@@ -1,0 +1,30 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "laclasse-api",
+  "main": "worker.js",
+  "compatibility_date": "2026-03-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "laclasse-d1",
+      "database_id": "replace-with-your-d1-database-id"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "BUCKET",
+      "bucket_name": "laclasse-r2",
+      "preview_bucket_name": "laclasse-r2-preview"
+    }
+  ],
+  "vars": {
+    "ADMIN_SECRET": "laclasse-secret-2026",
+    "RESERVATION_EXPIRY_MINUTES": "30",
+    "QR_UPI_ID": "9380509397@okbizaxis",
+    "QR_UPI_NAME": "LaClasse Abaya Couture"
+  },
+  "triggers": {
+    "crons": ["*/5 * * * *"]
+  }
+}

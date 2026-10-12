@@ -1,0 +1,25 @@
+name = "laclasse-backend"
+main = "worker.js"
+compatibility_date = "2024-09-23"
+
+# Cloudflare D1 Database Binding
+[[d1_databases]]
+binding = "DB"
+database_name = "laclasse_db"
+database_id = "YOUR_D1_DATABASE_ID"
+
+# Cloudflare R2 Bucket Binding
+[[r2_buckets]]
+binding = "BUCKET"
+bucket_name = "laclasse-assets"
+
+# Environment Variables
+[vars]
+ADMIN_SECRET = "laclasse-secret-2026"
+RESERVATION_EXPIRY_MINUTES = 30
+# Optional custom domain for R2 assets, or worker handles it via /api/media/*
+# R2_PUBLIC_URL = "https://assets.laclasse.com"
+
+# Scheduled Cron Trigger: Release expired reservations every 5 minutes
+[triggers]
+crons = ["*/5 * * * *"]

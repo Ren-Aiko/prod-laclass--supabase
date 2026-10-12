@@ -1,0 +1,8 @@
+{
+  "name": "Prod-Laclassé-Supabase",
+  "description": "Luxury Abaya Fashion Brand — Elegant, comfortable and premium abayas crafted with fine Dubai \u0026 Indonesian fabrics.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
