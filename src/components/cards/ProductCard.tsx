@@ -1,30 +1,65 @@
-import React, { useState } from 'react';
-import { Eye, Heart, ShoppingBag, Star } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Eye, Heart, ShoppingBag, Sparkles, Star } from 'lucide-react';
 import { Product } from '../../types';
+import { Product as DatabaseProduct } from '../../types/database';
 import { useCart } from '../../context/CartContext';
 import { useStore } from '../../context/StoreContext';
 
 interface ProductCardProps {
-  product: Product;
-  onSelectProduct: (product: Product) => void;
-  priority?: boolean;
+  product: Product | DatabaseProduct | any;
+  onSelectProduct: (product: any) => void;
 }
 
-export const NEUTRAL_PRODUCT_PLACEHOLDER =
-  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='800' viewBox='0 0 600 800'%3E%3Crect width='600' height='800' fill='%23F5F2EA'/%3E%3Cpath d='M300 240 L340 360 L380 620 L220 620 L260 360 Z' fill='none' stroke='%23D1CDC7' stroke-width='2' stroke-dasharray='4 4'/%3E%3Ctext x='50%25' y='55%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='14' font-weight='500' letter-spacing='3' fill='%238C7853'%3ELACLASSE ATELIER%3C/text%3E%3Ctext x='50%25' y='60%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='11' letter-spacing='1' fill='%23A09A92'%3EHAUTE COUTURE%3C/text%3E%3C/svg%3E";
+export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelectProduct }) => {
+  const fallbackImg = 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=800&auto=format&fit=crop';
 
-export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelectProduct, priority = false }) => {
-  const sizes = product.sizes && product.sizes.length > 0
-    ? product.sizes.map(s => (typeof s === 'object' ? s.size : s))
-    : ['Free Size'];
-  const lengths = product.lengths && product.lengths.length > 0 ? product.lengths : ['56"'];
-  
-  const primaryImage = product.image1 || product.thumbnail || (product.images && product.images[0]) || null;
-  const secondaryImage = (product.images && product.images[1]) || product.image2 || null;
+  const formatImageUrl = (url?: string | null): string => {
+    if (!url) return fallbackImg;
+    const trimmed = url.trim();
+    if (trimmed.startsWith('/assets/products/')) return trimmed;
+    if (trimmed.includes('/storage/v1/object/public/abaya-store-assets/')) {
+      const filename = trimmed.split('/storage/v1/object/public/abaya-store-assets/')[1];
+      return `/assets/products/${filename}`;
+    }
+    return trimmed;
+  };
+
+  // Map image1 as default, image2 and image3 for hover slideshow/fade
+  const rawImage1 = (product as any).image_1 || product.image1 || (product as any).thumbnail || fallbackImg;
+  const rawImage2 = (product as any).image_2 || product.image2 || (product.images && product.images[1]) || rawImage1;
+  const rawImage3 = (product as any).image_3 || product.image3 || (product.images && product.images[2]) || rawImage2;
+
+  const image1 = formatImageUrl(rawImage1);
+  const image2 = formatImageUrl(rawImage2);
+  const image3 = formatImageUrl(rawImage3);
+
+  // Bind size variants from selected_variants array
+  const variants: string[] = (product as any).selected_variants && (product as any).selected_variants.length > 0
+    ? (product as any).selected_variants
+    : (product.sizes && product.sizes.length > 0 ? product.sizes : ['S', 'M', 'L', 'XL']);
+
+  const lengths = product.lengths && product.lengths.length > 0 ? product.lengths : ['52"', '54"', '56"', '58"', '60"'];
 
   const [isHovered, setIsHovered] = useState(false);
-  const [selectedSize] = useState<string>(sizes[0] || 'Free Size');
-  const [selectedLength] = useState<string>(lengths[0] || '56"');
+  const [hoverSlideIndex, setHoverSlideIndex] = useState(0);
+  const [selectedSize, setSelectedSize] = useState<string>(variants[0] || 'M');
+  const [selectedLength] = useState<string>(lengths[1] || lengths[0] || '54"');
+
+  // Slideshow/fade animation between image_2 and image_3 on hover
+  useEffect(() => {
+    if (!isHovered) {
+      setHoverSlideIndex(0);
+      return;
+    }
+    const timer = setInterval(() => {
+      setHoverSlideIndex((prev) => (prev === 0 ? 1 : 0));
+    }, 1400);
+    return () => clearInterval(timer);
+  }, [isHovered]);
+
+  const activeImage = !isHovered
+    ? image1
+    : (hoverSlideIndex === 0 ? image2 : image3);
 
   const { addToCart } = useCart();
   const { wishlist, toggleWishlist, setQuickViewProduct } = useStore();
@@ -34,11 +69,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelectProdu
   const hasDiscount = Boolean(product.offerPrice && product.offerPrice < product.price);
   const rating = product.rating ?? 5;
   const reviewCount = product.reviewCount ?? 0;
-
-  // Swap to secondary image on hover ONLY if valid distinct secondary exists
-  const activeImageSrc = (isHovered && secondaryImage && secondaryImage !== primaryImage)
-    ? secondaryImage
-    : (primaryImage || NEUTRAL_PRODUCT_PLACEHOLDER);
 
   const handleQuickAdd = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -57,23 +87,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelectProdu
         onMouseLeave={() => setIsHovered(false)}
       >
         <img
-          src={activeImageSrc}
-          alt={product.name || 'LaClassé Abaya'}
-          width={600}
-          height={800}
-          className="w-full h-full object-cover object-center transition-transform duration-700 ease-out group-hover:scale-105"
-          loading={priority ? 'eager' : 'lazy'}
-          decoding="async"
-          {...(priority ? { fetchPriority: 'high' } : {})}
-          onError={(e) => {
-            console.warn('[ProductCard Image Load Error]:', {
-              productId: product.productId || product.id,
-              name: product.name,
-              attemptedSrc: e.currentTarget.src,
-            });
-            e.currentTarget.onerror = null;
-            e.currentTarget.src = NEUTRAL_PRODUCT_PLACEHOLDER;
-          }}
+          src={activeImage}
+          alt={product.name || 'Abaya'}
+          className="w-full h-full object-cover object-center transition-all duration-700 ease-out group-hover:scale-105"
+          loading="lazy"
         />
 
         {/* Badges */}
@@ -157,6 +174,26 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelectProdu
               ({reviewCount})
             </span>
           </div>
+
+          {/* Size Variant Selector from selected_variants */}
+          {variants.length > 0 && (
+            <div className="flex items-center gap-1 pt-1.5" onClick={(e) => e.stopPropagation()}>
+              {variants.slice(0, 5).map((sz) => (
+                <button
+                  key={sz}
+                  type="button"
+                  onClick={() => setSelectedSize(sz)}
+                  className={`px-1.5 py-0.5 text-[9px] uppercase font-medium rounded-xs border transition-colors ${
+                    selectedSize === sz
+                      ? 'bg-[#121212] text-[#FCFCFA] border-[#121212]'
+                      : 'bg-[#FCFCFA] text-[#777777] border-[#E8E4DA] hover:border-[#8C7853]'
+                  }`}
+                >
+                  {sz}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Pricing & Add to Cart */}
@@ -174,7 +211,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelectProdu
 
           <button
             onClick={handleQuickAdd}
-            className="p-2 bg-[#121212] hover:bg-[#8C7853] text-[#FCFCFA] rounded-xs transition-colors flex items-center justify-center gap-1 text-[11px] font-medium tracking-widest uppercase px-3 cursor-pointer"
+            className="p-2 bg-[#121212] hover:bg-[#8C7853] text-[#FCFCFA] rounded-xs transition-colors flex items-center justify-center gap-1 text-[11px] font-medium tracking-widest uppercase px-3"
             title="Add to bag"
           >
             <ShoppingBag className="w-3.5 h-3.5" />

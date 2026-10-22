@@ -95,7 +95,6 @@ CREATE TABLE orders (
     CHECK (payment_status IN (
       'Paid, Awaiting Confirmation',
       'Payment Confirmed',
-      'Payment Rejected',
       'Shipped',
       'Delivered',
       'Cancelled',

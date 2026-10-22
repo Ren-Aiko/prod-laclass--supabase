@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { X, Trash2, ShoppingBag, ArrowRight, Tag, ShieldCheck, Truck, AlertCircle, Check } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
-import { NEUTRAL_PRODUCT_PLACEHOLDER } from '../cards/ProductCard';
 
 interface CartDrawerProps {
   onProceedToCheckout?: () => void;
@@ -115,9 +114,9 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onProceedToCheckout, onO
                     className="flex gap-4 p-3 bg-[#FAF8F5] border border-[#F0ECE1] rounded-xs relative group"
                   >
                     <img
-                      src={item.product.thumbnail || item.product.image1 || item.product.images?.[0] || NEUTRAL_PRODUCT_PLACEHOLDER}
+                      src={item.product.thumbnail || 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=800&auto=format&fit=crop'}
                       alt={item.product.name || 'Cart Item'}
-                      className="w-20 h-24 object-cover rounded-xs bg-[#F5F2EA]"
+                      className="w-20 h-24 object-cover rounded-xs"
                     />
 
                     <div className="flex-1 flex flex-col justify-between">

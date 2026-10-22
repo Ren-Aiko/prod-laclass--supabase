@@ -85,12 +85,12 @@ serve(async (req: Request) => {
       return errorResponse('Please provide a review comment (minimum 5 characters).', 400);
     }
 
-    // Verify product exists in products table (safely handling UUID vs product code)
-    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(productId);
-    const prodQuery = supabase.from('products').select('id, product_id, name').limit(1);
-    const { data: prodCheck, error: pError } = isUuid
-      ? await prodQuery.eq('id', productId)
-      : await prodQuery.eq('product_id', productId);
+    // Verify product exists in products table
+    const { data: prodCheck, error: pError } = await supabase
+      .from('products')
+      .select('id, name')
+      .or(`product_id.eq.${productId},id.eq.${productId}`)
+      .limit(1);
 
     if (pError || !prodCheck || prodCheck.length === 0) {
       return errorResponse('The specified product was not found in our catalog.', 404);

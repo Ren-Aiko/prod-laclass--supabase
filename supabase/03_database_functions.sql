@@ -72,9 +72,7 @@ DECLARE
   
   v_prod_id TEXT;
   v_variant_id UUID;
-  v_variant_row products%ROWTYPE;
-  v_item_name TEXT;
-  v_item_slug TEXT;
+  v_variant_row RECORD;
   v_item_qty INTEGER;
   v_item_size TEXT;
   v_item_length TEXT;
@@ -151,11 +149,9 @@ BEGIN
 
     ELSE
       -- Case B: Standard Variant (Atomic lock & decrement)
-      v_variant_id := NULL;
-
       -- 1. Try to match variant by UUID if provided (36 chars)
       IF (v_item->>'product_variant_id') IS NOT NULL AND length(v_item->>'product_variant_id') = 36 THEN
-        SELECT id INTO v_variant_id
+        SELECT * INTO v_variant_row
         FROM products
         WHERE id = (v_item->>'product_variant_id')::UUID
           AND is_active = true
@@ -163,8 +159,8 @@ BEGIN
       END IF;
 
       -- 2. Try match by (product_id, size, length) with normalized quotes and casing
-      IF v_variant_id IS NULL THEN
-        SELECT id INTO v_variant_id
+      IF v_variant_row.id IS NULL THEN
+        SELECT * INTO v_variant_row
         FROM products
         WHERE (lower(trim(product_id)) = lower(trim(v_prod_id)) OR id::text = v_prod_id)
           AND (
@@ -183,8 +179,8 @@ BEGIN
       END IF;
 
       -- 3. Fallback: Match by product_id and size (any length)
-      IF v_variant_id IS NULL THEN
-        SELECT id INTO v_variant_id
+      IF v_variant_row.id IS NULL THEN
+        SELECT * INTO v_variant_row
         FROM products
         WHERE (lower(trim(product_id)) = lower(trim(v_prod_id)) OR id::text = v_prod_id)
           AND (
@@ -198,8 +194,8 @@ BEGIN
       END IF;
 
       -- 4. Fallback: Match any active row for this product_id
-      IF v_variant_id IS NULL THEN
-        SELECT id INTO v_variant_id
+      IF v_variant_row.id IS NULL THEN
+        SELECT * INTO v_variant_row
         FROM products
         WHERE (lower(trim(product_id)) = lower(trim(v_prod_id)) OR id::text = v_prod_id)
           AND is_active = true
@@ -209,7 +205,7 @@ BEGIN
       END IF;
 
       -- 5. Fallback: If no row exists at all in products (unseeded catalog), auto-provision variant
-      IF v_variant_id IS NULL THEN
+      IF v_variant_row.id IS NULL THEN
         INSERT INTO products (
           product_id, name, slug, category, collection, description,
           fabric, price, size, length, quantity, is_active
@@ -226,11 +222,8 @@ BEGIN
           10,
           true
         )
-        RETURNING id INTO v_variant_id;
+        RETURNING * INTO v_variant_row;
       END IF;
-
-      -- Fetch matched row atomically
-      SELECT * INTO v_variant_row FROM products WHERE id = v_variant_id;
 
       IF v_variant_row.quantity < v_item_qty THEN
         RAISE EXCEPTION 'INSUFFICIENT_STOCK: Variant % (% %) has only % in stock (requested %).',
@@ -329,7 +322,7 @@ BEGIN
     v_custom_m := v_item->'custom_measurements';
 
     IF v_item_size = 'Custom' THEN
-      SELECT price, name, slug INTO v_item_price, v_item_name, v_item_slug
+      SELECT price, name, slug INTO v_item_price, v_variant_row.name, v_variant_row.slug
       FROM products
       WHERE (product_id = v_prod_id OR id::text = v_prod_id)
       LIMIT 1;
@@ -338,36 +331,17 @@ BEGIN
         order_id, product_id, product_variant_id, product_name, product_slug,
         quantity, size, length, price_at_purchase, custom_measurements
       ) VALUES (
-        v_order_id, v_prod_id, NULL, COALESCE(v_item->>'name', v_item_name, 'Custom Abaya'),
-        v_item_slug, v_item_qty, 'Custom', NULL, v_item_price, v_custom_m
+        v_order_id, v_prod_id, NULL, COALESCE(v_item->>'name', v_variant_row.name, 'Custom Abaya'),
+        v_variant_row.slug, v_item_qty, 'Custom', NULL, v_item_price, v_custom_m
       );
     ELSE
       -- Standard item
-      v_variant_id := NULL;
-      v_item_name := NULL;
-      v_item_slug := NULL;
-      v_item_price := NULL;
-
       IF (v_item->>'product_variant_id') IS NOT NULL AND length(v_item->>'product_variant_id') = 36 THEN
-        SELECT id, name, slug, price, length INTO v_variant_id, v_item_name, v_item_slug, v_item_price, v_item_length
-        FROM products WHERE id = (v_item->>'product_variant_id')::UUID;
-      END IF;
-
-      IF v_variant_id IS NULL THEN
-        SELECT id, name, slug, price, length INTO v_variant_id, v_item_name, v_item_slug, v_item_price, v_item_length
-        FROM products
-        WHERE (product_id = v_prod_id OR id::text = v_prod_id)
-          AND size = v_item_size
+        SELECT * INTO v_variant_row FROM products WHERE id = (v_item->>'product_variant_id')::UUID;
+      ELSE
+        SELECT * INTO v_variant_row FROM products
+        WHERE product_id = v_prod_id AND size = v_item_size
           AND (v_item_length IS NULL OR length = v_item_length OR length IS NULL)
-        ORDER BY quantity DESC
-        LIMIT 1;
-      END IF;
-
-      IF v_variant_id IS NULL THEN
-        SELECT id, name, slug, price, length INTO v_variant_id, v_item_name, v_item_slug, v_item_price, v_item_length
-        FROM products
-        WHERE (product_id = v_prod_id OR id::text = v_prod_id)
-        ORDER BY quantity DESC
         LIMIT 1;
       END IF;
 
@@ -375,9 +349,9 @@ BEGIN
         order_id, product_id, product_variant_id, product_name, product_slug,
         quantity, size, length, price_at_purchase, custom_measurements
       ) VALUES (
-        v_order_id, v_prod_id, v_variant_id, COALESCE(v_item_name, v_item->>'name', 'Abaya Couture'), v_item_slug,
-        v_item_qty, v_item_size, COALESCE(v_item->>'length', v_item_length),
-        COALESCE(v_item_price, (v_item->>'price_at_purchase')::NUMERIC, 8999), NULL
+        v_order_id, v_prod_id, v_variant_row.id, v_variant_row.name, v_variant_row.slug,
+        v_item_qty, v_item_size, COALESCE(v_item_length, v_variant_row.length),
+        v_variant_row.price, NULL
       );
     END IF;
   END LOOP;
@@ -554,77 +528,6 @@ BEGIN
   );
 END;
 $$;
-
--- =====================================================================
--- 4B. FUNCTION: reject_order_payment
--- Atomic payment rejection with reason logging and inventory restoration
--- =====================================================================
-CREATE OR REPLACE FUNCTION public.reject_order_payment(p_order_id UUID, p_reason TEXT DEFAULT 'Payment verification failed')
-RETURNS JSONB
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public, pg_temp
-AS $$
-DECLARE
-  v_order RECORD;
-  v_item RECORD;
-  v_new_notes TEXT;
-BEGIN
-  SELECT * INTO v_order
-  FROM public.orders
-  WHERE id = p_order_id
-  FOR UPDATE;
-
-  IF NOT FOUND THEN
-    RETURN jsonb_build_object('success', false, 'error', 'Order not found');
-  END IF;
-
-  IF v_order.payment_status = 'Payment Rejected' THEN
-    RETURN jsonb_build_object('success', false, 'error', 'Order payment is already rejected');
-  END IF;
-
-  IF v_order.payment_status IN ('Payment Confirmed', 'Shipped', 'Delivered') THEN
-    RETURN jsonb_build_object('success', false, 'error', 'Cannot reject payment on confirmed or delivered order');
-  END IF;
-
-  -- If reserved, restore variant inventory
-  IF v_order.reservation_status = 'reserved' THEN
-    FOR v_item IN
-      SELECT * FROM public.order_items
-      WHERE order_id = p_order_id
-        AND product_variant_id IS NOT NULL
-        AND size != 'Custom'
-    LOOP
-      UPDATE public.products
-      SET quantity = quantity + v_item.quantity,
-          updated_at = now()
-      WHERE id = v_item.product_variant_id;
-    END LOOP;
-  END IF;
-
-  v_new_notes := CASE
-    WHEN v_order.notes IS NOT NULL AND length(v_order.notes) > 0
-    THEN v_order.notes || E'\n[Payment Rejected: ' || COALESCE(p_reason, 'Verification failed') || ']'
-    ELSE '[Payment Rejected: ' || COALESCE(p_reason, 'Verification failed') || ']'
-  END;
-
-  UPDATE public.orders
-  SET payment_status = 'Payment Rejected',
-      reservation_status = 'released',
-      notes = v_new_notes,
-      updated_at = now()
-  WHERE id = p_order_id;
-
-  RETURN jsonb_build_object(
-    'success', true,
-    'order_id', p_order_id,
-    'payment_status', 'Payment Rejected',
-    'reservation_status', 'released'
-  );
-END;
-$$;
-
-GRANT EXECUTE ON FUNCTION public.reject_order_payment(UUID, TEXT) TO authenticated, service_role;
 
 -- =====================================================================
 -- 5. EXPLICIT ORDER RESTOCK (Cancelled / Refunded Paid Orders)

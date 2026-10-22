@@ -1,21 +1,34 @@
 import { ContactMessage } from '../types';
 import { invokeEdgeFunction } from '../utils/supabase';
+import { submitContactMessage, fetchContactMessagesAdmin } from './contactService';
 
 export const sendContactMessage = async (message: ContactMessage): Promise<boolean> => {
   try {
-    await invokeEdgeFunction('contact-message', {
-      method: 'POST',
-      body: {
-        name: message.name,
-        email: message.email,
-        phone: message.phone,
-        message: message.message,
-      },
+    // 1. Try decoupled contact service (inserts directly into messages table with body)
+    await submitContactMessage({
+      name: message.name,
+      email: message.email,
+      body: message.message,
+      phone: message.phone,
     });
     return true;
   } catch (err: any) {
-    console.error('[sendContactMessage Error]:', err.message);
-    throw err;
+    console.warn('[submitContactMessage failed, trying edge function]:', err);
+    try {
+      await invokeEdgeFunction('contact-message', {
+        method: 'POST',
+        body: {
+          name: message.name,
+          email: message.email,
+          phone: message.phone,
+          message: message.message,
+        },
+      });
+      return true;
+    } catch (edgeErr: any) {
+      console.error('[sendContactMessage Error]:', edgeErr);
+      throw edgeErr;
+    }
   }
 };
 
@@ -26,18 +39,18 @@ export const fetchContactMessages = async (): Promise<ContactMessage[]> => {
     });
 
     if (Array.isArray(rawList)) {
-      return rawList.map((m: any) => ({
+      return rawList.map((m) => ({
         id: m.id,
         name: m.name,
         email: m.email,
         phone: m.phone || '',
         message: m.message,
-        date: (m.created_at || '').split('T')[0] || new Date().toISOString().split('T')[0],
+        date: (m.created_at || '').split('T')[0],
         status: m.status || 'Unread',
       }));
     }
-  } catch (err: any) {
-    console.error('[fetchContactMessages Error]:', err.message);
+  } catch (e) {
+    console.warn('[fetchContactMessages Error]:', e);
   }
 
   return [];

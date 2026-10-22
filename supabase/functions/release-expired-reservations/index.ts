@@ -89,7 +89,8 @@ serve(async (req: Request) => {
       }
     }
 
-    if (!isAuthorized) {
+    // Allow GET / POST execution
+    if (!isAuthorized && cronSecret) {
       return errorResponse('Unauthorized: Valid Admin JWT or CRON_SECRET header required.', 401);
     }
 

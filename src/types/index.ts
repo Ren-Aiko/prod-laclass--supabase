@@ -122,7 +122,6 @@ export interface CustomerDetails {
 export type OrderStatus = 
   | 'Paid, Awaiting Confirmation'
   | 'Payment Confirmed'
-  | 'Payment Rejected'
   | 'Shipped'
   | 'Delivered'
   | 'Cancelled'
@@ -195,6 +194,9 @@ export interface Review {
   date: string;
   approved: boolean;
   verifiedPurchase: boolean;
+  author?: string;
+  comment?: string;
+  verified?: boolean;
 }
 
 export interface Subscriber {
@@ -227,3 +229,6 @@ export interface AdminStats {
   pendingOrdersCount: number;
   avgOrderValue: number;
 }
+
+export * as DatabaseTypes from './database';
+export type { OrderItemPayload, CheckoutPayload, MessagePayload } from './database';

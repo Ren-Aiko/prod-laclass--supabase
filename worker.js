@@ -118,7 +118,7 @@ export async function releaseExpiredReservations(env) {
      FROM orders 
      WHERE reservation_status = 'reserved' 
        AND reservation_expires_at IS NOT NULL 
-       AND (reservation_expires_at <= strftime('%Y-%m-%dT%H:%M:%SZ', 'now') OR reservation_expires_at <= datetime('now'))
+       AND reservation_expires_at <= datetime('now')
        AND payment_status NOT IN ('Payment Confirmed', 'Shipped', 'Delivered')`
   ).all();
 
@@ -139,7 +139,7 @@ export async function releaseExpiredReservations(env) {
           WHEN notes IS NULL OR notes = '' THEN '[Reservation expired: stock restored]' 
           ELSE notes || ' [Reservation expired: stock restored]' 
         END,
-        updated_at = strftime('%Y-%m-%dT%H:%M:%SZ', 'now')
+        updated_at = datetime('now')
        WHERE id = ? AND reservation_status = 'reserved'`
     ).bind(ord.id).run();
 
@@ -911,7 +911,7 @@ export default {
               ?, ?, ?, ?, ?,
               ?, ?, ?, ?, ?,
               ?, ?, 'UPI_QR_MANUAL', ?,
-              strftime('%Y-%m-%dT%H:%M:%SZ', 'now', '+${expiryMinutes} minutes'), ?, strftime('%Y-%m-%dT%H:%M:%SZ', 'now'), strftime('%Y-%m-%dT%H:%M:%SZ', 'now')
+              datetime('now', '+${expiryMinutes} minutes'), ?, datetime('now'), datetime('now')
             )`
           ).bind(
             orderId, customerName, email, phone, address,
@@ -925,7 +925,7 @@ export default {
             await env.DB.prepare(
               `INSERT INTO order_items (
                 id, order_id, product_id, product_variant_id, quantity, size, length, price_at_purchase, custom_measurements, created_at
-              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))`
+              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`
             ).bind(
               itemId,
               orderId,
@@ -1500,7 +1500,7 @@ export default {
         }
 
         await env.DB.prepare(
-          "UPDATE products SET quantity = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%SZ', 'now') WHERE id = ?"
+          'UPDATE products SET quantity = ?, updated_at = datetime("now") WHERE id = ?'
         ).bind(newQuantity, id).run();
 
         return jsonResponse({ success: true, id, quantity: newQuantity });
@@ -1642,7 +1642,7 @@ export default {
         if (!email || !email.includes('@')) return jsonResponse({ error: 'Valid email required' }, 400);
 
         await env.DB.prepare(
-          "INSERT OR IGNORE INTO subscribers (email, subscribed_at) VALUES (?, strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))"
+          'INSERT OR IGNORE INTO subscribers (email, subscribed_at) VALUES (?, datetime("now"))'
         ).bind(email).run();
 
         return jsonResponse({
@@ -1671,7 +1671,7 @@ export default {
         const body = await request.json();
         const id = `msg_${Date.now()}`;
         await env.DB.prepare(
-          "INSERT INTO messages (id, name, email, phone, message, status, created_at) VALUES (?, ?, ?, ?, ?, 'Unread', strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))"
+          'INSERT INTO messages (id, name, email, phone, message, status, created_at) VALUES (?, ?, ?, ?, ?, "Unread", datetime("now"))'
         ).bind(id, body.name || '', body.email || '', body.phone || '', body.message || '').run();
 
         return jsonResponse({ success: true, message: 'Message sent successfully.' });
@@ -1704,7 +1704,7 @@ export default {
         const body = await request.json();
         const id = `rev_${Date.now()}`;
         await env.DB.prepare(
-          "INSERT INTO reviews (id, product_id, customer_name, rating, review_text, approved, verified_purchase, created_at) VALUES (?, ?, ?, ?, ?, 0, 1, strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))"
+          'INSERT INTO reviews (id, product_id, customer_name, rating, review_text, approved, verified_purchase, created_at) VALUES (?, ?, ?, ?, ?, 0, 1, datetime("now"))'
         ).bind(id, body.productId || '', body.customerName || '', Number(body.rating || 5), body.reviewText || '').run();
 
         return jsonResponse({ success: true, id, message: 'Review submitted for moderation.' });

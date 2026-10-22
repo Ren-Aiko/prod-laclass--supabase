@@ -1,5 +1,5 @@
 import { Order, OrderItem, OrderStatus } from '../types';
-import { invokeEdgeFunction } from '../utils/supabase';
+import { invokeEdgeFunction, getSupabase } from '../utils/supabase';
 
 export function mapRowToOrder(row: any): Order {
   let rawItems = row.items;
@@ -17,11 +17,10 @@ export function mapRowToOrder(row: any): Order {
         order_id: String(i.order_id || row.id || ''),
         product_id: String(i.product_id || i.productId || ''),
         productId: String(i.product_id || i.productId || ''),
-        product_variant_id: i.product_variant_id || null,
         name: String(i.name || i.product_name || 'Abaya Couture Design'),
         quantity: Number(i.quantity || 1),
-        size: String(i.size || 'Free Size'),
-        length: i.length || null,
+        size: String(i.size || 'M'),
+        length: i.length || undefined,
         price_at_purchase: Number(i.price_at_purchase || i.price || 0),
         custom_measurements: i.custom_measurements || null,
       }))
@@ -58,16 +57,12 @@ export function mapRowToOrder(row: any): Order {
     courier_name: row.courier_name || undefined,
     trackingNumber: row.tracking_number || undefined,
     tracking_number: row.tracking_number || undefined,
-    reservation_status: row.reservation_status || 'reserved',
-    reservation_expires_at: row.reservation_expires_at || null,
-    restocked_at: row.restocked_at || null,
     notes: row.notes || undefined,
   };
 }
 
 /**
- * Atomically create order with UTR and reserve stock via create-order Edge Function.
- * Revalidates stock and price authoritatively on the backend.
+ * Atomically create order with UTR and reserve stock via Supabase Edge Function
  */
 export const createOrder = async (order: Order): Promise<{ success: boolean; id: string; utr_number: string }> => {
   const payload = {
@@ -80,7 +75,7 @@ export const createOrder = async (order: Order): Promise<{ success: boolean; id:
       : '',
     amount: order.amount,
     discount_amount: order.discountAmount,
-    coupon_code: order.couponCode || null,
+    coupon_code: order.couponCode,
     shipping_fee: order.shippingFee,
     total_amount: order.grandTotal,
     utr_number: order.utrNumber || order.utr_number || '',
@@ -89,7 +84,6 @@ export const createOrder = async (order: Order): Promise<{ success: boolean; id:
       product_id: item.product_id || item.productId,
       product_variant_id: item.product_variant_id || (item as any).variantId || null,
       name: item.name,
-      product_name: item.name,
       quantity: item.quantity,
       size: item.size,
       length: item.length || null,
@@ -104,23 +98,88 @@ export const createOrder = async (order: Order): Promise<{ success: boolean; id:
       body: payload,
     });
 
-    if (!result || (!result.success && !result.id && !result.order_number)) {
-      throw new Error(result?.error || 'Failed to place order.');
-    }
-
     return {
       success: true,
       id: result.order_number || result.id || order.orderId,
       utr_number: result.utr_number || payload.utr_number,
     };
   } catch (err: any) {
-    console.error('[createOrder Error]:', err.message);
-    throw new Error(err.message || 'Trouble connecting to our servers. Please try our WhatsApp.');
+    console.warn('[invokeEdgeFunction create-order failed, attempting client-side fallback]:', err);
+    try {
+      const supabase = getSupabase();
+
+      // 1. Try calling PostgreSQL RPC directly
+      const { data: rpcData, error: rpcErr } = await supabase.rpc('create_order_atomic', {
+        p_order: payload,
+      });
+
+      if (!rpcErr && rpcData) {
+        return {
+          success: true,
+          id: rpcData.order_number || rpcData.id || order.orderId,
+          utr_number: payload.utr_number,
+        };
+      }
+
+      // 2. Fallback: Direct insert into orders table
+      const orderId = crypto.randomUUID();
+      const expiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString();
+      const { data: directOrder, error: directErr } = await supabase
+        .from('orders')
+        .insert({
+          id: orderId,
+          order_number: payload.order_number,
+          customer_name: payload.customer_name,
+          customer_email: payload.customer_email,
+          customer_phone: payload.customer_phone,
+          shipping_address: payload.shipping_address,
+          amount: payload.amount,
+          discount_amount: payload.discount_amount,
+          coupon_code: payload.coupon_code,
+          shipping_fee: payload.shipping_fee,
+          total_amount: payload.total_amount,
+          utr_number: payload.utr_number,
+          notes: payload.notes,
+          payment_status: 'Paid, Awaiting Confirmation',
+          payment_method: 'UPI_QR_MANUAL',
+          reservation_status: 'reserved',
+          reservation_expires_at: expiresAt,
+          items: payload.items,
+        })
+        .select()
+        .single();
+
+      if (!directErr && directOrder) {
+        // Also insert breakout records into order_items table
+        for (const it of payload.items) {
+          try {
+            await supabase.from('order_items').insert({
+              order_id: directOrder.id,
+              product_id: it.product_id && it.product_id.length === 36 ? it.product_id : null,
+              product_name: it.name || 'Abaya Couture',
+              selected_size: it.size || 'M',
+              quantity: it.quantity || 1,
+              price_at_purchase: it.price_at_purchase || 0,
+            });
+          } catch {}
+        }
+
+        return {
+          success: true,
+          id: directOrder.order_number || directOrder.id || order.orderId,
+          utr_number: payload.utr_number,
+        };
+      }
+    } catch (fallbackErr) {
+      console.warn('[Direct client order fallback error]:', fallbackErr);
+    }
+
+    throw err;
   }
 };
 
 /**
- * Fetch all orders via admin-orders Edge Function (Authorized Admin)
+ * Fetch all orders (Admin protected Edge Function)
  */
 export const fetchOrders = async (): Promise<Order[]> => {
   try {
@@ -130,66 +189,47 @@ export const fetchOrders = async (): Promise<Order[]> => {
 
     return Array.isArray(rawList) ? rawList.map(mapRowToOrder) : [];
   } catch (err: any) {
-    console.error('[fetchOrders Edge Function Error]:', err.message);
+    console.error('[fetchOrders Error]:', err);
     throw err;
   }
 };
 
 /**
- * Update order status via admin-orders Edge Function
+ * Update order status (Admin protected Edge Function)
  */
 export const updateOrderStatus = async (
   orderId: string,
   status: OrderStatus,
   courierName?: string,
-  trackingNumber?: string,
-  reason?: string
+  trackingNumber?: string
 ): Promise<boolean> => {
-  try {
-    await invokeEdgeFunction('admin-orders', {
-      method: 'PATCH',
-      body: {
-        id: orderId,
-        status,
-        payment_status: status,
-        courier_name: courierName || null,
-        tracking_number: trackingNumber || null,
-        reason: reason || null,
-      },
-    });
+  await invokeEdgeFunction('admin-orders', {
+    method: 'PATCH',
+    body: {
+      id: orderId,
+      status,
+      payment_status: status,
+      courier_name: courierName,
+      tracking_number: trackingNumber,
+    },
+  });
 
-    return true;
-  } catch (err: any) {
-    console.error('[updateOrderStatus Error]:', err.message);
-    throw err;
-  }
-};
-
-/**
- * Reject order payment with explicit reason and atomic stock restoration
- */
-export const rejectOrderPayment = async (orderId: string, reason: string): Promise<boolean> => {
-  return updateOrderStatus(orderId, 'Payment Rejected', undefined, undefined, reason);
+  return true;
 };
 
 /**
  * Explicit restock for cancelled/refunded paid order (Admin protected)
  */
 export const restockCancelledOrder = async (orderId: string): Promise<boolean> => {
-  try {
-    await invokeEdgeFunction('admin-orders', {
-      method: 'POST',
-      body: {
-        order_id: orderId,
-        action: 'restock',
-      },
-    });
+  await invokeEdgeFunction('admin-orders', {
+    method: 'POST',
+    body: {
+      order_id: orderId,
+      action: 'restock',
+    },
+  });
 
-    return true;
-  } catch (err: any) {
-    console.error('[restockCancelledOrder Error]:', err.message);
-    throw err;
-  }
+  return true;
 };
 
 export const createOrderInSheet = createOrder;

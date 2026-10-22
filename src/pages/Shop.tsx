@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Filter, SlidersHorizontal, Search, RotateCcw, X, Grid, List, AlertCircle, RefreshCw, MessageCircle } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { ProductCard } from '../components/cards/ProductCard';
 import { Product } from '../types';
+import { getActiveProducts } from '../services/product';
 
 interface ShopPageProps {
   onSelectProduct: (product: Product) => void;
@@ -31,6 +32,19 @@ export const ShopPage: React.FC<ShopPageProps> = ({ onSelectProduct }) => {
   } = useStore();
 
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
+
+  useEffect(() => {
+    // Proactively fetch catalog items using getActiveProducts from Stack A product service
+    getActiveProducts()
+      .then((data) => {
+        if (data && data.length > 0 && products.length === 0) {
+          refreshStoreData();
+        }
+      })
+      .catch((err) => {
+        console.warn('[ShopPage getActiveProducts ping]:', err?.message);
+      });
+  }, []);
 
   const resetFilters = () => {
     setSearchQuery('');

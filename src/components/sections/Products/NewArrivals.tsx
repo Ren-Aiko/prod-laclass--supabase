@@ -45,7 +45,7 @@ export const NewArrivals: React.FC<NewArrivalsProps> = ({ onSelectProduct, onVie
             ))}
           </div>
         ) : dbError ? (
-          <div className="text-center py-16 px-4 bg-[#FCFCFA] border border-[#F0ECE1] rounded-xs space-y-4">
+          <div className="text-center py-16 px-4 bg-[#FCFCFA] border border-[#F0ECE1] rounded-xs space-y-3">
             <AlertCircle className="w-10 h-10 text-[#8C7853] mx-auto stroke-1" />
             <h3 className="font-serif text-xl text-[#121212] font-medium">
               Trouble connecting to our servers. Please try our WhatsApp.
@@ -53,22 +53,6 @@ export const NewArrivals: React.FC<NewArrivalsProps> = ({ onSelectProduct, onVie
             <p className="text-xs text-[#777777] max-w-sm mx-auto">
               Our concierge atelier is available on WhatsApp to assist with immediate orders and inquiries.
             </p>
-            <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
-              <a
-                href="https://wa.me/919380509397?text=Hello%20LaClass%C3%A9%20Abaya%20Concierge!%20I%20would%20like%20to%20inquire%20about%20your%20luxury%20collections."
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 bg-[#25D366] hover:bg-[#20ba5a] text-white text-xs font-medium uppercase tracking-[0.2em] px-5 py-2.5 rounded-xs transition-colors shadow-sm"
-              >
-                <span>WhatsApp Concierge</span>
-              </a>
-              <button
-                onClick={onViewAllClick}
-                className="inline-flex items-center gap-2 bg-[#121212] hover:bg-[#8C7853] text-[#FCFCFA] text-xs font-medium uppercase tracking-[0.2em] px-5 py-2.5 rounded-xs transition-colors cursor-pointer"
-              >
-                <span>View Catalogue</span>
-              </button>
-            </div>
           </div>
         ) : products.length === 0 ? (
           <div className="text-center py-16 px-4 bg-[#FCFCFA] border border-[#F0ECE1] rounded-xs space-y-3">

@@ -10,7 +10,6 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 // Default production credentials provided for LaClassé project
 const DEFAULT_SUPABASE_URL = 'https://sfqnaftcpuoyftpjgxbb.supabase.co';
 const DEFAULT_SUPABASE_KEY = 'sb_publishable_x1k-8OB-6e4rCuYLuwUjNw_ylVYmLL3';
-const DEFAULT_R2_PUBLIC_URL = 'https://pub-de5214d2b1044125bc4e13a67637a92c.r2.dev';
 
 // Resolve Supabase URL from environment, localStorage, or provided default
 export const getSupabaseUrl = (): string => {
@@ -54,7 +53,10 @@ export const setSupabaseAnonKey = (key: string) => {
   }
 };
 
-// Resolve Cloudflare R2 Public Asset URL from environment, localStorage, or provided default
+// Default Cloudflare R2 Public URL provided for LaClassé project
+const DEFAULT_R2_PUBLIC_URL = 'https://pub-de5214d2b1044125bc4e13a67637a92c.r2.dev';
+
+// Resolve Cloudflare R2 Public URL from environment, localStorage, or provided default
 export const getR2PublicUrl = (): string => {
   const envUrl = import.meta.env.VITE_R2_PUBLIC_URL;
   if (envUrl && typeof envUrl === 'string' && envUrl.trim() !== '') {

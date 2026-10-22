@@ -37,8 +37,7 @@ interface AdminContextType {
   backendError: string | null;
   databaseConfigured: boolean;
   refreshAdminData: () => Promise<void>;
-  updateOrderStatus: (orderId: string, status: OrderStatus, courierName?: string, trackingNumber?: string, reason?: string) => Promise<boolean>;
-  rejectOrderPayment: (orderId: string, reason: string) => Promise<boolean>;
+  updateOrderStatus: (orderId: string, status: OrderStatus, courierName?: string, trackingNumber?: string) => Promise<boolean>;
   restockOrder: (orderId: string) => Promise<boolean>;
   saveProduct: (product: Partial<Product>, imageFiles?: (File | null)[]) => Promise<boolean>;
   updateProductStock: (id: string, quantity: number) => Promise<boolean>;
@@ -119,35 +118,22 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return null;
   };
 
-  // Restore authenticated session on application mount
+  // Restore authenticated Supabase session on application mount
   useEffect(() => {
     const restoreSession = async () => {
-      // 1. Check local administrator session token
-      const isLocalAuth = localStorage.getItem('laclasse_admin_auth') === 'true';
-      const savedEmail = localStorage.getItem('laclasse_admin_email');
-      if (isLocalAuth) {
-        setIsAdminAuthenticated(true);
-        setAdminEmail(savedEmail || 'admin@laclasse.com');
-      }
+      if (!isSupabaseConfigured()) return;
 
-      // 2. Also check Supabase Auth session if configured
-      if (isSupabaseConfigured()) {
-        try {
-          const supabase = getSupabase();
-          const { data: { session } } = await supabase.auth.getSession();
+      try {
+        const supabase = getSupabase();
+        const { data: { session } } = await supabase.auth.getSession();
 
-          if (session?.user) {
-            setIsAdminAuthenticated(true);
-            setAdminEmail(session.user.email || savedEmail || 'admin@laclasse.com');
-            localStorage.setItem('laclasse_admin_auth', 'true');
-            if (session.user.email) {
-              localStorage.setItem('laclasse_admin_email', session.user.email);
-            }
-            checkAdminPrivileges(supabase, session.user).catch(() => {});
-          }
-        } catch (err) {
-          console.warn('[Session restoration check]:', err);
+        if (session?.user) {
+          setIsAdminAuthenticated(true);
+          setAdminEmail(session.user.email || null);
+          checkAdminPrivileges(supabase, session.user).catch(() => {});
         }
+      } catch (err) {
+        console.warn('[Session restoration check]:', err);
       }
     };
 
@@ -158,19 +144,12 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (isSupabaseConfigured()) {
         const supabase = getSupabase();
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-          if (event === 'SIGNED_OUT') {
-            const isLocal = localStorage.getItem('laclasse_admin_auth') === 'true';
-            if (!isLocal) {
-              setIsAdminAuthenticated(false);
-              setAdminEmail(null);
-            }
+          if (event === 'SIGNED_OUT' || !session) {
+            setIsAdminAuthenticated(false);
+            setAdminEmail(null);
           } else if (session?.user) {
             setIsAdminAuthenticated(true);
             setAdminEmail(session.user.email || null);
-            localStorage.setItem('laclasse_admin_auth', 'true');
-            if (session.user.email) {
-              localStorage.setItem('laclasse_admin_email', session.user.email);
-            }
             checkAdminPrivileges(supabase, session.user).catch(() => {});
           }
         });
@@ -183,7 +162,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, []);
 
   /**
-   * Secure administrator login with master secret support & Supabase Auth
+   * Secure administrator login via Supabase Auth
    */
   const loginAdmin = async (
     emailOrSecret: string,
@@ -199,59 +178,46 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       setSupabaseAnonKey(customAnonKey.trim());
     }
 
-    const email = (emailOrSecret || '').trim();
-    const pwd = (password || '').trim();
-
-    if (!email && !pwd) {
-      return { success: false, error: 'Please enter Administrator Email and Password or Secret Passphrase.' };
+    if (!isSupabaseConfigured()) {
+      return {
+        success: false,
+        error: 'Supabase URL and Anon Key are required. Please configure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.'
+      };
     }
 
-    const masterSecret = (import.meta.env.VITE_ADMIN_SECRET || 'laclasse-secret-2026').trim();
+    const email = emailOrSecret.trim();
+    const pwd = password || '';
 
-    // Check master secret passphrase matching
-    const isMasterSecretMatch = 
-      pwd === masterSecret || 
-      email === masterSecret || 
-      pwd === 'admin123' ||
-      pwd === 'laclasse2026' ||
-      (email.toLowerCase().includes('admin') && pwd.length >= 6) ||
-      (email.toLowerCase() === 'aravind@renaiko.com' && (pwd === masterSecret || pwd.length >= 6));
+    if (!email || !pwd) {
+      return { success: false, error: 'Please enter both Administrator Email and Password.' };
+    }
 
-    let authSuccess = false;
-    let verifiedEmail = email || 'admin@laclasse.com';
+    try {
+      const supabase = getSupabase();
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password: pwd,
+      });
 
-    // 1. Try Supabase Auth if configured and password provided
-    if (isSupabaseConfigured() && email && pwd) {
-      try {
-        const supabase = getSupabase();
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email,
-          password: pwd,
-        });
-
-        if (!error && data?.user) {
-          authSuccess = true;
-          verifiedEmail = data.user.email || email;
-          checkAdminPrivileges(supabase, data.user).catch(() => {});
-        }
-      } catch (authErr) {
-        console.warn('[Supabase Auth sign in]:', authErr);
+      if (error || !data.user) {
+        return {
+          success: false,
+          error: error?.message || 'Invalid credentials. Please verify your email and password.'
+        };
       }
-    }
 
-    // 2. If Supabase Auth didn't succeed but master secret matched, authorize!
-    if (!authSuccess && isMasterSecretMatch) {
-      authSuccess = true;
-      verifiedEmail = email || 'admin@laclasse.com';
-    }
+      // Check and sync `admins` metadata table in background
+      let adminRecord: any = null;
+      try {
+        adminRecord = await checkAdminPrivileges(supabase, data.user);
+      } catch (checkErr) {
+        console.warn('[Admin privileges check]:', checkErr);
+      }
 
-    if (authSuccess) {
-      localStorage.setItem('laclasse_admin_auth', 'true');
-      localStorage.setItem('laclasse_admin_email', verifiedEmail);
-      localStorage.setItem('laclasse_admin_secret', masterSecret);
+      // Grant admin session to authenticated Supabase account
       setIsAdminAuthenticated(true);
-      setAdminEmail(verifiedEmail);
-
+      setAdminEmail(adminRecord?.email || data.user.email || email);
+      
       try {
         await refreshAdminData();
       } catch (refreshErr) {
@@ -259,18 +225,13 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
 
       return { success: true };
+    } catch (err: any) {
+      console.error('[Admin Login Error]:', err);
+      return { success: false, error: err.message || 'An unexpected error occurred during authentication.' };
     }
-
-    return {
-      success: false,
-      error: 'Invalid administrator credentials. Verify your email and passphrase.'
-    };
   };
 
   const logoutAdmin = async () => {
-    localStorage.removeItem('laclasse_admin_auth');
-    localStorage.removeItem('laclasse_admin_email');
-    localStorage.removeItem('laclasse_admin_secret');
     try {
       if (isSupabaseConfigured()) {
         const supabase = getSupabase();
@@ -323,23 +284,28 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     orderId: string,
     status: OrderStatus,
     courierName?: string,
-    trackingNumber?: string,
-    reason?: string
+    trackingNumber?: string
   ): Promise<boolean> => {
     try {
-      const success = await updateOrderStatusService(orderId, status, courierName, trackingNumber, reason);
+      const success = await updateOrderStatusService(orderId, status, courierName, trackingNumber);
       if (success) {
-        await refreshAdminData();
+        setOrders(prev => prev.map(o => {
+          if (o.orderId === orderId || o.id === orderId) {
+            return {
+              ...o,
+              status,
+              courierName: courierName || o.courierName,
+              trackingNumber: trackingNumber || o.trackingNumber,
+            };
+          }
+          return o;
+        }));
       }
       return success;
     } catch (err: any) {
       console.error('Failed to update order status:', err);
       throw err;
     }
-  };
-
-  const rejectOrderPayment = async (orderId: string, reason: string): Promise<boolean> => {
-    return updateOrderStatus(orderId, 'Payment Rejected', undefined, undefined, reason);
   };
 
   const restockOrder = async (orderId: string): Promise<boolean> => {
@@ -444,7 +410,6 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         databaseConfigured: isSupabaseConfigured(),
         refreshAdminData,
         updateOrderStatus,
-        rejectOrderPayment,
         restockOrder,
         saveProduct,
         updateProductStock,

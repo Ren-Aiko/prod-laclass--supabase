@@ -87,40 +87,6 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
           </div>
         )}
 
-        <div className="mb-4 p-3 bg-[#161514] border border-[#8C7853]/40 rounded-xs flex items-center justify-between">
-          <div className="text-[11px] text-[#A09A92]">
-            <span className="text-[#FAF8F5] font-medium block">Atelier Store Owner</span>
-            <span className="text-[10px]">Instant 1-click access to manage orders & inventory</span>
-          </div>
-          <button
-            type="button"
-            onClick={async () => {
-              setEmail('aravind@renaiko.com');
-              setPassword('laclasse-secret-2026');
-              setErrorMsg(null);
-              setIsSubmitting(true);
-              try {
-                const res = await loginAdmin('aravind@renaiko.com', 'laclasse-secret-2026');
-                if (res.success) {
-                  if (typeof onSuccess === 'function') onSuccess();
-                  if (typeof onLoginSuccess === 'function') onLoginSuccess();
-                  onClose();
-                } else {
-                  setErrorMsg(res.error || 'Authentication error');
-                }
-              } catch (e: any) {
-                setErrorMsg(e.message || 'Authentication error');
-              } finally {
-                setIsSubmitting(false);
-              }
-            }}
-            disabled={isSubmitting}
-            className="px-3 py-1.5 bg-[#8C7853] hover:bg-[#A08B63] text-white text-[10px] uppercase tracking-wider font-semibold rounded-xs cursor-pointer transition-colors shrink-0 ml-2"
-          >
-            Quick Access
-          </button>
-        </div>
-
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-xs text-[#A09A92] mb-1 font-medium">

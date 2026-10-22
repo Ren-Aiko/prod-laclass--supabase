@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Mail, Shield, Instagram, MessageCircle, ArrowRight, CheckCircle2, Copy, Check, Info, Sparkles, Loader2, X } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
+import { subscribeAndGenerateCoupon } from '../../services/coupon';
 import { SubscribeResult } from '../../types';
 import logo from '../../assets/SVG-02 (12)-Photoroom.png';
 
@@ -32,11 +33,15 @@ export const Footer: React.FC<FooterProps> = ({ setActiveTab, onNavigate, onSele
     setIsSubmitting(true);
     setCopied(false);
     try {
-      const res = await subscribeNewsletter(email.trim());
-      setSubResult(res);
-      if (res.success) {
-        setEmail('');
-      }
+      // Call subscribeAndGenerateCoupon from backend service layer
+      const couponCode = await subscribeAndGenerateCoupon(email.trim());
+      setSubResult({
+        success: true,
+        alreadySubscribed: false,
+        couponCode,
+        message: 'Welcome to the atelier! Your exclusive 10% discount code is generated below.'
+      });
+      setEmail('');
     } catch (err: any) {
       setSubResult({
         success: false,

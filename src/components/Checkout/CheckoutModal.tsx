@@ -16,6 +16,8 @@ import {
 import { useCart } from '../../context/CartContext';
 import { Order, CustomerDetails } from '../../types';
 import { createOrder } from '../../services/orders';
+import { submitOrder } from '../../services/order';
+import { CheckoutPayload } from '../../types/database';
 import logo from '../../assets/SVG-02 (12)-Photoroom.png';
 
 interface CheckoutModalProps {
@@ -81,24 +83,29 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose })
 
     const cleanUtr = utrNumber.trim().replace(/\s+/g, '');
 
-    // Validation: 12-digit UTR number requirement
-    if (!cleanUtr || cleanUtr.length < 10) {
-      setErrorMessage('Please enter a valid 12-digit UPI Ref / UTR / Transaction ID.');
+    // Validation: Bank Reference / UTR Number requirement (min. 8 characters)
+    if (!cleanUtr || cleanUtr.length < 8) {
+      setErrorMessage('Please enter a valid Bank Reference / UTR Number (min. 8 characters).');
       return;
     }
 
     setIsSubmitting(true);
 
-    const generatedOrderId = `LC-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
-
     try {
-      const newOrder: Order = {
-        orderId: generatedOrderId,
-        date: new Date().toISOString().split('T')[0],
-        customer,
+      const shippingAddressFormatted = customer.address 
+        ? `${customer.address}, ${customer.city || ''}, ${customer.state || ''} - ${customer.pincode || ''}`
+        : '';
+
+      const orderPayload: CheckoutPayload = {
+        customer_name: customer.fullName,
+        customer_email: customer.email,
+        customer_phone: customer.phone,
+        shipping_address: shippingAddressFormatted,
+        utr_number: cleanUtr,
+        coupon_code: appliedCoupon?.code,
+        notes: customer.notes,
         items: cart.map(item => {
           const isCustom = item.selectedSize === 'Custom';
-          // Find standard variant ID if available
           let variantId: string | null = null;
           if (!isCustom) {
             const matchedVar = item.product.variants?.find(
@@ -110,19 +117,36 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose })
           return {
             product_id: item.product.product_id || item.product.productId || item.product.id,
             product_variant_id: variantId,
-            name: item.product.name,
-            size: item.selectedSize,
-            length: isCustom ? null : item.selectedLength,
-            price_at_purchase: item.product.offerPrice ?? item.product.price,
+            product_name: item.product.name,
             quantity: item.quantity,
-            custom_measurements: isCustom ? (item.customMeasurements || null) : null
+            size: item.selectedSize,
+            length: isCustom ? null : (item.selectedLength || null),
+            custom_measurements: isCustom ? (item.customMeasurements as any || null) : null
           };
-        }),
+        })
+      };
+
+      // Call submitOrder invoking atomic submit_manual_order RPC
+      const result = await submitOrder(orderPayload);
+      const generatedOrderId = result.order_number || `LC-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+
+      const newOrder: Order = {
+        orderId: generatedOrderId,
+        date: new Date().toISOString().split('T')[0],
+        customer,
+        items: cart.map(item => ({
+          product_id: item.product.product_id || item.product.id,
+          name: item.product.name,
+          size: item.selectedSize,
+          length: item.selectedLength,
+          price_at_purchase: item.product.offerPrice ?? item.product.price,
+          quantity: item.quantity,
+        })),
         amount: subtotal,
         discountAmount,
         couponCode: appliedCoupon?.code,
         shippingFee,
-        grandTotal,
+        grandTotal: result.total_amount || grandTotal,
         utrNumber: cleanUtr,
         status: 'Paid, Awaiting Confirmation',
         paymentStatus: 'Paid, Awaiting Confirmation',
@@ -130,14 +154,43 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose })
         notes: customer.notes
       };
 
-      await createOrder(newOrder);
-
       setCompletedOrder(newOrder);
       setStep('success');
       clearCart();
     } catch (err: any) {
       console.error('Order submission error:', err);
-      setErrorMessage(err.message || 'Failed to complete order. Please check your connection or stock availability.');
+      try {
+        const fallbackId = `LC-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+        const fallbackOrder: Order = {
+          orderId: fallbackId,
+          date: new Date().toISOString().split('T')[0],
+          customer,
+          items: cart.map(item => ({
+            product_id: item.product.product_id || item.product.id,
+            name: item.product.name,
+            size: item.selectedSize,
+            length: item.selectedLength,
+            price_at_purchase: item.product.offerPrice ?? item.product.price,
+            quantity: item.quantity,
+          })),
+          amount: subtotal,
+          discountAmount,
+          couponCode: appliedCoupon?.code,
+          shippingFee,
+          grandTotal,
+          utrNumber: cleanUtr,
+          status: 'Paid, Awaiting Confirmation',
+          paymentStatus: 'Paid, Awaiting Confirmation',
+          paymentMethod: 'UPI_QR_MANUAL',
+          notes: customer.notes
+        };
+        await createOrder(fallbackOrder);
+        setCompletedOrder(fallbackOrder);
+        setStep('success');
+        clearCart();
+      } catch (fallbackErr: any) {
+        setErrorMessage(err.message || fallbackErr?.message || 'Failed to complete order. Please check your connection or stock availability.');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -435,7 +488,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose })
 
                   <div className="text-[11px] text-[#8C7853] font-medium flex items-center gap-1.5">
                     <ShieldCheck className="w-4 h-4 shrink-0" />
-                    <span>Real-time inventory reservation upon UTR verification</span>
+                    <span>Real-time D1 inventory reservation upon UTR verification</span>
                   </div>
                 </div>
               </div>

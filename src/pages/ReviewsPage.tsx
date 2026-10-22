@@ -1,29 +1,51 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Star, CheckCircle2, Send, Quote } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
+import { getApprovedReviews } from '../services/review';
+import { Review as DatabaseReview } from '../types/database';
 
 export const ReviewsPage: React.FC = () => {
-  const { reviews, addCustomerReview, products } = useStore();
-  const approvedReviews = reviews.filter(r => r.approved === true);
+  const { reviews: contextReviews, addCustomerReview, products } = useStore();
+  const [dbReviews, setDbReviews] = useState<DatabaseReview[]>([]);
 
-  const [selectedProductId, setSelectedProductId] = useState(products[0]?.productId || products[0]?.id || '');
+  useEffect(() => {
+    // Populate review cards directly using Stack A review service
+    getApprovedReviews()
+      .then((data) => {
+        if (data && data.length > 0) {
+          setDbReviews(data);
+        }
+      })
+      .catch((err) => {
+        console.warn('[ReviewsPage getApprovedReviews]:', err?.message);
+      });
+  }, []);
+
+  const approvedReviews = dbReviews.length > 0
+    ? dbReviews.map((r) => ({
+        id: r.id,
+        productId: r.product_id,
+        productName: products.find((p) => p.id === r.product_id || p.product_id === r.product_id)?.name || 'Haute Couture Abaya',
+        customerName: r.customer_name,
+        rating: r.rating,
+        reviewText: r.comment,
+        date: r.created_at ? new Date(r.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+        approved: r.approved,
+        verifiedPurchase: r.verified_purchase,
+      }))
+    : contextReviews.filter((r) => r.approved === true);
+
+  const [selectedProductId, setSelectedProductId] = useState(products[0]?.id || 'lc-001');
   const [reviewerName, setReviewerName] = useState('');
   const [rating, setRating] = useState(5);
   const [reviewText, setReviewText] = useState('');
   const [submitted, setSubmitted] = useState(false);
 
-  React.useEffect(() => {
-    if (products.length > 0 && !selectedProductId) {
-      setSelectedProductId(products[0].productId || products[0].id);
-    }
-  }, [products, selectedProductId]);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!reviewerName.trim() || !reviewText.trim()) return;
-    const prod = products.find(p => p.id === selectedProductId || p.productId === selectedProductId || p.product_id === selectedProductId);
-    const targetProdId = prod?.productId || prod?.product_id || selectedProductId || products[0]?.productId || 'LC001';
-    await addCustomerReview(targetProdId, prod?.name || 'Laclassé Abaya', reviewerName, rating, reviewText);
+    const prod = products.find((p) => p.id === selectedProductId);
+    await addCustomerReview(selectedProductId, prod?.name || 'Laclassé Abaya', reviewerName, rating, reviewText);
     setSubmitted(true);
     setReviewerName('');
     setReviewText('');

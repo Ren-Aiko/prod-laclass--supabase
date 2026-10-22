@@ -8,19 +8,14 @@ export const fetchReviews = async (): Promise<Review[]> => {
 
   try {
     const supabase = getSupabase();
-    // Public read: only approved reviews per RLS policy
+    // Public read: only approved reviews per RLS
     const { data, error } = await supabase
       .from('reviews')
       .select('*')
       .eq('approved', true)
       .order('created_at', { ascending: false });
 
-    if (error) {
-      console.error('[fetchReviews DB Error]:', error.message, error.code);
-      return [];
-    }
-
-    if (!data) return [];
+    if (error || !data) return [];
 
     return data.map((r) => ({
       id: r.id,
@@ -33,14 +28,14 @@ export const fetchReviews = async (): Promise<Review[]> => {
       approved: Boolean(r.approved),
       verifiedPurchase: Boolean(r.verified_purchase),
     }));
-  } catch (err: any) {
-    console.error('[fetchReviews Error]:', err.message);
+  } catch (err) {
+    console.warn('[fetchReviews Error]:', err);
     return [];
   }
 };
 
 /**
- * Public review submission via submit-review Edge Function
+ * Public review submission via secure submit-review Edge Function
  */
 export const addReview = async (review: Review): Promise<boolean> => {
   try {
@@ -55,7 +50,7 @@ export const addReview = async (review: Review): Promise<boolean> => {
     });
     return true;
   } catch (err: any) {
-    console.error('[addReview Error]:', err.message);
+    console.error('[addReview Error]:', err);
     throw err;
   }
 };
@@ -74,7 +69,7 @@ export const toggleReviewApproval = async (reviewId: string, approved: boolean):
     });
     return true;
   } catch (err: any) {
-    console.error('[toggleReviewApproval Error]:', err.message);
+    console.error('[toggleReviewApproval Error]:', err);
     throw err;
   }
 };

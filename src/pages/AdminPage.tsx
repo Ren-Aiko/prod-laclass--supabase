@@ -48,10 +48,9 @@ import { getSupabaseUrl, setSupabaseUrl, getSupabaseAnonKey, setSupabaseAnonKey,
 
 interface AdminPageProps {
   onNavigate?: (page: string) => void;
-  onOpenLoginModal?: () => void;
 }
 
-export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate, onOpenLoginModal }) => {
+export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
   const {
     isAdminAuthenticated,
     logoutAdmin,
@@ -63,7 +62,6 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate, onOpenLoginMod
     backendError,
     refreshAdminData,
     updateOrderStatus,
-    rejectOrderPayment,
     saveProduct,
     updateProductStock,
     deleteProduct,
@@ -116,31 +114,12 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate, onOpenLoginMod
     }
   };
 
-  // Payment Rejection Modal State
-  const [rejectionModal, setRejectionModal] = useState<{ orderId: string; reason: string } | null>(null);
-  const [isSubmittingRejection, setIsSubmittingRejection] = useState(false);
-
-  const handleConfirmRejection = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!rejectionModal) return;
-    setIsSubmittingRejection(true);
-    try {
-      await rejectOrderPayment(rejectionModal.orderId, rejectionModal.reason || 'Payment verification failed');
-      setRejectionModal(null);
-    } catch (err: any) {
-      alert(`Error rejecting payment: ${err.message}`);
-    } finally {
-      setIsSubmittingRejection(false);
-    }
-  };
-
   const handleReleaseExpired = async () => {
     setIsReleasingExpired(true);
     try {
       const data = await invokeEdgeFunction<any>('release-expired-reservations', { method: 'POST' });
-      const releasedCount = data?.released_count ?? data?.releasedCount ?? 0;
-      alert(`Reservation Expiry & Restoration Job executed!\nReleased ${releasedCount} expired orders.`);
-      await refreshAdminData();
+      alert(`Reservation Expiry & Restoration Job executed!\nReleased ${data.released_count ?? data.releasedCount ?? 0} expired orders.`);
+      refreshAdminData();
     } catch (err: any) {
       alert(`Failed to run expiry job: ${err.message}`);
     } finally {
@@ -494,28 +473,20 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate, onOpenLoginMod
   if (!isAdminAuthenticated) {
     return (
       <div className="bg-[#121212] text-[#FAF8F5] min-h-screen flex items-center justify-center p-4">
-        <div className="text-center space-y-4 max-w-md bg-[#1C1B1A] border border-[#2D2B28] p-8 rounded-xs shadow-2xl">
+        <div className="text-center space-y-4 max-w-md">
           <Shield className="w-12 h-12 text-[#D4AF37] mx-auto" />
           <h2 className="font-serif text-2xl font-medium">Administrator Authorization Required</h2>
           <p className="text-xs text-[#A09A92]">
             Please authenticate using your verified administrator credentials to access the Atelier Dashboard.
           </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-3">
+          {onNavigate && (
             <button
-              onClick={() => onOpenLoginModal ? onOpenLoginModal() : (window.location.href = '/')}
-              className="w-full sm:w-auto px-6 py-2.5 bg-[#8C7853] hover:bg-[#A08B63] text-white font-medium text-xs uppercase tracking-widest rounded-xs transition-colors cursor-pointer"
+              onClick={() => onNavigate('home')}
+              className="mt-4 px-6 py-2.5 bg-[#8C7853] hover:bg-[#A08B63] text-white text-xs uppercase tracking-widest rounded-xs transition-colors cursor-pointer"
             >
-              Sign In to Admin Portal
+              Back to Storefront
             </button>
-            {onNavigate && (
-              <button
-                onClick={() => onNavigate('home')}
-                className="w-full sm:w-auto px-6 py-2.5 bg-[#262422] hover:bg-[#3D3A36] text-[#FAF8F5] text-xs uppercase tracking-widest rounded-xs transition-colors cursor-pointer"
-              >
-                Back to Storefront
-              </button>
-            )}
-          </div>
+          )}
         </div>
       </div>
     );
@@ -570,7 +541,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate, onOpenLoginMod
               }`}
             >
               <Package className="w-4 h-4" />
-              <span>Products ({products.length})</span>
+              <span>D1 Products ({products.length})</span>
             </button>
 
             <button
@@ -600,7 +571,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate, onOpenLoginMod
               }`}
             >
               <Settings className="w-4 h-4" />
-              <span>Supabase & R2 Settings</span>
+              <span>Cloudflare D1 & R2</span>
             </button>
           </nav>
         </div>
@@ -608,7 +579,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate, onOpenLoginMod
         <div className="pt-8 border-t border-[#2A2927] space-y-4">
           <div className="text-[10px] text-[#A09A92] leading-relaxed">
             Backend Engine: <br />
-            <strong className="text-[#a5d6a7]">Supabase PostgreSQL + Edge Functions & R2</strong>
+            <strong className="text-[#a5d6a7]">Cloudflare D1 + Workers & R2</strong>
           </div>
 
           <button
@@ -637,7 +608,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate, onOpenLoginMod
                   {dbError || backendError}
                 </p>
                 <p className="text-[10px] text-[#D1CDC7]">
-                  Ensure Supabase project URL, Anon Key, and Edge Functions are configured and operational.
+                  Ensure your Cloudflare Worker is running, has D1 binding <code className="text-[#D4AF37]">env.DB</code>, and schema from <code className="text-[#D4AF37]">schema.sql</code> is executed.
                 </p>
               </div>
             </div>
@@ -657,7 +628,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate, onOpenLoginMod
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div>
                 <h1 className="font-serif text-3xl font-medium text-[#FAF8F5]">Atelier Executive Dashboard</h1>
-                <p className="text-xs text-[#A09A92] mt-1">Supabase & Cloudflare R2 Real-Time Order Metrics</p>
+                <p className="text-xs text-[#A09A92] mt-1">Cloudflare D1 & R2 Real-Time Order Metrics</p>
               </div>
 
               <div className="flex gap-2">
@@ -699,13 +670,13 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate, onOpenLoginMod
 
               <div className="bg-[#1C1B1A] border border-[#2D2B28] p-6 rounded-xs space-y-2">
                 <div className="flex items-center justify-between text-[#A09A92] text-xs font-medium uppercase tracking-wider">
-                  <span>Catalog Garments</span>
+                  <span>D1 Catalog Products</span>
                   <Package className="w-4 h-4 text-[#D4AF37]" />
                 </div>
                 <div className="font-serif text-3xl font-semibold text-[#FAF8F5]">
                   {products.length}
                 </div>
-                <span className="text-[10px] text-[#A09A92]">Active Pieces in Catalog</span>
+                <span className="text-[10px] text-[#A09A92]">Active Pieces in SQLite</span>
               </div>
 
               <div className="bg-[#1C1B1A] border border-[#2D2B28] p-6 rounded-xs space-y-2">
@@ -716,7 +687,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate, onOpenLoginMod
                 <div className="font-serif text-3xl font-semibold text-[#FAF8F5]">
                   {categories.filter(c => c !== 'All').length}
                 </div>
-                <span className="text-[10px] text-[#A09A92]">Dynamic Collections</span>
+                <span className="text-[10px] text-[#A09A92]">Dynamic D1 Collections</span>
               </div>
             </div>
 
@@ -974,14 +945,9 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate, onOpenLoginMod
                         <td className="p-3.5 text-right space-y-1.5">
                           {ord.status === 'Paid, Awaiting Confirmation' && (() => {
                             const isExp = ord.reservation_expires_at 
-                              ? (() => {
-                                  const s = ord.reservation_expires_at;
-                                  const iso = s.includes('T') ? (s.endsWith('Z') ? s : s + 'Z') : s.replace(' ', 'T') + 'Z';
-                                  const t = new Date(iso).getTime();
-                                  return !isNaN(t) && t <= Date.now();
-                                })() 
+                              ? new Date(ord.reservation_expires_at).getTime() <= Date.now() 
                               : false;
-                            const isReleased = (ord.reservation_status === 'released' || ord.reservation_status === 'expired') || isExp;
+                            const isReleased = ord.reservation_status === 'released' || ord.reservation_status === 'expired' || isExp;
 
                             if (isReleased) {
                               return (
@@ -995,42 +961,27 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate, onOpenLoginMod
                                     <span>Recover & Confirm</span>
                                   </button>
                                   <button
-                                    onClick={() => setRejectionModal({
-                                      orderId: ord.orderId,
-                                      reason: 'Order reservation expired; payment not verified in bank statement'
-                                    })}
-                                    className="px-2.5 py-1 bg-[#3a1818] hover:bg-[#5a1818] text-[#fca5a5] text-[10px] font-medium rounded-xs cursor-pointer flex items-center gap-1"
-                                    title="Reject payment and release reservation"
+                                    onClick={async () => {
+                                      if (confirm(`Reject payment and cancel expired order ${ord.orderId}?`)) {
+                                        await updateOrderStatus(ord.orderId, 'Cancelled');
+                                      }
+                                    }}
+                                    className="px-2.5 py-1 bg-[#3a1818] hover:bg-[#5a1818] text-[#fca5a5] text-[10px] font-medium rounded-xs cursor-pointer"
                                   >
-                                    <X className="w-3 h-3" />
-                                    <span>Reject Payment</span>
+                                    <span>Reject / Cancel</span>
                                   </button>
                                 </div>
                               );
                             }
 
                             return (
-                              <div className="flex flex-col sm:flex-row items-end sm:items-center justify-end gap-1.5 ml-auto">
-                                <button
-                                  onClick={() => handleConfirmPayment(ord.orderId)}
-                                  className="px-2.5 py-1.5 bg-[#065f46] hover:bg-[#047857] text-[#FAF8F5] text-[10px] font-semibold rounded-xs shadow-sm flex items-center gap-1 cursor-pointer transition-colors"
-                                  title="Approve payment and commit inventory reservation"
-                                >
-                                  <Check className="w-3 h-3" />
-                                  <span>Approve Payment</span>
-                                </button>
-                                <button
-                                  onClick={() => setRejectionModal({
-                                    orderId: ord.orderId,
-                                    reason: 'UTR transaction not found in bank statement'
-                                  })}
-                                  className="px-2 py-1.5 bg-[#3a1818] hover:bg-[#5a1818] text-[#fca5a5] hover:text-white border border-[#6b2323] text-[10px] font-medium rounded-xs cursor-pointer transition-colors flex items-center gap-1"
-                                  title="Reject payment and release reserved stock"
-                                >
-                                  <X className="w-3 h-3" />
-                                  <span>Reject Payment</span>
-                                </button>
-                              </div>
+                              <button
+                                onClick={() => handleConfirmPayment(ord.orderId)}
+                                className="px-3 py-1.5 bg-[#065f46] hover:bg-[#047857] text-[#FAF8F5] text-[11px] font-semibold rounded-xs shadow-sm flex items-center gap-1 ml-auto cursor-pointer"
+                              >
+                                <Check className="w-3.5 h-3.5" />
+                                <span>Confirm Payment</span>
+                              </button>
                             );
                           })()}
 
@@ -1085,7 +1036,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate, onOpenLoginMod
                   {orders.length === 0 && (
                     <tr>
                       <td colSpan={7} className="p-8 text-center text-xs text-[#A09A92]">
-                        No orders recorded in Supabase yet.
+                        No orders recorded in Cloudflare D1 yet.
                       </td>
                     </tr>
                   )}
@@ -1095,14 +1046,14 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate, onOpenLoginMod
           </div>
         )}
 
-        {/* TAB 3: PRODUCTS MANAGEMENT (Supabase PostgreSQL & Cloudflare R2 Images) */}
+        {/* TAB 3: PRODUCTS MANAGEMENT (D1 SQLite & R2 Images) */}
         {activeTab === 'products' && (
           <div className="space-y-6">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div>
-                <h1 className="font-serif text-3xl font-medium text-[#FAF8F5]">Garments & Products Catalog</h1>
+                <h1 className="font-serif text-3xl font-medium text-[#FAF8F5]">Cloudflare D1 Products Catalog</h1>
                 <p className="text-xs text-[#A09A92]">
-                  Garments grouped by Product ID in Supabase with active inventory variants and Cloudflare R2 assets.
+                  Garments grouped by Product ID in Cloudflare D1 with active inventory variants and Cloudflare R2 assets.
                 </p>
               </div>
 
@@ -1306,7 +1257,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate, onOpenLoginMod
                   {products.length === 0 && (
                     <tr>
                       <td colSpan={8} className="p-8 text-center text-xs text-[#A09A92]">
-                        No products currently in catalog. Click "Create New Product" above to add the first piece!
+                        No products currently in Cloudflare D1. Click "Create New Product" above to add the first piece!
                       </td>
                     </tr>
                   )}
@@ -1612,90 +1563,6 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate, onOpenLoginMod
         </div>
       )}
 
-      {/* MODAL: REJECT ORDER PAYMENT DIALOG */}
-      {rejectionModal && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-[#1C1B1A] border border-[#2D2B28] rounded-xs p-6 max-w-md w-full space-y-4">
-            <div className="flex items-center justify-between border-b border-[#2D2B28] pb-3">
-              <div className="flex items-center gap-2">
-                <AlertCircle className="w-5 h-5 text-[#ef4444]" />
-                <h3 className="font-serif text-lg font-medium text-[#FAF8F5]">Reject Order Payment</h3>
-              </div>
-              <button onClick={() => setRejectionModal(null)} className="text-[#A09A92] hover:text-white cursor-pointer">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleConfirmRejection} className="space-y-4 text-xs">
-              <div>
-                <span className="text-[#A09A92] block mb-1">Order Reference</span>
-                <strong className="text-sm font-mono text-[#FAF8F5]">{rejectionModal.orderId}</strong>
-                <p className="text-[10px] text-[#A09A92] mt-0.5">
-                  Rejecting payment marks the order as Payment Rejected and immediately restores reserved catalog units.
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-[#A09A92] mb-1.5 font-medium">Common Rejection Reasons:</label>
-                <div className="flex flex-wrap gap-1.5 mb-2.5">
-                  {[
-                    'UTR transaction not found in bank statement',
-                    'Incorrect payment amount transferred',
-                    'Duplicate / invalid transaction reference',
-                    'Reservation expired before receipt'
-                  ].map((preset) => (
-                    <button
-                      key={preset}
-                      type="button"
-                      onClick={() => setRejectionModal(prev => prev ? ({ ...prev, reason: preset }) : null)}
-                      className={`text-[10px] px-2 py-1 rounded-xs border cursor-pointer transition-colors ${
-                        rejectionModal.reason === preset
-                          ? 'border-[#ef4444] bg-[#2d1212] text-[#fca5a5]'
-                          : 'border-[#3A3835] bg-[#121212] text-[#A09A92] hover:text-white'
-                      }`}
-                    >
-                      {preset}
-                    </button>
-                  ))}
-                </div>
-
-                <label className="block text-[#A09A92] mb-1 font-medium">Detailed Reason / Note to Record *</label>
-                <textarea
-                  rows={3}
-                  value={rejectionModal.reason}
-                  onChange={(e) => setRejectionModal(prev => prev ? ({ ...prev, reason: e.target.value }) : null)}
-                  placeholder="Explain why the transaction is being rejected..."
-                  className="w-full bg-[#121212] border border-[#3A3835] px-3 py-2 rounded-xs text-[#FAF8F5] resize-none"
-                  required
-                />
-              </div>
-
-              <div className="flex gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setRejectionModal(null)}
-                  className="flex-1 bg-[#262422] text-[#A09A92] py-2.5 rounded-xs cursor-pointer hover:text-white"
-                >
-                  Cancel
-                </button>
-
-                <button
-                  type="submit"
-                  disabled={isSubmittingRejection}
-                  className="flex-1 bg-[#7f1d1d] hover:bg-[#991b1b] text-white py-2.5 font-semibold uppercase tracking-wider rounded-xs flex items-center justify-center gap-2 cursor-pointer transition-colors"
-                >
-                  {isSubmittingRejection ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <span>Reject & Release Stock</span>
-                  )}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
       {/* MODAL: CREATE / EDIT PRODUCT (WITH UP TO 3 R2 IMAGE UPLOADS & VARIANT MANAGEMENT) */}
       {isProductModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
@@ -1703,7 +1570,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate, onOpenLoginMod
             <div className="flex justify-between items-center border-b border-[#2D2B28] pb-3">
               <div>
                 <h3 className="font-serif text-xl font-medium">
-                  {editingProduct?.id ? 'Edit Garment & Variants (Supabase + R2)' : 'Add New Garment (Supabase + R2)'}
+                  {editingProduct?.id ? 'Edit Garment & Variants (D1 + R2)' : 'Add New Garment (D1 + R2)'}
                 </h3>
                 <span className="text-[10px] text-[#A09A92]">
                   Manage shared garment metadata, Cloudflare R2 assets, and inventory variants.
@@ -2017,10 +1884,10 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate, onOpenLoginMod
                 {isSavingProduct ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Saving Garment & Syncing R2 Assets...</span>
+                    <span>Writing to D1 & Syncing R2 Assets...</span>
                   </>
                 ) : (
-                  <span>Save Garment & All Variants</span>
+                  <span>Save Garment & All Variants to D1</span>
                 )}
               </button>
             </form>

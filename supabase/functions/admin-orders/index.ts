@@ -15,8 +15,6 @@ const corsHeaders: Record<string, string> = {
   'Access-Control-Max-Age': '86400',
 };
 
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
 function handleCors(req: Request): Response | null {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -107,242 +105,44 @@ serve(async (req: Request) => {
       return jsonResponse(data || []);
     }
 
-    // PATCH /admin-orders (State machine mutations)
+    // PATCH /admin-orders (Status transition or courier dispatch)
     if (req.method === 'PATCH') {
       const body = await req.json().catch(() => ({}));
-      const idOrNumber = String(body.id || body.order_id || body.orderId || '').trim();
-      const targetStatus = String(body.status || body.payment_status || '').trim();
+      const id = String(body.id || body.order_id || '').trim();
+      const status = String(body.status || body.payment_status || '').trim();
       const courierName = body.courier_name || null;
       const trackingNumber = body.tracking_number || null;
-      const reason = body.reason ? String(body.reason).trim() : null;
 
-      if (!idOrNumber || !targetStatus) {
+      if (!id || !status) {
         return errorResponse('Order ID and new Status are required.', 400);
       }
 
-      // Fetch the order and items safely
-      const isUuid = UUID_REGEX.test(idOrNumber);
-      const query = supabase
-        .from('orders')
-        .select(`
-          *,
-          items:order_items(*)
-        `);
-
-      const { data: order, error: fetchErr } = isUuid
-        ? await query.eq('id', idOrNumber).single()
-        : await query.eq('order_number', idOrNumber).single();
-
-      if (fetchErr || !order) {
-        return errorResponse(`Order not found for identifier "${idOrNumber}".`, 404);
-      }
-
-      const currentStatus = order.payment_status;
-
-      // CASE 1: APPROVE PAYMENT ('Payment Confirmed')
-      if (targetStatus === 'Payment Confirmed') {
-        if (currentStatus === 'Payment Rejected') {
-          return errorResponse('Cannot approve a previously rejected order. Customer must place a new order.', 400);
-        }
-        if (currentStatus === 'Cancelled' || currentStatus === 'Refunded') {
-          return errorResponse(`Cannot confirm payment for order with status "${currentStatus}".`, 400);
-        }
-
+      // If transitioning to "Payment Confirmed", execute PostgreSQL confirm_order_payment RPC
+      if (status === 'Payment Confirmed') {
         const { data: confirmedOrder, error: confError } = await supabase.rpc('confirm_order_payment', {
-          p_order_id: order.id,
+          p_order_id: id,
         });
 
         if (confError) {
           console.error('[confirm_order_payment RPC Error]:', confError);
-          // Fallback if RPC encounters issues: commit directly
-          await supabase
-            .from('orders')
-            .update({
-              payment_status: 'Payment Confirmed',
-              reservation_status: 'committed',
-              updated_at: new Date().toISOString(),
-            })
-            .eq('id', order.id);
-
-          return jsonResponse({ success: true, payment_status: 'Payment Confirmed' });
+          return errorResponse(confError.message, 400, confError);
         }
 
         return jsonResponse({ success: true, updated: confirmedOrder });
       }
 
-      // CASE 2: REJECT PAYMENT ('Payment Rejected')
-      if (targetStatus === 'Payment Rejected') {
-        if (currentStatus === 'Payment Rejected') {
-          return errorResponse('Order payment is already rejected.', 400);
-        }
-        if (currentStatus === 'Payment Confirmed' || currentStatus === 'Shipped' || currentStatus === 'Delivered') {
-          return errorResponse('Cannot reject payment on confirmed/fulfilled order. Please process a Refund instead.', 400);
-        }
+      // Other status updates (e.g. Shipped, Delivered, Cancelled)
+      const updateData: Record<string, any> = {
+        payment_status: status,
+      };
 
-        // Try PostgreSQL reject_order_payment RPC first if defined
-        try {
-          const { data: rpcResult, error: rpcErr } = await supabase.rpc('reject_order_payment', {
-            p_order_id: order.id,
-            p_reason: reason || 'Payment verification failed',
-          });
-          if (!rpcErr && rpcResult?.success) {
-            return jsonResponse({ success: true, updated: rpcResult });
-          }
-        } catch {}
+      if (courierName) updateData.courier_name = courierName;
+      if (trackingNumber) updateData.tracking_number = trackingNumber;
 
-        // Fallback atomic release in Edge Function:
-        // If reservation is active ('reserved'), restore standard variant inventory exactly once
-        if (order.reservation_status === 'reserved' && Array.isArray(order.items)) {
-          for (const it of order.items) {
-            if (it.product_variant_id && it.size !== 'Custom') {
-              const { data: vRow } = await supabase
-                .from('products')
-                .select('quantity')
-                .eq('id', it.product_variant_id)
-                .single();
-
-              if (vRow) {
-                await supabase
-                  .from('products')
-                  .update({ quantity: (vRow.quantity || 0) + it.quantity, updated_at: new Date().toISOString() })
-                  .eq('id', it.product_variant_id);
-              }
-            }
-          }
-        }
-
-        const rejectNote = `[Payment Rejected: ${reason || 'UTR verification failed'}]`;
-        const updatedNotes = order.notes ? `${order.notes}\n${rejectNote}` : rejectNote;
-
-        const { data: updatedOrder, error: upError } = await supabase
-          .from('orders')
-          .update({
-            payment_status: 'Payment Rejected',
-            reservation_status: 'released',
-            notes: updatedNotes,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', order.id)
-          .select()
-          .single();
-
-        if (upError) {
-          // If check constraint does not yet have 'Payment Rejected', update with Cancelled + rejection notes
-          const { data: fallbackOrder, error: fbError } = await supabase
-            .from('orders')
-            .update({
-              payment_status: 'Cancelled',
-              reservation_status: 'released',
-              notes: updatedNotes,
-              updated_at: new Date().toISOString(),
-            })
-            .eq('id', order.id)
-            .select()
-            .single();
-
-          if (fbError) return errorResponse(fbError.message, 400, fbError);
-          return jsonResponse({ success: true, updated: fallbackOrder, note: 'Cancelled via payment rejection' });
-        }
-
-        return jsonResponse({ success: true, updated: updatedOrder });
-      }
-
-      // CASE 3: CANCEL ORDER ('Cancelled')
-      if (targetStatus === 'Cancelled') {
-        if (currentStatus === 'Cancelled') {
-          return errorResponse('Order is already cancelled.', 400);
-        }
-
-        // If unpaid and reserved, release stock
-        if (order.reservation_status === 'reserved' && currentStatus === 'Paid, Awaiting Confirmation' && Array.isArray(order.items)) {
-          for (const it of order.items) {
-            if (it.product_variant_id && it.size !== 'Custom') {
-              const { data: vRow } = await supabase
-                .from('products')
-                .select('quantity')
-                .eq('id', it.product_variant_id)
-                .single();
-
-              if (vRow) {
-                await supabase
-                  .from('products')
-                  .update({ quantity: (vRow.quantity || 0) + it.quantity, updated_at: new Date().toISOString() })
-                  .eq('id', it.product_variant_id);
-              }
-            }
-          }
-        }
-
-        const { data: updatedOrder, error: upError } = await supabase
-          .from('orders')
-          .update({
-            payment_status: 'Cancelled',
-            reservation_status: order.reservation_status === 'reserved' ? 'released' : order.reservation_status,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', order.id)
-          .select()
-          .single();
-
-        if (upError) return errorResponse(upError.message, 400, upError);
-        return jsonResponse({ success: true, updated: updatedOrder });
-      }
-
-      // CASE 4: FULFILLMENT ('Shipped', 'Delivered')
-      if (targetStatus === 'Shipped' || targetStatus === 'Delivered') {
-        if (currentStatus !== 'Payment Confirmed' && currentStatus !== 'Shipped') {
-          return errorResponse(`Cannot transition to "${targetStatus}" when current payment status is "${currentStatus}". Payment must be confirmed first.`, 400);
-        }
-
-        const updateData: Record<string, any> = {
-          payment_status: targetStatus,
-          updated_at: new Date().toISOString(),
-        };
-
-        if (courierName) updateData.courier_name = courierName;
-        if (trackingNumber) updateData.tracking_number = trackingNumber;
-
-        const { data: updatedOrder, error: upError } = await supabase
-          .from('orders')
-          .update(updateData)
-          .eq('id', order.id)
-          .select()
-          .single();
-
-        if (upError) return errorResponse(upError.message, 400, upError);
-        return jsonResponse({ success: true, updated: updatedOrder });
-      }
-
-      // CASE 5: REFUND ('Refunded')
-      if (targetStatus === 'Refunded') {
-        if (currentStatus !== 'Payment Confirmed' && currentStatus !== 'Shipped' && currentStatus !== 'Delivered') {
-          return errorResponse(`Refund is only applicable for paid orders. Current status is "${currentStatus}".`, 400);
-        }
-
-        const { data: updatedOrder, error: upError } = await supabase
-          .from('orders')
-          .update({
-            payment_status: 'Refunded',
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', order.id)
-          .select()
-          .single();
-
-        if (upError) return errorResponse(upError.message, 400, upError);
-        return jsonResponse({ success: true, updated: updatedOrder });
-      }
-
-      // Default status update
       const { data: updatedOrder, error: upError } = await supabase
         .from('orders')
-        .update({
-          payment_status: targetStatus,
-          courier_name: courierName || order.courier_name,
-          tracking_number: trackingNumber || order.tracking_number,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', order.id)
+        .update(updateData)
+        .or(`id.eq.${id},order_number.eq.${id}`)
         .select()
         .single();
 
@@ -350,28 +150,15 @@ serve(async (req: Request) => {
       return jsonResponse({ success: true, updated: updatedOrder });
     }
 
-    // POST /admin-orders (Explicit restock action)
+    // POST /admin-orders (Explicit restock for cancelled paid orders)
     if (req.method === 'POST') {
       const body = await req.json().catch(() => ({}));
       const orderId = String(body.order_id || body.id || '').trim();
       const action = String(body.action || '').trim();
 
       if (action === 'restock' && orderId) {
-        const isUuid = UUID_REGEX.test(orderId);
-        let resolvedId = orderId;
-
-        if (!isUuid) {
-          const { data: ord } = await supabase
-            .from('orders')
-            .select('id')
-            .eq('order_number', orderId)
-            .single();
-
-          if (ord) resolvedId = ord.id;
-        }
-
         const { data: restocked, error: restockErr } = await supabase.rpc('restock_order_explicit', {
-          p_order_id: resolvedId,
+          p_order_id: orderId,
         });
 
         if (restockErr) {

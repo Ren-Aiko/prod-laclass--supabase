@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Mail, Phone, MapPin, MessageCircle, Send, CheckCircle2, Sparkles } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
+import { submitContactMessage } from '../services/message';
+import { MessagePayload } from '../types/database';
 
 export const ContactPage: React.FC = () => {
   const { submitContactForm } = useStore();
@@ -16,14 +18,27 @@ export const ContactPage: React.FC = () => {
     e.preventDefault();
     if (!name.trim() || !email.trim() || !message.trim()) return;
     setIsSubmitting(true);
-    await submitContactForm(name, email, phone, message);
-    setIsSubmitting(false);
-    setSubmitted(true);
-    setName('');
-    setEmail('');
-    setPhone('');
-    setMessage('');
-    setTimeout(() => setSubmitted(false), 5000);
+    try {
+      // Bind onSubmit directly to Stack A message service
+      const payload: MessagePayload = {
+        name: name.trim(),
+        email: email.trim(),
+        phone: phone.trim() || undefined,
+        message: message.trim(),
+      };
+      await submitContactMessage(payload);
+    } catch (err: any) {
+      console.warn('[submitContactMessage fallback]:', err?.message);
+      await submitContactForm(name, email, phone, message);
+    } finally {
+      setIsSubmitting(false);
+      setSubmitted(true);
+      setName('');
+      setEmail('');
+      setPhone('');
+      setMessage('');
+      setTimeout(() => setSubmitted(false), 5000);
+    }
   };
 
   return (

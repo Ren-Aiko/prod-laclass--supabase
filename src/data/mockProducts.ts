@@ -471,3 +471,5 @@ export const INITIAL_ORDERS: Order[] = [];
 export const INITIAL_SUBSCRIBERS: Subscriber[] = [];
 
 export const INITIAL_CONTACT_MESSAGES: ContactMessage[] = [];
+
+export const MOCK_PRODUCTS = INITIAL_PRODUCTS;

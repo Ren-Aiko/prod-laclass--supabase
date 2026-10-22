@@ -138,10 +138,7 @@ export function App() {
 
   const handleNavigatePage = (page: string) => {
     if (page === 'admin' && !isAdminAuthenticated) {
-      setCurrentPage('admin');
       setIsAdminLoginOpen(true);
-      window.history.pushState({}, '', '/admin');
-      window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
     if (page === 'collections') {
@@ -230,10 +227,7 @@ export function App() {
           )}
 
           {currentPage === 'admin' && (
-            <AdminPage 
-              onNavigate={handleNavigatePage} 
-              onOpenLoginModal={() => setIsAdminLoginOpen(true)} 
-            />
+            <AdminPage onNavigate={handleNavigatePage} />
           )}
         </div>
       </div>

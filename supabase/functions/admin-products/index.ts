@@ -15,8 +15,6 @@ const corsHeaders: Record<string, string> = {
   'Access-Control-Max-Age': '86400',
 };
 
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
 function handleCors(req: Request): Response | null {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -120,7 +118,6 @@ serve(async (req: Request) => {
       const badge = body.badge || null;
       const isFeatured = Boolean(body.featured || body.is_featured);
       const isNewArrival = Boolean(body.newArrival || body.is_new_arrival);
-      const isActive = body.active !== undefined ? Boolean(body.active) : (body.is_active !== undefined ? Boolean(body.is_active) : true);
 
       const image1 = body.image1 || null;
       const image2 = body.image2 || null;
@@ -137,32 +134,29 @@ serve(async (req: Request) => {
         ? body.variants
         : [{ size: body.size || 'Free Size', length: body.length || '56"', quantity: Number(body.quantity || 1) }];
 
-      const upsertRows = variants.map((v: any) => {
-        const rowId = (v.id && UUID_REGEX.test(v.id)) ? v.id : crypto.randomUUID();
-        return {
-          id: rowId,
-          product_id: pId,
-          name,
-          slug,
-          category,
-          fabric,
-          price,
-          original_price: originalPrice,
-          description,
-          collection,
-          badge,
-          size: v.size || 'Free Size',
-          length: v.length || '56"',
-          quantity: Math.max(0, Number(v.quantity || 0)),
-          image1,
-          image2,
-          image3,
-          thumbnail: image1,
-          is_featured: isFeatured,
-          is_new_arrival: isNewArrival,
-          is_active: isActive,
-        };
-      });
+      const upsertRows = variants.map((v: any) => ({
+        id: v.id || `prod_${pId.toLowerCase()}_${(v.size || 'fs').toLowerCase().replace(/[^a-z0-9]/g, '')}_${(v.length || '56').replace(/[^0-9]/g, '')}`,
+        product_id: pId,
+        name,
+        slug,
+        category,
+        fabric,
+        price,
+        original_price: originalPrice,
+        description,
+        collection,
+        badge,
+        size: v.size || 'Free Size',
+        length: v.length || '56"',
+        quantity: Math.max(0, Number(v.quantity || 0)),
+        image1,
+        image2,
+        image3,
+        thumbnail: image1,
+        is_featured: isFeatured,
+        is_new_arrival: isNewArrival,
+        is_active: true,
+      }));
 
       const { data: savedRows, error: upsertError } = await supabase
         .from('products')
@@ -185,7 +179,7 @@ serve(async (req: Request) => {
       return jsonResponse({ success: true, variants: savedRows }, 200);
     }
 
-    // PATCH /admin-products (Stock update)
+    // PATCH /admin-products?id=<id> (Stock update)
     if (req.method === 'PATCH') {
       const body = await req.json().catch(() => ({}));
       const id = String(body.id || url.searchParams.get('id') || '').trim();
@@ -193,11 +187,12 @@ serve(async (req: Request) => {
 
       if (!id) return errorResponse('Variant ID is required.', 400);
 
-      const isUuid = UUID_REGEX.test(id);
-      const query = supabase.from('products').update({ quantity });
-      const { data, error } = isUuid
-        ? await query.eq('id', id).select().single()
-        : await query.eq('product_id', id).select();
+      const { data, error } = await supabase
+        .from('products')
+        .update({ quantity })
+        .eq('id', id)
+        .select()
+        .single();
 
       if (error) return errorResponse(error.message, 400, error);
       return jsonResponse({ success: true, updated: data });
@@ -205,13 +200,12 @@ serve(async (req: Request) => {
 
     // DELETE /admin-products?id=<id>&is_group=<bool>
     if (req.method === 'DELETE') {
-      const id = String(url.searchParams.get('id') || '').trim();
-      const isGroup = url.searchParams.get('is_group') === 'true' || url.searchParams.get('group') === 'true';
+      const id = url.searchParams.get('id') || '';
+      const isGroup = url.searchParams.get('is_group') === 'true';
 
       if (!id) return errorResponse('ID parameter is required.', 400);
 
-      const isUuid = UUID_REGEX.test(id);
-      if (isGroup || !isUuid) {
+      if (isGroup) {
         const { error } = await supabase.from('products').delete().eq('product_id', id);
         if (error) return errorResponse(error.message, 400, error);
       } else {

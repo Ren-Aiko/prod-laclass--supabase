@@ -27,7 +27,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
     ? [p.image1, p.image2, p.image3, ...(p.images || [])].filter((img, idx, arr) => Boolean(img) && arr.indexOf(img) === idx)
     : [];
   if (images.length === 0 && p?.thumbnail) images.push(p.thumbnail);
-  if (images.length === 0) images.push("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='800' viewBox='0 0 600 800'%3E%3Crect width='600' height='800' fill='%23F5F2EA'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='16' letter-spacing='2' fill='%238C7853'%3ELaClass%C3%A9 Haute Couture%3C/text%3E%3C/svg%3E");
+  if (images.length === 0) images.push('https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=800&auto=format&fit=crop');
 
   // Compute available sizes strictly from active inventory variants
   // Never add XS or S. Only show options corresponding to real active variants.
@@ -224,13 +224,9 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
             {/* Main Image Container */}
             <div className="flex-1 aspect-[3/4] bg-[#F5F2EA] rounded-xs overflow-hidden relative shadow-md">
               <img
-                src={images[selectedImageIndex] || p.thumbnail || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='800' viewBox='0 0 600 800'%3E%3Crect width='600' height='800' fill='%23F5F2EA'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='18' fill='%23A09A92'%3ELaClass%C3%A9 Haute Couture%3C/text%3E%3C/svg%3E"}
+                src={images[selectedImageIndex] || p.thumbnail}
                 alt={p.name}
                 className="w-full h-full object-cover object-center transition-all duration-500"
-                decoding="async"
-                onError={(e) => {
-                  e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='800' viewBox='0 0 600 800'%3E%3Crect width='600' height='800' fill='%23F5F2EA'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='18' fill='%23A09A92'%3ELaClass%C3%A9 Haute Couture%3C/text%3E%3C/svg%3E";
-                }}
               />
 
               {p.featured && (
@@ -252,16 +248,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                       : 'border-transparent opacity-60 hover:opacity-100'
                   }`}
                 >
-                  <img 
-                    src={img} 
-                    alt={`View ${idx + 1}`} 
-                    className="w-full h-full object-cover" 
-                    loading="lazy" 
-                    decoding="async" 
-                    onError={(e) => {
-                      e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='266' viewBox='0 0 200 266'%3E%3Crect width='200' height='266' fill='%23F5F2EA'/%3E%3C/svg%3E";
-                    }}
-                  />
+                  <img src={img} alt={`View ${idx + 1}`} className="w-full h-full object-cover" />
                   <span className="absolute bottom-1 right-1 bg-black/60 text-white text-[8px] px-1 rounded-xs">
                     {idx + 1}
                   </span>

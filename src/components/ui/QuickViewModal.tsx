@@ -57,7 +57,7 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({ onSelectProduct 
   const images = [quickViewProduct.image1, quickViewProduct.image2, quickViewProduct.image3, ...(quickViewProduct.images || [])]
     .filter((img, idx, arr) => Boolean(img) && arr.indexOf(img) === idx);
   if (images.length === 0 && quickViewProduct.thumbnail) images.push(quickViewProduct.thumbnail);
-  if (images.length === 0) images.push("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='800' viewBox='0 0 600 800'%3E%3Crect width='600' height='800' fill='%23F5F2EA'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='16' letter-spacing='2' fill='%238C7853'%3ELaClass%C3%A9 Haute Couture%3C/text%3E%3C/svg%3E");
+  if (images.length === 0) images.push('https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=800&auto=format&fit=crop');
 
   const activeSize = selectedSize || availableSizes[0] || 'L';
   const activeLength = selectedLength || availableLengths[0] || '56"';

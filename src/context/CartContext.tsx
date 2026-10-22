@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Product, CartItem, Coupon, CustomMeasurements } from '../types';
 import { verifyCouponCode, fetchCoupons } from '../services/api';
+import { validateCoupon } from '../services/coupon';
 
 interface CartContextType {
   cart: CartItem[];
@@ -149,6 +150,22 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!cleanCode) return false;
 
     try {
+      // Validate coupon with Stack A coupon service
+      const dbCoupon = await validateCoupon(cleanCode, subtotal);
+      if (dbCoupon) {
+        setAppliedCoupon({
+          code: dbCoupon.code,
+          discountType: dbCoupon.discount_type,
+          discountValue: Number(dbCoupon.discount_value),
+          minPurchase: Number(dbCoupon.min_purchase || 0),
+          expiryDate: dbCoupon.expiry_date || '2030-12-31',
+          active: Boolean(dbCoupon.active),
+        });
+        setCouponError(null);
+        return true;
+      }
+
+      // Resilient fallback validation
       const result = await verifyCouponCode(cleanCode, subtotal);
       if (!result.valid || !result.coupon) {
         setCouponError(result.error || 'Invalid or expired coupon code.');

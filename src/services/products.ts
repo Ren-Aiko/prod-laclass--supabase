@@ -1,21 +1,12 @@
-import { Product } from '../types';
+import { Product, SizeStockItem } from '../types';
 import { getSupabase, isSupabaseConfigured, invokeEdgeFunction, getR2PublicUrl } from '../utils/supabase';
 
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-/**
- * Resolves image URL against configured Cloudflare R2 delivery domain.
- * Supports absolute URLs, relative R2 keys, and handles null/empty gracefully.
- */
 export function resolveProductImageUrl(urlOrKey: string | null | undefined): string | null {
   if (!urlOrKey) return null;
   const trimmed = urlOrKey.trim();
-  if (!trimmed) return null;
-
   if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
     return trimmed;
   }
-
   const base = getR2PublicUrl().replace(/\/+$/, '');
   const cleanKey = trimmed.replace(/^\/+/, '');
   return `${base}/${cleanKey}`;
@@ -162,147 +153,135 @@ export function groupProductVariants(rows: any[]): Product[] {
 }
 
 /**
- * Fetch active products directly from Supabase PostgreSQL.
- * Never falls back to hardcoded mock products or local storage cache.
+ * Fetch active products directly from Supabase PostgreSQL (Public Read via RLS)
  */
 export const fetchProducts = async (): Promise<Product[]> => {
   if (!isSupabaseConfigured()) {
-    console.error('[fetchProducts Error]: Supabase is not configured.');
-    throw new Error('Supabase backend configuration is missing.');
+    throw new Error('Supabase credentials not configured in environment or settings.');
+  }
+
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from('products')
+    .select('*')
+    .eq('is_active', true)
+    .order('is_featured', { ascending: false })
+    .order('created_at', { ascending: true });
+
+  if (error) {
+    console.warn('[fetchProducts Supabase status]:', error.code, error.message);
+    if (error.code === 'PGRST205') {
+      throw new Error('Trouble connecting to our servers. (Table public.products not found in schema cache. Run schema migration in Supabase SQL Editor)');
+    }
+    throw new Error(`Trouble connecting to our servers. (${error.message})`);
+  }
+
+  return groupProductVariants(data || []);
+};
+
+/**
+ * Fetch distinct active categories directly from Supabase
+ */
+export const fetchCategories = async (): Promise<string[]> => {
+  if (!isSupabaseConfigured()) {
+    return ['All', 'Premium', 'Bridal', 'Casual', 'Luxury'];
   }
 
   try {
     const supabase = getSupabase();
     const { data, error } = await supabase
       .from('products')
-      .select('*')
-      .eq('is_active', true)
-      .order('is_featured', { ascending: false })
-      .order('created_at', { ascending: true });
+      .select('category')
+      .eq('is_active', true);
 
-    if (error) {
-      console.error('[fetchProducts Supabase Error]:', error.message, error.code);
-      throw new Error(`Database query failed: ${error.message}`);
+    if (error || !data) {
+      return ['All', 'Premium', 'Bridal', 'Casual', 'Luxury'];
     }
 
-    if (!data || data.length === 0) {
-      return [];
-    }
+    const uniqueCategories = Array.from(
+      new Set(data.map(d => d.category?.trim()).filter(Boolean))
+    );
 
-    return groupProductVariants(data);
-  } catch (err: any) {
-    console.error('[fetchProducts Failure]:', err.message);
-    throw err;
+    return uniqueCategories.length > 0 ? ['All', ...uniqueCategories] : ['All', 'Premium', 'Bridal', 'Casual', 'Luxury'];
+  } catch {
+    return ['All', 'Premium', 'Bridal', 'Casual', 'Luxury'];
   }
 };
 
 /**
- * Fetch distinct active categories from live Supabase products
+ * Fetch single product by slug or product_id
  */
-export const fetchCategories = async (): Promise<string[]> => {
-  try {
-    const prods = await fetchProducts();
-    if (prods.length > 0) {
-      const unique = Array.from(new Set(prods.map(p => p.category?.trim()).filter(Boolean) as string[]));
-      return ['All', ...unique];
-    }
-  } catch (err) {
-    console.warn('[fetchCategories Error]:', err);
-  }
-
-  return ['All', 'Luxury', 'Bridal', 'Premium', 'Casual'];
-};
-
-/**
- * Fetch single product by slug, product_id, or UUID from Supabase.
- * Uses type-aware queries to avoid PostgREST 22P02 invalid UUID cast error.
- */
-export const fetchProductBySlug = async (slugOrId: string): Promise<Product | null> => {
-  if (!isSupabaseConfigured() || !slugOrId) return null;
+export const fetchProductBySlug = async (slug: string): Promise<Product | null> => {
+  if (!isSupabaseConfigured()) return null;
 
   try {
     const supabase = getSupabase();
-    const cleanParam = slugOrId.trim();
-    const isUuid = UUID_REGEX.test(cleanParam);
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .or(`slug.eq.${slug},product_id.eq.${slug},id.eq.${slug}`)
+      .eq('is_active', true)
+      .order('created_at', { ascending: true });
 
-    let query = supabase.from('products').select('*').eq('is_active', true);
-
-    if (isUuid) {
-      query = query.or(`id.eq.${cleanParam},slug.eq.${cleanParam}`);
-    } else {
-      query = query.or(`slug.eq.${cleanParam},product_id.eq.${cleanParam}`);
-    }
-
-    const { data, error } = await query.order('created_at', { ascending: true });
-
-    if (error) {
-      console.error('[fetchProductBySlug Error]:', error.message, error.code);
-      return null;
-    }
-
-    if (!data || data.length === 0) return null;
+    if (error || !data || data.length === 0) return null;
 
     const grouped = groupProductVariants(data);
     return grouped.length > 0 ? grouped[0] : null;
-  } catch (e: any) {
-    console.error('[fetchProductBySlug Failure]:', e.message);
+  } catch (e) {
+    console.warn('[fetchProductBySlug error]:', e);
     return null;
   }
 };
 
 /**
- * Admin: Create or update product variant via Supabase Edge Function
- * Uploads image files to Cloudflare R2 via r2-images Edge Function if provided
+ * Admin: Create or update product variant via Edge Function
+ * Uploads image files to Cloudflare R2 if provided
  */
 export const createProduct = async (
   product: Partial<Product>,
   imageFiles?: (File | null)[]
 ): Promise<boolean> => {
-  const payload: any = { ...product };
+  try {
+    const payload: any = { ...product };
 
-  // 1. Upload new image files to Cloudflare R2 via r2-images Edge Function
-  if (imageFiles && imageFiles.some(f => f !== null)) {
-    for (let i = 0; i < imageFiles.length; i++) {
-      const file = imageFiles[i];
-      if (file) {
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('product_id', product.productId || product.product_id || 'shared');
-        formData.append('slot', String(i + 1));
+    // If new image files were selected, upload them to R2 first
+    if (imageFiles && imageFiles.some(f => f !== null)) {
+      for (let i = 0; i < imageFiles.length; i++) {
+        const file = imageFiles[i];
+        if (file) {
+          const formData = new FormData();
+          formData.append('file', file);
+          formData.append('product_id', product.productId || product.product_id || 'shared');
+          formData.append('slot', String(i + 1));
 
-        try {
-          const edgeRes = await invokeEdgeFunction<any>('r2-images', {
+          const res = await invokeEdgeFunction<any>('r2-images', {
             method: 'POST',
             body: formData,
           });
-          if (edgeRes?.url) {
-            if (i === 0) payload.image1 = edgeRes.url;
-            if (i === 1) payload.image2 = edgeRes.url;
-            if (i === 2) payload.image3 = edgeRes.url;
+
+          if (res?.url) {
+            if (i === 0) payload.image1 = res.url;
+            if (i === 1) payload.image2 = res.url;
+            if (i === 2) payload.image3 = res.url;
           }
-        } catch (uploadErr: any) {
-          console.error(`[r2-images upload error for slot ${i + 1}]:`, uploadErr.message);
-          throw new Error(`Failed to upload image slot ${i + 1}: ${uploadErr.message}`);
         }
       }
     }
-  }
 
-  // 2. Persist product and variants via admin-products Edge Function
-  try {
     await invokeEdgeFunction('admin-products', {
       method: 'POST',
       body: payload,
     });
+
     return true;
   } catch (err: any) {
-    console.error('[createProduct Error]:', err.message);
+    console.error('[createProduct Error]:', err);
     throw err;
   }
 };
 
 /**
- * Admin: Update quantity for a specific variant via admin-products Edge Function
+ * Admin: Update quantity for a specific variant
  */
 export const updateProductStock = async (id: string, quantity: number): Promise<boolean> => {
   try {
@@ -312,23 +291,23 @@ export const updateProductStock = async (id: string, quantity: number): Promise<
     });
     return true;
   } catch (err: any) {
-    console.error('[updateProductStock Error]:', err.message);
+    console.error('[updateProductStock Error]:', err);
     throw err;
   }
 };
 
 /**
- * Admin: Delete single variant or entire product group via admin-products Edge Function
+ * Admin: Delete single variant or entire product group
  */
 export const deleteProduct = async (productId: string, isGroup: boolean = false): Promise<boolean> => {
   try {
-    const query = isGroup ? `?id=${encodeURIComponent(productId)}&is_group=true` : `?id=${encodeURIComponent(productId)}`;
+    const query = isGroup ? `?id=${encodeURIComponent(productId)}&group=true` : `?id=${encodeURIComponent(productId)}`;
     await invokeEdgeFunction(`admin-products${query}`, {
       method: 'DELETE',
     });
     return true;
   } catch (err: any) {
-    console.error('[deleteProduct Error]:', err.message);
+    console.error('[deleteProduct Error]:', err);
     throw err;
   }
 };
