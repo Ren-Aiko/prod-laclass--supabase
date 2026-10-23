@@ -12,7 +12,7 @@ export const Hero: React.FC<HeroProps> = ({ onShopClick, onBridalClick }) => {
       {/* Background Editorial Image Overlay */}
       <div className="absolute inset-0 z-0 opacity-40 mix-blend-luminosity">
         <img
-          src="https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=1920&auto=format&fit=crop"
+          src="https://sfqnaftcpuoyftpjgxbb.supabase.co/storage/v1/object/public/abaya-store-assets/IMG_0201.JPG"
           alt="Laclassé Haute Couture Abaya"
           className="w-full h-full object-cover object-top filter brightness-75 scale-105 animate-pulse duration-[10000ms]"
         />
