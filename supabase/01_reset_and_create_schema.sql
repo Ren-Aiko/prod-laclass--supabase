@@ -39,7 +39,6 @@ CREATE TABLE products (
   fabric TEXT NOT NULL DEFAULT 'Dubai Nida',            -- Primary fabric name
   price NUMERIC(10, 2) NOT NULL CHECK (price >= 0),     -- Current selling price (INR)
   original_price NUMERIC(10, 2) CHECK (original_price IS NULL OR original_price >= 0),
-  offer_price NUMERIC(10, 2) CHECK (offer_price IS NULL OR offer_price >= 0),
   size TEXT NOT NULL CHECK (size IN ('L', 'XL', 'XXL', 'Free Size')),
   quantity INTEGER NOT NULL DEFAULT 0 CHECK (quantity >= 0),
   length TEXT CHECK (length IS NULL OR length IN ('52"', '54"', '56"', '58"', '60"')),

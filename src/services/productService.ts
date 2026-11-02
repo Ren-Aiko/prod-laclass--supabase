@@ -214,7 +214,7 @@ function mapRowToProduct(row: any): Product {
     fabric: row.fabric || 'Dubai Nida',
     price: Number(row.price),
     originalPrice: row.original_price ? Number(row.original_price) : null,
-    offerPrice: row.original_price ? Number(row.original_price) : null,
+    offerPrice: null,
     featured: Boolean(row.is_featured),
     newArrival: Boolean(row.is_new_arrival ?? true),
     flashSale: Boolean(row.is_flash_sale),
