@@ -7,7 +7,7 @@
  * Bindings:
  *  - env.DB           (D1 Database binding)
  *  - env.BUCKET       (R2 Bucket binding)
- *  - env.ADMIN_SECRET (Secret string for Bearer token auth, default: 'laclasse-secret-2026')
+ *  - env.SUPABASE_URL and env.SUPABASE_ANON_KEY (public Supabase project settings)
  *  - env.R2_PUBLIC_URL (Optional public custom domain or CDN URL for R2 bucket)
  */
 
@@ -31,15 +31,46 @@ function jsonResponse(data, status = 200, extraHeaders = {}) {
   });
 }
 
-// Helper: Validate Admin Authentication
-function verifyAdmin(request, env) {
+// Helper: Validate the caller's Supabase session and active admin record.
+async function verifyAdmin(request, env) {
   const authHeader = request.headers.get('Authorization') || '';
   if (!authHeader.startsWith('Bearer ')) {
     return false;
   }
   const token = authHeader.substring(7).trim();
-  const secret = (env && env.ADMIN_SECRET) ? env.ADMIN_SECRET : 'laclasse-secret-2026';
-  return token === secret;
+  const supabaseUrl = env && env.SUPABASE_URL;
+  const supabaseAnonKey = env && env.SUPABASE_ANON_KEY;
+  if (!supabaseUrl || !supabaseAnonKey) {
+    console.error('Admin verification requires SUPABASE_URL and SUPABASE_ANON_KEY Worker variables.');
+    return false;
+  }
+
+  const baseUrl = supabaseUrl.replace(/\/+$/, '');
+  const headers = {
+    apikey: supabaseAnonKey,
+    Authorization: `Bearer ${token}`,
+  };
+  const userResponse = await fetch(`${baseUrl}/auth/v1/user`, { headers });
+  if (!userResponse.ok) return false;
+
+  const user = await userResponse.json();
+  if (!user?.id) return false;
+
+  const query = new URLSearchParams({
+    select: 'auth_user_id,is_active',
+    auth_user_id: `eq.${user.id}`,
+    is_active: 'eq.true',
+    limit: '1',
+  });
+  const adminResponse = await fetch(`${baseUrl}/rest/v1/admins?${query}`, { headers });
+  if (!adminResponse.ok) {
+    console.error(`Admin record verification failed with HTTP ${adminResponse.status}.`);
+    return false;
+  }
+
+  const admins = await adminResponse.json();
+  return Array.isArray(admins) &&
+    admins.some((admin) => admin.auth_user_id === user.id && admin.is_active === true);
 }
 
 // Helper: Automatic Slug Generator
@@ -279,7 +310,7 @@ export default {
       // Generates unique unpredictable object key
       // -------------------------------------------------------------
       if (path === '/api/admin/media/upload' && method === 'POST') {
-        if (!verifyAdmin(request, env)) {
+        if (!(await verifyAdmin(request, env))) {
           return jsonResponse({ error: 'Unauthorized: Admin access required' }, 401);
         }
         if (!env.BUCKET) {
@@ -341,7 +372,7 @@ export default {
       // Checks that no other record references the asset before deleting
       // -------------------------------------------------------------
       if (path === '/api/admin/media' && method === 'DELETE') {
-        if (!verifyAdmin(request, env)) {
+        if (!(await verifyAdmin(request, env))) {
           return jsonResponse({ error: 'Unauthorized: Admin access required' }, 401);
         }
         if (!env.BUCKET) {
@@ -963,7 +994,7 @@ export default {
       // Authenticated admin view
       // -------------------------------------------------------------
       if (path === '/api/admin/orders' && method === 'GET') {
-        if (!verifyAdmin(request, env)) {
+        if (!(await verifyAdmin(request, env))) {
           return jsonResponse({ error: 'Unauthorized: Admin access required' }, 401);
         }
         if (!env.DB) {
@@ -1016,7 +1047,7 @@ export default {
       //     If paid order cancelled/refunded, do not automatically restock (requires explicit restock action).
       // -------------------------------------------------------------
       if (path.startsWith('/api/admin/orders/') && method === 'PATCH' && !path.endsWith('/restock')) {
-        if (!verifyAdmin(request, env)) {
+        if (!(await verifyAdmin(request, env))) {
           return jsonResponse({ error: 'Unauthorized: Admin access required' }, 401);
         }
         if (!env.DB) {
@@ -1159,7 +1190,7 @@ export default {
       // Ensures exact-once restocking via restocked_at check
       // -------------------------------------------------------------
       if (path.startsWith('/api/admin/orders/') && path.endsWith('/restock') && method === 'POST') {
-        if (!verifyAdmin(request, env)) {
+        if (!(await verifyAdmin(request, env))) {
           return jsonResponse({ error: 'Unauthorized: Admin access required' }, 401);
         }
         if (!env.DB) {
@@ -1243,7 +1274,7 @@ export default {
       // Validates prices, quantities, and input.
       // -------------------------------------------------------------
       if (path === '/api/admin/products' && method === 'POST') {
-        if (!verifyAdmin(request, env)) {
+        if (!(await verifyAdmin(request, env))) {
           return jsonResponse({ error: 'Unauthorized: Admin access required' }, 401);
         }
         if (!env.DB) {
@@ -1439,7 +1470,7 @@ export default {
       // Stock adjustment for a specific variant
       // -------------------------------------------------------------
       if (path.startsWith('/api/admin/products/') && path.endsWith('/stock') && method === 'PATCH') {
-        if (!verifyAdmin(request, env)) {
+        if (!(await verifyAdmin(request, env))) {
           return jsonResponse({ error: 'Unauthorized: Admin access required' }, 401);
         }
         if (!env.DB) {
@@ -1465,7 +1496,7 @@ export default {
       // ROUTE: DELETE /api/admin/products/:id
       // -------------------------------------------------------------
       if (path.startsWith('/api/admin/products/') && method === 'DELETE') {
-        if (!verifyAdmin(request, env)) {
+        if (!(await verifyAdmin(request, env))) {
           return jsonResponse({ error: 'Unauthorized: Admin access required' }, 401);
         }
         if (!env.DB) {
@@ -1540,7 +1571,7 @@ export default {
       // ROUTE: GET /api/admin/coupons
       // -------------------------------------------------------------
       if (path === '/api/admin/coupons' && method === 'GET') {
-        if (!verifyAdmin(request, env)) return jsonResponse({ error: 'Unauthorized' }, 401);
+        if (!(await verifyAdmin(request, env))) return jsonResponse({ error: 'Unauthorized' }, 401);
         if (!env.DB) return jsonResponse([]);
         const { results } = await env.DB.prepare('SELECT * FROM coupons ORDER BY created_at DESC').all();
         return jsonResponse(results || []);
@@ -1550,7 +1581,7 @@ export default {
       // ROUTE: POST /api/admin/coupons
       // -------------------------------------------------------------
       if (path === '/api/admin/coupons' && method === 'POST') {
-        if (!verifyAdmin(request, env)) return jsonResponse({ error: 'Unauthorized' }, 401);
+        if (!(await verifyAdmin(request, env))) return jsonResponse({ error: 'Unauthorized' }, 401);
         if (!env.DB) return jsonResponse({ error: 'D1 missing' }, 500);
         const body = await request.json();
         const code = (body.code || '').trim().toUpperCase();
@@ -1580,7 +1611,7 @@ export default {
       // ROUTE: DELETE /api/admin/coupons/:code
       // -------------------------------------------------------------
       if (path.startsWith('/api/admin/coupons/') && method === 'DELETE') {
-        if (!verifyAdmin(request, env)) return jsonResponse({ error: 'Unauthorized' }, 401);
+        if (!(await verifyAdmin(request, env))) return jsonResponse({ error: 'Unauthorized' }, 401);
         if (!env.DB) return jsonResponse({ error: 'D1 missing' }, 500);
         const code = decodeURIComponent(path.replace('/api/admin/coupons/', '')).toUpperCase();
         await env.DB.prepare('DELETE FROM coupons WHERE UPPER(code) = ?').bind(code).run();
@@ -1612,7 +1643,7 @@ export default {
       // ROUTE: GET /api/admin/subscribers
       // -------------------------------------------------------------
       if (path === '/api/admin/subscribers' && method === 'GET') {
-        if (!verifyAdmin(request, env)) return jsonResponse({ error: 'Unauthorized' }, 401);
+        if (!(await verifyAdmin(request, env))) return jsonResponse({ error: 'Unauthorized' }, 401);
         if (!env.DB) return jsonResponse([]);
         const { results } = await env.DB.prepare('SELECT * FROM subscribers ORDER BY subscribed_at DESC').all();
         return jsonResponse(results || []);
@@ -1636,7 +1667,7 @@ export default {
       // ROUTE: GET /api/admin/contacts
       // -------------------------------------------------------------
       if (path === '/api/admin/contacts' && method === 'GET') {
-        if (!verifyAdmin(request, env)) return jsonResponse({ error: 'Unauthorized' }, 401);
+        if (!(await verifyAdmin(request, env))) return jsonResponse({ error: 'Unauthorized' }, 401);
         if (!env.DB) return jsonResponse([]);
         const { results } = await env.DB.prepare('SELECT * FROM messages ORDER BY created_at DESC').all();
         return jsonResponse(results || []);
@@ -1669,7 +1700,7 @@ export default {
       // ROUTE: PATCH /api/admin/reviews/:id
       // -------------------------------------------------------------
       if (path.startsWith('/api/admin/reviews/') && method === 'PATCH') {
-        if (!verifyAdmin(request, env)) return jsonResponse({ error: 'Unauthorized' }, 401);
+        if (!(await verifyAdmin(request, env))) return jsonResponse({ error: 'Unauthorized' }, 401);
         if (!env.DB) return jsonResponse({ error: 'D1 missing' }, 500);
         const id = decodeURIComponent(path.replace('/api/admin/reviews/', ''));
         const body = await request.json();
@@ -1682,7 +1713,7 @@ export default {
       // ROUTE: DELETE /api/admin/reviews/:id
       // -------------------------------------------------------------
       if (path.startsWith('/api/admin/reviews/') && method === 'DELETE') {
-        if (!verifyAdmin(request, env)) return jsonResponse({ error: 'Unauthorized' }, 401);
+        if (!(await verifyAdmin(request, env))) return jsonResponse({ error: 'Unauthorized' }, 401);
         if (!env.DB) return jsonResponse({ error: 'D1 missing' }, 500);
         const id = decodeURIComponent(path.replace('/api/admin/reviews/', ''));
         await env.DB.prepare('DELETE FROM reviews WHERE id = ?').bind(id).run();
@@ -1693,8 +1724,8 @@ export default {
       // ROUTE: GET /api/admin/verify
       // -------------------------------------------------------------
       if (path === '/api/admin/verify' && method === 'GET') {
-        if (!verifyAdmin(request, env)) {
-          return jsonResponse({ error: 'Unauthorized: Invalid Admin Secret' }, 401);
+        if (!(await verifyAdmin(request, env))) {
+          return jsonResponse({ error: 'Unauthorized: Active administrator session required' }, 401);
         }
         return jsonResponse({ success: true, message: 'Admin verified' });
       }

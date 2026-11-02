@@ -34,9 +34,28 @@ BEGIN
 END;
 $$;
 
+CREATE OR REPLACE FUNCTION public.is_active_super_admin()
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, auth, pg_temp
+AS $$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1
+    FROM public.admins
+    WHERE auth_user_id = auth.uid()
+      AND role = 'super_admin'
+      AND is_active = true
+  );
+END;
+$$;
+
 -- Revoke execute from public and grant to authenticated
-REVOKE EXECUTE ON FUNCTION public.is_active_admin() FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.is_active_admin() FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.is_active_admin() TO authenticated, service_role;
+REVOKE ALL ON FUNCTION public.is_active_super_admin() FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.is_active_super_admin() TO authenticated, service_role;
 
 -- =====================================================================
 -- 3. PRODUCTS POLICIES
@@ -250,43 +269,33 @@ CREATE POLICY "Admins can delete contact messages"
 
 -- =====================================================================
 -- 9. ADMINS TABLE POLICIES
--- Authenticated users can read and sync their own row by auth.uid() or JWT email.
--- No public read/write.
+-- Administrators can read only their own linked record. Account identity,
+-- activation, and roles can only be managed by an active super administrator.
 -- =====================================================================
-DROP POLICY IF EXISTS "Admins can read own profile" ON admins;
+DO $$
+DECLARE
+  v_policy RECORD;
+BEGIN
+  FOR v_policy IN
+    SELECT policyname
+    FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'admins'
+  LOOP
+    EXECUTE format('DROP POLICY %I ON public.admins', v_policy.policyname);
+  END LOOP;
+END;
+$$;
+
 CREATE POLICY "Admins can read own profile"
   ON admins
   FOR SELECT
   TO authenticated
-  USING (
-    auth_user_id = auth.uid() 
-    OR lower(email) = lower(COALESCE(auth.jwt() ->> 'email', ''))
-  );
+  USING (auth_user_id = auth.uid());
 
-DROP POLICY IF EXISTS "Admins can update own profile" ON admins;
-CREATE POLICY "Admins can update own profile"
-  ON admins
-  FOR UPDATE
-  TO authenticated
-  USING (
-    auth_user_id = auth.uid() 
-    OR lower(email) = lower(COALESCE(auth.jwt() ->> 'email', ''))
-  )
-  WITH CHECK (
-    auth_user_id = auth.uid() 
-    OR lower(email) = lower(COALESCE(auth.jwt() ->> 'email', ''))
-  );
-
-DROP POLICY IF EXISTS "Super admins can manage admins" ON admins;
 CREATE POLICY "Super admins can manage admins"
   ON admins
   FOR ALL
   TO authenticated
-  USING (
-    EXISTS (
-      SELECT 1 FROM admins 
-      WHERE (auth_user_id = auth.uid() OR lower(email) = lower(COALESCE(auth.jwt() ->> 'email', '')))
-        AND role = 'super_admin' 
-        AND is_active = true
-    )
-  );
+  USING (public.is_active_super_admin())
+  WITH CHECK (public.is_active_super_admin());

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, ShoppingBag, Heart, Menu, X, Shield, Sparkles } from 'lucide-react';
+import { Search, ShoppingBag, Heart, Menu, X, Sparkles } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
 import { useStore } from '../../context/StoreContext';
 import logo from '../../assets/SVG-02 (12)-Photoroom.png';
@@ -10,7 +10,6 @@ interface HeaderProps {
   currentPage?: string;
   onNavigate?: (page: string) => void;
   onOpenSearch?: () => void;
-  onOpenAdminModal?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -18,8 +17,7 @@ export const Header: React.FC<HeaderProps> = ({
   setActiveTab,
   currentPage,
   onNavigate,
-  onOpenSearch,
-  onOpenAdminModal
+  onOpenSearch
 }) => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -52,6 +50,28 @@ export const Header: React.FC<HeaderProps> = ({
     { id: 'reviews', label: 'Client Reviews' },
     { id: 'contact', label: 'Contact' }
   ];
+  const leftNavLinks = navLinks.slice(0, 3);
+  const rightNavLinks = navLinks.slice(3);
+
+  const renderNavLink = (link: typeof navLinks[number]) => (
+    <button
+      key={link.id}
+      onClick={() => {
+        handleTabChange(link.id);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }}
+      className={`text-xs font-medium uppercase tracking-[0.15em] transition-colors relative py-1 whitespace-nowrap ${
+        currentTab === link.id
+          ? 'text-[#121212] font-semibold'
+          : 'text-[#555555] hover:text-[#121212]'
+      }`}
+    >
+      {link.label}
+      {currentTab === link.id && (
+        <span className="absolute bottom-0 left-0 w-full h-[1.5px] bg-[#121212] transition-all duration-300" />
+      )}
+    </button>
+  );
 
   return (
     <header
@@ -62,10 +82,10 @@ export const Header: React.FC<HeaderProps> = ({
       }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-        <div className="flex items-center justify-between min-h-[56px] md:min-h-[64px]">
+        <div className="grid grid-cols-[1fr_auto_1fr] items-center min-h-[56px] md:min-h-[64px]">
           
           {/* Desktop & Mobile Left Section */}
-          <div className="flex items-center space-x-6 xl:space-x-8 pr-8 lg:pr-12 xl:pr-16">
+          <div className="flex items-center min-w-0">
             {/* Mobile Menu Toggle */}
             <div className="flex items-center lg:hidden">
               <button
@@ -78,31 +98,13 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
 
             {/* Desktop Left Navigation Links */}
-            <nav className="hidden lg:flex items-center space-x-6 xl:space-x-8">
-              {navLinks.map((link) => (
-                <button
-                  key={link.id}
-                  onClick={() => {
-                    handleTabChange(link.id);
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }}
-                  className={`text-xs font-medium uppercase tracking-[0.2em] transition-colors relative py-1 ${
-                    currentTab === link.id
-                      ? 'text-[#121212] font-semibold'
-                      : 'text-[#555555] hover:text-[#121212]'
-                  }`}
-                >
-                  {link.label}
-                  {currentTab === link.id && (
-                    <span className="absolute bottom-0 left-0 w-full h-[1.5px] bg-[#121212] transition-all duration-300" />
-                  )}
-                </button>
-              ))}
+            <nav className="hidden lg:flex items-center gap-4 xl:gap-6">
+              {leftNavLinks.map(renderNavLink)}
             </nav>
           </div>
 
-          {/* Brand Logo - Dead Centered Horizontally with Generous Spacing */}
-          <div className="absolute left-1/2 -translate-x-1/2 text-center py-1 z-10 px-6 sm:px-10 md:px-12">
+          {/* Brand Logo */}
+          <div className="justify-self-center text-center py-1 z-10 px-2">
             <button
               onClick={() => {
                 handleTabChange('home');
@@ -114,13 +116,16 @@ export const Header: React.FC<HeaderProps> = ({
               <img
                 src={logo}
                 alt="LA.CLASSÈ"
-                className="h-25 sm:h-40 md:h-[90px] lg:h-[140px] w-auto object-contain"
+                className="h-12 sm:h-14 md:h-16 lg:h-20 w-auto object-contain"
               />
             </button>
           </div>
 
-          {/* Right Action Buttons: Search, Cart, Admin */}
-          <div className="flex items-center space-x-3 sm:space-x-5 z-20 pl-8 lg:pl-12 xl:pl-16">
+          {/* Desktop Right Navigation and Store Actions */}
+          <div className="flex items-center justify-end gap-2 sm:gap-3 lg:gap-4 min-w-0">
+            <nav className="hidden lg:flex items-center gap-4 xl:gap-6">
+              {rightNavLinks.map(renderNavLink)}
+            </nav>
             <button
               onClick={onOpenSearch}
               className="p-2 text-[#121212] hover:text-[#8C7853] transition-colors"
@@ -141,16 +146,6 @@ export const Header: React.FC<HeaderProps> = ({
                   {totalItemCount}
                 </span>
               )}
-            </button>
-
-            {/* Admin Dashboard Quick Portal */}
-            <button
-              onClick={onOpenAdminModal}
-              className="hidden sm:flex items-center gap-1 text-[10px] tracking-widest uppercase border border-[#D1CDC7] px-2.5 py-1 rounded-sm text-[#555555] hover:text-[#121212] hover:border-[#121212] transition-colors"
-              title="Admin Portal"
-            >
-              <Shield className="w-3 h-3 text-[#8C7853]" />
-              <span>Admin</span>
             </button>
           </div>
 
@@ -210,18 +205,7 @@ export const Header: React.FC<HeaderProps> = ({
               </div>
             </div>
 
-            <div className="pt-6 border-t border-[#EAEAEA] space-y-4">
-              <button
-                onClick={() => {
-                  setIsMobileMenuOpen(false);
-                  onOpenAdminModal();
-                }}
-                className="w-full flex items-center justify-center gap-2 py-2.5 bg-[#121212] text-[#FCFCFA] text-xs uppercase tracking-[0.2em] font-medium rounded-sm"
-              >
-                <Shield className="w-3.5 h-3.5 text-[#D4AF37]" />
-                <span>Admin Portal</span>
-              </button>
-
+            <div className="pt-6 border-t border-[#EAEAEA]">
               <div className="text-center text-[10px] text-[#888888] tracking-widest uppercase">
                 Crafted with Dubai & Indonesian Fine Fabrics
               </div>
