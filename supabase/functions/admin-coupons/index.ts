@@ -110,23 +110,38 @@ serve(async (req: Request) => {
       const discountType = body.discountType || body.discount_type || 'percentage';
       const discountValue = Number(body.discountValue ?? body.discount_value ?? 0);
       const minPurchase = Number(body.minPurchase ?? body.min_purchase ?? 0);
-      const expiryDate = body.expiryDate || body.expiry_date || '2026-12-31';
+      const expiryDate = body.expiryDate || body.expiry_date || null;
       const active = body.active !== undefined ? Boolean(body.active) : true;
+      const subscriberEmail = body.subscriberEmail || body.subscriber_email || null;
 
-      if (!code || discountValue <= 0) {
+      if (!/^[A-Z0-9_-]{3,40}$/.test(code) || discountValue <= 0 || minPurchase < 0) {
         return errorResponse('Coupon code and positive discount value are required.', 400);
       }
+      if (!['percentage', 'flat'].includes(discountType)) return errorResponse('Discount type must be percentage or flat.', 400);
+      if (discountType === 'percentage' && discountValue > 100) return errorResponse('Percentage discount cannot exceed 100.', 400);
 
-      const { data, error } = await supabase
+      const { data: existing, error: lookupError } = await supabase
         .from('coupons')
-        .upsert({
+        .select('id')
+        .ilike('code', code)
+        .maybeSingle();
+      if (lookupError) return errorResponse(lookupError.message, 400, lookupError);
+
+      const couponPayload = {
           code,
           discount_type: discountType,
           discount_value: discountValue,
           min_purchase: minPurchase,
           expiry_date: expiryDate,
+          subscriber_email: subscriberEmail,
           active,
-        }, { onConflict: 'code' })
+          updated_at: new Date().toISOString(),
+      };
+
+      const query = existing
+        ? supabase.from('coupons').update(couponPayload).eq('id', existing.id)
+        : supabase.from('coupons').insert(couponPayload);
+      const { data, error } = await query
         .select()
         .single();
 

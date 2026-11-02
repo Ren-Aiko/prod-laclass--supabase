@@ -174,12 +174,14 @@ export interface Order {
 }
 
 export interface Coupon {
+  id?: string;
   code: string;
   discountType: 'percentage' | 'flat';
   discountValue: number; // e.g. 15 for 15% or 500 for ₹500
   minPurchase: number;
   expiryDate: string;
   active: boolean;
+  subscriberEmail?: string | null;
 }
 
 export interface Review {
@@ -198,6 +200,7 @@ export interface Review {
 }
 
 export interface Subscriber {
+  id?: string;
   email: string;
   subscribedAt: string;
 }

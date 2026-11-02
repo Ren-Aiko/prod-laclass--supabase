@@ -153,6 +153,7 @@ CREATE TABLE coupons (
   discount_value NUMERIC(10, 2) NOT NULL CHECK (discount_value > 0),
   min_purchase NUMERIC(10, 2) NOT NULL DEFAULT 0 CHECK (min_purchase >= 0),
   expiry_date DATE,
+  subscriber_email TEXT,
   active BOOLEAN NOT NULL DEFAULT true,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),

@@ -73,37 +73,106 @@ serve(async (req: Request) => {
       return errorResponse('Please provide a valid email address.', 400);
     }
 
-    // Check if email already exists in subscribers table
-    const { data: existing } = await supabase
+    // Reuse an existing subscriber record to keep the newsletter email unique.
+    const { data: existing, error: existingError } = await supabase
       .from('subscribers')
       .select('id, email')
-      .eq('email', rawEmail)
+      .ilike('email', rawEmail)
       .maybeSingle();
 
-    if (existing) {
+    if (existingError) {
+      return errorResponse(existingError.message || 'Unable to check subscription.', 500);
+    }
+
+    let subscriberId = existing?.id;
+    if (!subscriberId) {
+      const { data: newSubscriber, error: insertError } = await supabase
+        .from('subscribers')
+        .insert({ email: rawEmail })
+        .select('id, email')
+        .single();
+
+      if (insertError || !newSubscriber) {
+        console.error('[subscribe-newsletter Insert Error]:', insertError);
+        return errorResponse(insertError?.message || 'Unable to record subscription.', 400, insertError);
+      }
+      subscriberId = newSubscriber.id;
+    }
+
+    // Return the same coupon on repeated subscriptions. Create and persist a
+    // unique 10% coupon if this subscriber has not received one yet.
+    const { data: linkedCoupon, error: linkedCouponError } = await supabase
+      .from('coupons')
+      .select('code')
+      .eq('subscriber_email', rawEmail)
+      .maybeSingle();
+
+    if (linkedCouponError) {
+      return errorResponse(`Unable to look up newsletter coupon. Apply database migration 08_newsletter_coupon_subscriber.sql. ${linkedCouponError.message}`, 500);
+    }
+
+    if (linkedCoupon?.code) {
       return jsonResponse({
         success: true,
         alreadySubscribed: true,
-        couponCode: 'WELCOME10',
-        message: 'You are already subscribed to the LaClassé VIP Atelier! Use promo code WELCOME10 for 10% off.',
+        couponCode: linkedCoupon.code,
+        message: 'You are already subscribed. Here is your 10% welcome code.',
       });
     }
 
-    // Insert new subscriber
-    const { error: insertError } = await supabase
-      .from('subscribers')
-      .insert({ email: rawEmail });
+    const expiry = new Date();
+    expiry.setDate(expiry.getDate() + 30);
+    const expiryDate = expiry.toISOString().slice(0, 10);
+    let couponCode = '';
+    let couponError: any = null;
 
-    if (insertError) {
-      console.error('[subscribe-newsletter Insert Error]:', insertError);
-      return errorResponse(insertError.message || 'Unable to record subscription.', 400, insertError);
+    for (let attempt = 0; attempt < 5; attempt++) {
+      couponCode = `ABAYA10-${crypto.randomUUID().replace(/-/g, '').slice(0, 6).toUpperCase()}`;
+      const { error } = await supabase.from('coupons').insert({
+        code: couponCode,
+        discount_type: 'percentage',
+        discount_value: 10,
+        min_purchase: 0,
+        expiry_date: expiryDate,
+        subscriber_email: rawEmail,
+        active: true,
+      });
+
+      if (!error) {
+        couponError = null;
+        break;
+      }
+      couponError = error;
+      if (error.code === '23505') {
+        const { data: concurrentCoupon } = await supabase
+          .from('coupons')
+          .select('code')
+          .eq('subscriber_email', rawEmail)
+          .maybeSingle();
+        if (concurrentCoupon?.code) {
+          return jsonResponse({
+            success: true,
+            alreadySubscribed: true,
+            couponCode: concurrentCoupon.code,
+            message: 'You are already subscribed. Here is your 10% welcome code.',
+          });
+        }
+        continue;
+      }
+      break;
+    }
+
+    if (couponError) {
+      console.error('[subscribe-newsletter Coupon Insert Error]:', couponError);
+      if (!existing) await supabase.from('subscribers').delete().eq('id', subscriberId);
+      return errorResponse(couponError.message || 'Unable to create your coupon.', 500, couponError);
     }
 
     return jsonResponse({
       success: true,
       alreadySubscribed: false,
-      couponCode: 'WELCOME10',
-      message: 'Thank you for joining our Privé Circle! Use promo code WELCOME10 for 10% off your first order.',
+      couponCode,
+      message: 'Thank you for joining our Privé Circle! Your 10% coupon is ready.',
     }, 201);
   } catch (err: any) {
     console.error('[subscribe-newsletter Exception]:', err);
