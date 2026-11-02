@@ -34,6 +34,22 @@ export const fetchReviews = async (): Promise<Review[]> => {
   }
 };
 
+/** Admin: fetch all reviews, including those awaiting moderation. */
+export const fetchAdminReviews = async (): Promise<Review[]> => {
+  const rows = await invokeEdgeFunction<any[]>('admin-reviews', { method: 'GET' });
+  return (rows || []).map((r) => ({
+    id: r.id,
+    productId: r.product_id,
+    productName: r.product_name || r.product_id,
+    customerName: r.customer_name,
+    rating: Number(r.rating || 5),
+    reviewText: r.comment || '',
+    date: (r.created_at || '').split('T')[0],
+    approved: Boolean(r.approved),
+    verifiedPurchase: Boolean(r.verified_purchase),
+  }));
+};
+
 /**
  * Public review submission via secure submit-review Edge Function
  */
@@ -72,6 +88,23 @@ export const toggleReviewApproval = async (reviewId: string, approved: boolean):
     console.error('[toggleReviewApproval Error]:', err);
     throw err;
   }
+};
+
+/** Admin: edit the customer-visible review fields. */
+export const updateReview = async (
+  reviewId: string,
+  changes: Pick<Review, 'customerName' | 'rating' | 'reviewText'>
+): Promise<boolean> => {
+  await invokeEdgeFunction('admin-reviews', {
+    method: 'PATCH',
+    body: {
+      id: reviewId,
+      customer_name: changes.customerName,
+      rating: changes.rating,
+      comment: changes.reviewText,
+    },
+  });
+  return true;
 };
 
 export const addReviewToSheet = addReview;

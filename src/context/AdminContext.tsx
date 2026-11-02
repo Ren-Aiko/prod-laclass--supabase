@@ -12,7 +12,9 @@ import {
   restockCancelledOrder as restockCancelledOrderService,
   saveCoupon as saveCouponService,
   deleteCoupon as deleteCouponService,
-  toggleReviewApproval as toggleReviewApprovalService
+  toggleReviewApproval as toggleReviewApprovalService,
+  fetchAdminReviews as fetchAdminReviewsService,
+  updateReview as updateReviewService
 } from '../services/api';
 import { 
   getSupabase, 
@@ -32,11 +34,13 @@ interface AdminContextType {
   coupons: Coupon[];
   subscribers: Subscriber[];
   contacts: ContactMessage[];
+  reviews: Review[];
   stats: AdminStats;
   isLoadingAdminData: boolean;
   backendError: string | null;
   databaseConfigured: boolean;
   refreshAdminData: () => Promise<void>;
+  refreshReviewModeration: () => Promise<void>;
   updateOrderStatus: (orderId: string, status: OrderStatus, courierName?: string, trackingNumber?: string) => Promise<boolean>;
   restockOrder: (orderId: string) => Promise<boolean>;
   saveProduct: (product: Partial<Product>, imageFiles?: (File | null)[]) => Promise<boolean>;
@@ -45,6 +49,7 @@ interface AdminContextType {
   saveCoupon: (coupon: Coupon) => Promise<boolean>;
   deleteCoupon: (code: string) => Promise<boolean>;
   toggleReviewApproval: (reviewId: string, approved: boolean) => Promise<boolean>;
+  updateReview: (reviewId: string, changes: Pick<Review, 'customerName' | 'rating' | 'reviewText'>) => Promise<boolean>;
 }
 
 const AdminContext = createContext<AdminContextType | undefined>(undefined);
@@ -57,10 +62,11 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [subscribers, setSubscribers] = useState<Subscriber[]>([]);
   const [contacts, setContacts] = useState<ContactMessage[]>([]);
+  const [reviews, setReviews] = useState<Review[]>([]);
   const [isLoadingAdminData, setIsLoadingAdminData] = useState<boolean>(false);
   const [backendError, setBackendError] = useState<string | null>(null);
 
-  const { refreshStoreData, updateReviewApprovalState } = useStore();
+  const { refreshStoreData } = useStore();
 
   // Helper to verify and sync administrator status
   const checkAdminPrivileges = async (supabase: any, user: any) => {
@@ -246,11 +252,12 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setIsLoadingAdminData(true);
     setBackendError(null);
     try {
-      const [ordsRes, cpsRes, subsRes, cntsRes] = await Promise.allSettled([
+      const [ordsRes, cpsRes, subsRes, cntsRes, reviewsRes] = await Promise.allSettled([
         fetchOrders(),
         fetchCoupons(),
         fetchSubscribers(),
-        fetchContactMessages()
+        fetchContactMessages(),
+        fetchAdminReviewsService()
       ]);
 
       if (ordsRes.status === 'fulfilled') {
@@ -264,6 +271,8 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (cpsRes.status === 'fulfilled') setCoupons(cpsRes.value);
       if (subsRes.status === 'fulfilled') setSubscribers(subsRes.value);
       if (cntsRes.status === 'fulfilled') setContacts(cntsRes.value);
+      if (reviewsRes.status === 'fulfilled') setReviews(reviewsRes.value);
+      else console.warn('[Admin fetchReviews error]:', reviewsRes.reason);
 
       await refreshStoreData();
     } catch (e: any) {
@@ -271,6 +280,14 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       setBackendError(e.message || 'Error communicating with Supabase');
     } finally {
       setIsLoadingAdminData(false);
+    }
+  };
+
+  const refreshReviewModeration = async () => {
+    try {
+      setReviews(await fetchAdminReviewsService());
+    } catch (err) {
+      console.warn('[Admin fetchReviews error]:', err);
     }
   };
 
@@ -370,9 +387,17 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const toggleReviewApproval = async (reviewId: string, approved: boolean) => {
-    updateReviewApprovalState(reviewId, approved);
-    const success = await toggleReviewApprovalService(reviewId, approved);
-    return success;
+    await toggleReviewApprovalService(reviewId, approved);
+    setReviews(prev => prev.map(review => review.id === reviewId ? { ...review, approved } : review));
+    await refreshStoreData();
+    return true;
+  };
+
+  const updateReview = async (reviewId: string, changes: Pick<Review, 'customerName' | 'rating' | 'reviewText'>) => {
+    await updateReviewService(reviewId, changes);
+    setReviews(prev => prev.map(review => review.id === reviewId ? { ...review, ...changes } : review));
+    await refreshStoreData();
+    return true;
   };
 
   // High-level stats
@@ -404,11 +429,13 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         coupons,
         subscribers,
         contacts,
+        reviews,
         stats,
         isLoadingAdminData,
         backendError,
         databaseConfigured: isSupabaseConfigured(),
         refreshAdminData,
+        refreshReviewModeration,
         updateOrderStatus,
         restockOrder,
         saveProduct,
@@ -416,7 +443,8 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         deleteProduct,
         saveCoupon,
         deleteCoupon,
-        toggleReviewApproval
+        toggleReviewApproval,
+        updateReview
       }}
     >
       {children}
