@@ -15,7 +15,8 @@ bucket_name = "laclasse-assets"
 
 # Environment Variables
 [vars]
-ADMIN_SECRET = "laclasse-secret-2026"
+SUPABASE_URL = "https://sfqnaftcpuoyftpjgxbb.supabase.co"
+SUPABASE_ANON_KEY = "sb_publishable_x1k-8OB-6e4rCuYLuwUjNw_ylVYmLL3"
 RESERVATION_EXPIRY_MINUTES = 30
 # Optional custom domain for R2 assets, or worker handles it via /api/media/*
 # R2_PUBLIC_URL = "https://assets.laclasse.com"

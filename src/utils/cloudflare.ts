@@ -3,6 +3,8 @@
  * Handles communication with Cloudflare Worker API, D1 queries, and R2 asset storage.
  */
 
+import { getSupabase } from './supabase';
+
 export const getWorkerBaseUrl = (): string => {
   const envUrl = import.meta.env.VITE_WORKER_URL;
   if (envUrl && typeof envUrl === 'string' && envUrl.trim() !== '') {
@@ -20,24 +22,6 @@ export const setWorkerBaseUrl = (url: string) => {
     localStorage.setItem('laclasse_worker_url', url.trim());
   } else {
     localStorage.removeItem('laclasse_worker_url');
-  }
-};
-
-export const getAdminSecret = (): string => {
-  const envSecret = import.meta.env.VITE_ADMIN_SECRET;
-  if (envSecret && typeof envSecret === 'string' && envSecret.trim() !== '') {
-    return envSecret.trim();
-  }
-  return localStorage.getItem('laclasse_admin_secret') || '';
-};
-
-export const setAdminSecret = (secret: string) => {
-  if (secret) {
-    localStorage.setItem('laclasse_admin_secret', secret.trim());
-    localStorage.setItem('laclasse_admin_auth', 'true');
-  } else {
-    localStorage.removeItem('laclasse_admin_secret');
-    localStorage.removeItem('laclasse_admin_auth');
   }
 };
 
@@ -117,10 +101,14 @@ export async function workerFetch(
   const headers = new Headers(options.headers || {});
   
   if (requireAdmin) {
-    const secret = getAdminSecret();
-    if (secret) {
-      headers.set('Authorization', `Bearer ${secret}`);
+    const { data: { session }, error } = await getSupabase().auth.getSession();
+    if (error) {
+      throw new Error(`Could not verify the administrator session: ${error.message}`);
     }
+    if (!session?.access_token) {
+      throw new Error('An authenticated administrator session is required.');
+    }
+    headers.set('Authorization', `Bearer ${session.access_token}`);
   }
 
   // Do not set Content-Type for FormData

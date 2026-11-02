@@ -609,8 +609,8 @@ $$;
 
 -- =====================================================================
 -- 5. FUNCTION: sync_admin_user
--- Synchronizes the calling authenticated user (auth.uid()) with public.admins
--- Accepts optional p_email, checks auth.jwt() email, links and activates!
+-- Checks an existing administrator record without linking, creating, or
+-- activating accounts based on user-supplied identity data.
 -- =====================================================================
 CREATE OR REPLACE FUNCTION public.sync_admin_user(p_email TEXT DEFAULT NULL)
 RETURNS JSONB
@@ -620,74 +620,41 @@ SET search_path = public, auth, pg_temp
 AS $$
 DECLARE
   v_user_id UUID := auth.uid();
-  v_user_email TEXT;
   v_admin_record RECORD;
 BEGIN
   IF v_user_id IS NULL THEN
     RETURN jsonb_build_object('success', false, 'error', 'Not authenticated');
   END IF;
 
-  -- Prioritize explicitly supplied email, then JWT email, then auth.users table
-  v_user_email := COALESCE(
-    NULLIF(TRIM(p_email), ''),
-    NULLIF(TRIM(auth.jwt() ->> 'email'), ''),
-    (SELECT email FROM auth.users WHERE id = v_user_id LIMIT 1)
-  );
-
-  -- 1. If this auth_user_id already exists in admins, ensure active
-  SELECT id, auth_user_id, email, role, is_active 
+  SELECT id, auth_user_id, email, role, is_active
   INTO v_admin_record
   FROM public.admins
-  WHERE auth_user_id = v_user_id;
+  WHERE auth_user_id = v_user_id
+    AND is_active = true;
 
   IF FOUND THEN
-    IF NOT v_admin_record.is_active THEN
-      UPDATE public.admins SET is_active = true WHERE id = v_admin_record.id;
-    END IF;
     RETURN jsonb_build_object(
-      'success', true, 
-      'admin', jsonb_build_object('id', v_admin_record.id, 'email', v_admin_record.email, 'role', v_admin_record.role)
+      'success', true,
+      'admin', jsonb_build_object(
+        'id', v_admin_record.id,
+        'email', v_admin_record.email,
+        'role', v_admin_record.role,
+        'is_active', v_admin_record.is_active
+      )
     );
   END IF;
 
-  -- 2. If user email exists in admins under a different or placeholder auth_user_id, sync it!
-  IF v_user_email IS NOT NULL AND v_user_email != '' THEN
-    SELECT id, auth_user_id, email, role, is_active 
-    INTO v_admin_record
-    FROM public.admins
-    WHERE lower(email) = lower(v_user_email);
-
-    IF FOUND THEN
-      UPDATE public.admins
-      SET auth_user_id = v_user_id, is_active = true, updated_at = now()
-      WHERE id = v_admin_record.id;
-
-      RETURN jsonb_build_object(
-        'success', true, 
-        'admin', jsonb_build_object('id', v_admin_record.id, 'email', v_user_email, 'role', v_admin_record.role)
-      );
-    END IF;
-
-    -- 3. If no row exists yet for this authenticated user, create a super_admin entry!
-    INSERT INTO public.admins (auth_user_id, email, role, is_active)
-    VALUES (v_user_id, v_user_email, 'super_admin', true)
-    ON CONFLICT (auth_user_id) DO UPDATE SET is_active = true, role = 'super_admin'
-    RETURNING id, auth_user_id, email, role, is_active INTO v_admin_record;
-
-    RETURN jsonb_build_object(
-      'success', true, 
-      'admin', jsonb_build_object('id', v_admin_record.id, 'email', v_admin_record.email, 'role', v_admin_record.role)
-    );
-  END IF;
-
-  RETURN jsonb_build_object('success', false, 'error', 'No email identified for authenticated user');
+  RETURN jsonb_build_object('success', false, 'error', 'No active administrator account is linked to this user');
 END;
 $$;
 
 -- Grant execution permissions
 GRANT EXECUTE ON FUNCTION public.create_order_atomic(JSONB) TO anon, authenticated, service_role;
-GRANT EXECUTE ON FUNCTION public.release_expired_reservations() TO authenticated, service_role;
-GRANT EXECUTE ON FUNCTION public.confirm_order_payment(UUID) TO authenticated, service_role;
-GRANT EXECUTE ON FUNCTION public.restock_order_explicit(UUID) TO authenticated, service_role;
+REVOKE ALL ON FUNCTION public.release_expired_reservations() FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.confirm_order_payment(UUID) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.restock_order_explicit(UUID) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.release_expired_reservations() TO service_role;
+GRANT EXECUTE ON FUNCTION public.confirm_order_payment(UUID) TO service_role;
+GRANT EXECUTE ON FUNCTION public.restock_order_explicit(UUID) TO service_role;
+REVOKE ALL ON FUNCTION public.sync_admin_user(TEXT) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.sync_admin_user(TEXT) TO authenticated, service_role;
-GRANT EXECUTE ON FUNCTION public.sync_admin_user() TO authenticated, service_role;

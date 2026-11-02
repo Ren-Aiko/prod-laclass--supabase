@@ -466,7 +466,8 @@ const r2Bucket = {
 const env = {
   DB: d1Db,
   BUCKET: r2Bucket,
-  ADMIN_SECRET: process.env.VITE_ADMIN_SECRET || 'laclasse-secret-2026',
+  SUPABASE_URL: process.env.VITE_SUPABASE_URL || 'https://sfqnaftcpuoyftpjgxbb.supabase.co',
+  SUPABASE_ANON_KEY: process.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_x1k-8OB-6e4rCuYLuwUjNw_ylVYmLL3',
   RESERVATION_EXPIRY_MINUTES: 30,
   R2_PUBLIC_URL: process.env.VITE_R2_PUBLIC_URL || ''
 };

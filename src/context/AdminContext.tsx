@@ -27,6 +27,7 @@ import { useStore } from './StoreContext';
 
 interface AdminContextType {
   isAdminAuthenticated: boolean;
+  isAdminAuthReady: boolean;
   adminEmail: string | null;
   loginAdmin: (email: string, password?: string, customUrl?: string, customAnonKey?: string) => Promise<{ success: boolean; error?: string }>;
   logoutAdmin: () => Promise<void>;
@@ -56,6 +57,7 @@ const AdminContext = createContext<AdminContextType | undefined>(undefined);
 
 export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean>(false);
+  const [isAdminAuthReady, setIsAdminAuthReady] = useState<boolean>(false);
   const [adminEmail, setAdminEmail] = useState<string | null>(null);
 
   const [orders, setOrders] = useState<Order[]>([]);
@@ -68,78 +70,70 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const { refreshStoreData } = useStore();
 
-  // Helper to verify and sync administrator status
   const checkAdminPrivileges = async (supabase: any, user: any) => {
-    const userEmail = (user.email || '').trim().toLowerCase();
+    const { data: adminRecord, error } = await supabase
+      .from('admins')
+      .select('id, email, role, is_active, auth_user_id')
+      .eq('auth_user_id', user.id)
+      .eq('is_active', true)
+      .maybeSingle();
 
-    // 1. Try invoking sync_admin_user RPC with explicit email parameter
-    try {
-      const { data: syncData, error: syncErr } = await supabase.rpc('sync_admin_user', {
-        p_email: userEmail,
-      });
-      if (!syncErr && syncData?.success && syncData?.admin) {
-        return syncData.admin;
-      }
-    } catch {}
-
-    // 2. Direct query on admins table by auth_user_id
-    try {
-      const { data: adminRecord } = await supabase
-        .from('admins')
-        .select('id, email, role, is_active, auth_user_id')
-        .eq('auth_user_id', user.id)
-        .eq('is_active', true)
-        .maybeSingle();
-
-      if (adminRecord) {
-        return adminRecord;
-      }
-    } catch {}
-
-    // 3. Fallback match by email (case-insensitive)
-    if (userEmail) {
-      try {
-        const { data: emailRecord } = await supabase
-          .from('admins')
-          .select('id, email, role, is_active, auth_user_id')
-          .ilike('email', userEmail)
-          .eq('is_active', true)
-          .maybeSingle();
-
-        if (emailRecord) {
-          // If auth_user_id had a placeholder or previous ID, sync it now
-          if (emailRecord.auth_user_id !== user.id) {
-            try {
-              await supabase
-                .from('admins')
-                .update({ auth_user_id: user.id })
-                .eq('id', emailRecord.id);
-            } catch {}
-          }
-          return emailRecord;
-        }
-      } catch {}
+    if (error) {
+      throw new Error(`Could not verify administrator access: ${error.message}`);
     }
 
-    return null;
+    return adminRecord;
   };
 
   // Restore authenticated Supabase session on application mount
   useEffect(() => {
+    let authorizationCheckId = 0;
+
+    const verifySession = async (supabase: any, session: any) => {
+      const checkId = ++authorizationCheckId;
+      setIsAdminAuthenticated(false);
+      setIsAdminAuthReady(false);
+      setAdminEmail(null);
+
+      if (!session?.user) {
+        setIsAdminAuthReady(true);
+        return;
+      }
+
+      try {
+        const adminRecord = await checkAdminPrivileges(supabase, session.user);
+        if (checkId !== authorizationCheckId) return;
+
+        if (adminRecord) {
+          setIsAdminAuthenticated(true);
+          setAdminEmail(adminRecord.email || session.user.email || null);
+        } else {
+          await supabase.auth.signOut();
+        }
+        if (checkId === authorizationCheckId) {
+          setIsAdminAuthReady(true);
+        }
+      } catch (error) {
+        if (checkId === authorizationCheckId) {
+          console.error('[Administrator authorization check]:', error);
+          setIsAdminAuthReady(true);
+        }
+      }
+    };
+
     const restoreSession = async () => {
-      if (!isSupabaseConfigured()) return;
+      if (!isSupabaseConfigured()) {
+        setIsAdminAuthReady(true);
+        return;
+      }
 
       try {
         const supabase = getSupabase();
         const { data: { session } } = await supabase.auth.getSession();
-
-        if (session?.user) {
-          setIsAdminAuthenticated(true);
-          setAdminEmail(session.user.email || null);
-          checkAdminPrivileges(supabase, session.user).catch(() => {});
-        }
+        await verifySession(supabase, session);
       } catch (err) {
-        console.warn('[Session restoration check]:', err);
+        console.error('[Session restoration check]:', err);
+        setIsAdminAuthReady(true);
       }
     };
 
@@ -149,14 +143,14 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     try {
       if (isSupabaseConfigured()) {
         const supabase = getSupabase();
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
           if (event === 'SIGNED_OUT' || !session) {
+            authorizationCheckId += 1;
             setIsAdminAuthenticated(false);
+            setIsAdminAuthReady(true);
             setAdminEmail(null);
           } else if (session?.user) {
-            setIsAdminAuthenticated(true);
-            setAdminEmail(session.user.email || null);
-            checkAdminPrivileges(supabase, session.user).catch(() => {});
+            void verifySession(supabase, session);
           }
         });
 
@@ -164,7 +158,9 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           subscription.unsubscribe();
         };
       }
-    } catch {}
+    } catch (error) {
+      console.error('[Supabase auth listener setup]:', error);
+    }
   }, []);
 
   /**
@@ -212,17 +208,23 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         };
       }
 
-      // Check and sync `admins` metadata table in background
-      let adminRecord: any = null;
+      let adminRecord;
       try {
         adminRecord = await checkAdminPrivileges(supabase, data.user);
-      } catch (checkErr) {
-        console.warn('[Admin privileges check]:', checkErr);
+      } catch (verificationError) {
+        await supabase.auth.signOut();
+        throw verificationError;
+      }
+      if (!adminRecord) {
+        await supabase.auth.signOut();
+        return {
+          success: false,
+          error: 'This account is not registered as an active administrator.'
+        };
       }
 
-      // Grant admin session to authenticated Supabase account
       setIsAdminAuthenticated(true);
-      setAdminEmail(adminRecord?.email || data.user.email || email);
+      setAdminEmail(adminRecord.email || data.user.email || email);
       
       try {
         await refreshAdminData();
@@ -422,6 +424,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     <AdminContext.Provider
       value={{
         isAdminAuthenticated,
+        isAdminAuthReady,
         adminEmail,
         loginAdmin,
         logoutAdmin,

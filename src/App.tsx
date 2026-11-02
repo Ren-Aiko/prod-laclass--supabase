@@ -37,7 +37,7 @@ export function App() {
   const [isAdminLoginOpen, setIsAdminLoginOpen] = useState(false);
 
   const { products, setSelectedCategory, setIsSearchOpen } = useStore();
-  const { isAdminAuthenticated } = useAdmin();
+  const { isAdminAuthenticated, isAdminAuthReady } = useAdmin();
 
   // Dynamic Route Resolver based on window.location.pathname
   const resolveRouteFromPath = async () => {
@@ -115,6 +115,12 @@ export function App() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
+  useEffect(() => {
+    if (currentPage === 'admin' && isAdminAuthReady && !isAdminAuthenticated) {
+      setIsAdminLoginOpen(true);
+    }
+  }, [currentPage, isAdminAuthReady, isAdminAuthenticated]);
+
   // Update selected product if products load later while viewing /product/:slug
   useEffect(() => {
     if (currentPage === 'product-detail' && currentSlug && !selectedProduct && products.length > 0) {
@@ -178,7 +184,6 @@ export function App() {
           currentPage={currentPage}
           onNavigate={handleNavigatePage}
           onOpenSearch={() => setIsSearchOpen(true)}
-          onOpenAdminModal={() => setIsAdminLoginOpen(true)}
         />
 
         {/* Dynamic Page Router Content */}

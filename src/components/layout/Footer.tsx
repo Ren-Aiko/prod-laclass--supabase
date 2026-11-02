@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Mail, Shield, Instagram, MessageCircle, ArrowRight, CheckCircle2, Copy, Check, Info, Sparkles, Loader2, X } from 'lucide-react';
+import { Mail, Instagram, MessageCircle, ArrowRight, CheckCircle2, Copy, Check, Info, Sparkles, Loader2, X } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { subscribeAndGenerateCoupon } from '../../services/coupon';
 import { SubscribeResult } from '../../types';
@@ -9,10 +9,9 @@ interface FooterProps {
   setActiveTab?: (tab: string) => void;
   onNavigate?: (page: string) => void;
   onSelectCategory?: (category: any) => void;
-  onOpenAdminModal?: () => void;
 }
 
-export const Footer: React.FC<FooterProps> = ({ setActiveTab, onNavigate, onSelectCategory, onOpenAdminModal }) => {
+export const Footer: React.FC<FooterProps> = ({ setActiveTab, onNavigate, onSelectCategory }) => {
   const [email, setEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [subResult, setSubResult] = useState<SubscribeResult | null>(null);
@@ -299,12 +298,6 @@ export const Footer: React.FC<FooterProps> = ({ setActiveTab, onNavigate, onSele
               <li>
                 <button onClick={() => { handleTab('contact'); window.scrollTo(0,0); }} className="hover:text-[#FAF8F5] transition-colors">
                   Contact Concierge
-                </button>
-              </li>
-              <li>
-                <button onClick={onOpenAdminModal} className="hover:text-[#D4AF37] transition-colors flex items-center gap-1">
-                  <Shield className="w-3 h-3" />
-                  <span>Admin Portal</span>
                 </button>
               </li>
             </ul>
