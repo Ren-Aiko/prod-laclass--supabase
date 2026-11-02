@@ -206,7 +206,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
 
     // Fabric
-    if (selectedFabric !== 'All' && product.fabric !== selectedFabric) {
+    if (
+      selectedFabric !== 'All' &&
+      product.fabric?.trim().toLowerCase() !== selectedFabric.trim().toLowerCase()
+    ) {
       return false;
     }
 

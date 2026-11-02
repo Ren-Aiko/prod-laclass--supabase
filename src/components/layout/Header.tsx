@@ -45,9 +45,9 @@ export const Header: React.FC<HeaderProps> = ({
 
   const navLinks = [
     { id: 'collections', label: 'Collections' },
-    { id: 'order-status', label: 'Order Status' },
-    { id: 'about', label: 'Brand Story' },
     { id: 'reviews', label: 'Client Reviews' },
+    { id: 'about', label: 'Brand Story' },
+    { id: 'order-status', label: 'Order Status' },
     { id: 'contact', label: 'Contact' }
   ];
   const leftNavLinks = navLinks.slice(0, 3);
@@ -77,12 +77,12 @@ export const Header: React.FC<HeaderProps> = ({
     <header
       className={`sticky top-0 z-40 transition-all duration-300 ${
         isScrolled
-          ? 'bg-[#FCFCFA]/90 backdrop-blur-md shadow-sm border-b border-[#EAEAEA] py-3'
-          : 'bg-[#FCFCFA] border-b border-[#F0ECE1] py-5'
+          ? 'bg-[#FCFCFA]/90 backdrop-blur-md shadow-sm border-b border-[#EAEAEA] py-1.5'
+          : 'bg-[#FCFCFA] border-b border-[#F0ECE1] py-2'
       }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-        <div className="grid grid-cols-[1fr_auto_1fr] items-center min-h-[56px] md:min-h-[64px]">
+        <div className="grid grid-cols-[1fr_auto_1fr] items-center min-h-[48px] md:min-h-[56px]">
           
           {/* Desktop & Mobile Left Section */}
           <div className="flex items-center min-w-0">
@@ -104,7 +104,7 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
 
           {/* Brand Logo */}
-          <div className="justify-self-center text-center py-1 z-10 px-2">
+          <div className="justify-self-center text-center py-0 z-10 px-2">
             <button
               onClick={() => {
                 handleTabChange('home');

@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowRight, Sparkles, Shield, Heart } from 'lucide-react';
+import { ArrowRight, Shield, Heart } from 'lucide-react';
 
 interface HeroProps {
   onShopClick: () => void;
@@ -23,12 +23,6 @@ export const Hero: React.FC<HeroProps> = ({ onShopClick, onBridalClick }) => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 relative z-10 w-full">
         <div className="max-w-2xl space-y-6">
           
-          {/* Eyebrow badge */}
-          <div className="inline-flex items-center gap-2 border border-[#8C7853] bg-[#8C7853]/15 px-3.5 py-1.5 rounded-full text-xs tracking-[0.25em] uppercase text-[#D4AF37] font-medium backdrop-blur-sm">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Dubai & Indonesian Fine Silk Couture</span>
-          </div>
-
           {/* Main Title */}
           <h1 className="font-serif text-4xl sm:text-6xl lg:text-7xl font-normal leading-[1.08] tracking-wide text-[#FAF8F5]">
             Elegance <br />

@@ -9,8 +9,6 @@ interface ShopPageProps {
   onSelectProduct: (product: Product) => void;
 }
 
-const FABRICS = ['All', 'Dubai Nida', 'Indonesian Zoom', 'Silk Satin', 'Korean Chiffon', 'Linen Cotton', 'Organza Silk'];
-
 export const ShopPage: React.FC<ShopPageProps> = ({ onSelectProduct }) => {
   const {
     products,
@@ -32,6 +30,18 @@ export const ShopPage: React.FC<ShopPageProps> = ({ onSelectProduct }) => {
   } = useStore();
 
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
+  const fabrics = [
+    'All',
+    ...products
+      .reduce<string[]>((uniqueFabrics, product) => {
+        const fabric = product.fabric?.trim();
+        if (fabric && !uniqueFabrics.some((existing) => existing.toLowerCase() === fabric.toLowerCase())) {
+          uniqueFabrics.push(fabric);
+        }
+        return uniqueFabrics;
+      }, [])
+      .sort((a, b) => a.localeCompare(b)),
+  ];
 
   useEffect(() => {
     // Proactively fetch catalog items using getActiveProducts from Stack A product service
@@ -207,7 +217,7 @@ export const ShopPage: React.FC<ShopPageProps> = ({ onSelectProduct }) => {
             <div>
               <h4 className="text-xs font-semibold uppercase tracking-wider text-[#121212] mb-3">Fabric Origin</h4>
               <div className="space-y-1.5">
-                {FABRICS.map((fab) => (
+                {fabrics.map((fab) => (
                   <button
                     key={fab}
                     onClick={() => setSelectedFabric(fab)}
@@ -357,10 +367,7 @@ export const ShopPage: React.FC<ShopPageProps> = ({ onSelectProduct }) => {
                 {categories.map((cat) => (
                   <button
                     key={cat}
-                    onClick={() => {
-                      setSelectedCategory(cat);
-                      setIsMobileFilterOpen(false);
-                    }}
+                    onClick={() => setSelectedCategory(cat)}
                     className={`w-full text-left text-xs py-2 px-3 rounded-xs ${
                       selectedCategory.toLowerCase() === cat.toLowerCase()
                         ? 'bg-[#121212] text-[#FCFCFA] font-semibold'
@@ -376,13 +383,10 @@ export const ShopPage: React.FC<ShopPageProps> = ({ onSelectProduct }) => {
             <div>
               <h4 className="text-xs font-semibold uppercase tracking-wider text-[#121212] mb-3">Fabric</h4>
               <div className="space-y-1.5">
-                {FABRICS.map((fab) => (
+                {fabrics.map((fab) => (
                   <button
                     key={fab}
-                    onClick={() => {
-                      setSelectedFabric(fab);
-                      setIsMobileFilterOpen(false);
-                    }}
+                    onClick={() => setSelectedFabric(fab)}
                     className={`w-full text-left text-xs py-2 px-3 rounded-xs ${
                       selectedFabric === fab ? 'bg-[#121212] text-[#FCFCFA]' : 'text-[#555555]'
                     }`}
@@ -393,14 +397,40 @@ export const ShopPage: React.FC<ShopPageProps> = ({ onSelectProduct }) => {
               </div>
             </div>
 
+            <div>
+              <div className="flex justify-between items-center text-xs font-semibold uppercase tracking-wider text-[#121212] mb-2">
+                <span>Max Price</span>
+                <span className="text-[#8C7853]">₹{priceRange[1].toLocaleString('en-IN')}</span>
+              </div>
+              <input
+                type="range"
+                min="3000"
+                max="50000"
+                step="500"
+                value={priceRange[1]}
+                onChange={(e) => setPriceRange([priceRange[0], Number(e.target.value)])}
+                aria-label="Maximum price"
+                className="w-full accent-[#121212] cursor-pointer"
+              />
+              <div className="flex justify-between text-[10px] text-[#888888] mt-1">
+                <span>₹3,000</span>
+                <span>₹50,000+</span>
+              </div>
+            </div>
+
             <button
               onClick={() => {
                 resetFilters();
-                setIsMobileFilterOpen(false);
               }}
               className="w-full bg-[#121212] text-[#FCFCFA] py-3 text-xs uppercase tracking-widest rounded-xs"
             >
               Reset Filters
+            </button>
+            <button
+              onClick={() => setIsMobileFilterOpen(false)}
+              className="w-full border border-[#121212] text-[#121212] py-3 text-xs uppercase tracking-widest rounded-xs"
+            >
+              Apply Filters
             </button>
           </div>
         </div>
