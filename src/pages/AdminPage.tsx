@@ -95,6 +95,8 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
   // Coupon Modal State
   const [editingCoupon, setEditingCoupon] = useState<Partial<Coupon> | null>(null);
   const [isCouponModalOpen, setIsCouponModalOpen] = useState(false);
+  const [isSavingCoupon, setIsSavingCoupon] = useState(false);
+  const [couponFeedback, setCouponFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   // Orders Search & Filter
   const [orderSearch, setOrderSearch] = useState('');
@@ -485,17 +487,29 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
     e.preventDefault();
     if (!editingCoupon?.code || !editingCoupon?.discountValue) return;
 
-    const coupon: Coupon = {
-      code: editingCoupon.code.toUpperCase(),
-      discountType: editingCoupon.discountType || 'percentage',
-      discountValue: Number(editingCoupon.discountValue),
-      minPurchase: Number(editingCoupon.minPurchase || 0),
-      expiryDate: editingCoupon.expiryDate || '2026-12-31',
-      active: true,
-    };
+    setIsSavingCoupon(true);
+    setCouponFeedback(null);
+    try {
+      const defaultExpiry = new Date();
+      defaultExpiry.setDate(defaultExpiry.getDate() + 30);
+      const coupon: Coupon = {
+        code: editingCoupon.code.trim().toUpperCase(),
+        discountType: editingCoupon.discountType || 'percentage',
+        discountValue: Number(editingCoupon.discountValue),
+        minPurchase: Number(editingCoupon.minPurchase || 0),
+        expiryDate: editingCoupon.expiryDate || defaultExpiry.toISOString().slice(0, 10),
+        active: true,
+        subscriberEmail: editingCoupon.subscriberEmail || null,
+      };
 
-    await saveCoupon(coupon);
-    setIsCouponModalOpen(false);
+      await saveCoupon(coupon);
+      setIsCouponModalOpen(false);
+      setCouponFeedback({ type: 'success', message: 'Coupon saved to the backend.' });
+    } catch (err: any) {
+      setCouponFeedback({ type: 'error', message: err.message || 'Could not save coupon.' });
+    } finally {
+      setIsSavingCoupon(false);
+    }
   };
 
   const handleSaveSettings = (e: React.FormEvent) => {
@@ -616,6 +630,19 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
             >
               <Tag className="w-4 h-4" />
               <span>Coupons ({coupons.length})</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('subscribers')}
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xs transition-colors ${
+                activeTab === 'subscribers' ? 'bg-[#8C7853] text-[#FAF8F5]' : 'text-[#A09A92] hover:bg-[#262422] hover:text-[#FAF8F5]'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <Mail className="w-4 h-4" />
+                <span>Subscribers</span>
+              </div>
+              <span className="text-[10px]">{subscribers.length}</span>
             </button>
 
             <button
@@ -1331,6 +1358,12 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div>
                 <h1 className="font-serif text-3xl font-medium text-[#FAF8F5]">Promo Codes & Vouchers</h1>
+
+            {couponFeedback && (
+              <div className={`p-3 text-xs rounded-xs ${couponFeedback.type === 'success' ? 'bg-[#1b5e20] text-[#a5d6a7]' : 'bg-[#3a1818] text-[#ffaaaa]'}`}>
+                {couponFeedback.message}
+              </div>
+            )}
                 <p className="text-xs text-[#A09A92]">Manage active percentage and flat amount discount vouchers.</p>
               </div>
 
@@ -1354,6 +1387,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                     <th className="p-3.5">Discount Type</th>
                     <th className="p-3.5">Value</th>
                     <th className="p-3.5">Min Spend</th>
+                    <th className="p-3.5">Subscriber</th>
                     <th className="p-3.5">Status</th>
                     <th className="p-3.5 text-right">Actions</th>
                   </tr>
@@ -1367,6 +1401,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                         {c.discountType === 'percentage' ? `${c.discountValue}% OFF` : `₹${c.discountValue} OFF`}
                       </td>
                       <td className="p-3.5">₹{c.minPurchase.toLocaleString('en-IN')}</td>
+                      <td className="p-3.5">{c.subscriberEmail || '—'}</td>
                       <td className="p-3.5">
                         <span className={`px-2 py-0.5 rounded-full text-[10px] ${c.active ? 'bg-[#1b5e20] text-[#a5d6a7]' : 'bg-[#424242] text-[#e0e0e0]'}`}>
                           {c.active ? 'Active' : 'Expired'}
@@ -1382,6 +1417,58 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                       </td>
                     </tr>
                   ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* TAB: NEWSLETTER SUBSCRIBERS */}
+        {activeTab === 'subscribers' && (
+          <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h1 className="font-serif text-3xl font-medium text-[#FAF8F5]">Newsletter Subscribers</h1>
+                <p className="text-xs text-[#A09A92]">Subscriber records and their newsletter welcome coupons.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => refreshAdminData()}
+                className="px-4 py-2 bg-[#262422] hover:bg-[#3A3835] text-[#FAF8F5] rounded-xs text-xs flex items-center gap-2"
+              >
+                <RefreshCw className="w-3.5 h-3.5" /> Refresh
+              </button>
+            </div>
+            <div className="bg-[#1C1B1A] border border-[#2D2B28] rounded-xs overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr className="border-b border-[#2D2B28] text-[#A09A92] uppercase text-[10px] tracking-wider bg-[#141312]">
+                    <th className="p-3.5">Email Address</th>
+                    <th className="p-3.5">Subscribed On</th>
+                    <th className="p-3.5">Newsletter Coupon</th>
+                    <th className="p-3.5">Coupon Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#2D2B28] text-[#D1CDC7]">
+                  {subscribers.length === 0 ? (
+                    <tr><td colSpan={4} className="p-8 text-center text-[#A09A92]">No newsletter subscribers yet.</td></tr>
+                  ) : subscribers.map((subscriber) => {
+                    const linkedCoupon = coupons.find(c => c.subscriberEmail?.toLowerCase() === subscriber.email.toLowerCase());
+                    return (
+                      <tr key={subscriber.id || subscriber.email} className="hover:bg-[#242220]">
+                        <td className="p-3.5 font-medium text-[#FAF8F5]">{subscriber.email}</td>
+                        <td className="p-3.5">{subscriber.subscribedAt ? new Date(subscriber.subscribedAt).toLocaleString() : '—'}</td>
+                        <td className="p-3.5 font-mono text-[#D4AF37]">{linkedCoupon?.code || '—'}</td>
+                        <td className="p-3.5">
+                          {linkedCoupon ? (
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] ${linkedCoupon.active ? 'bg-[#1b5e20] text-[#a5d6a7]' : 'bg-[#424242] text-[#e0e0e0]'}`}>
+                              {linkedCoupon.active ? 'Active' : 'Inactive'}
+                            </span>
+                          ) : <span className="text-[#777]">No linked coupon</span>}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -2165,11 +2252,24 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                 />
               </div>
 
+              <div>
+                <label className="block text-[#A09A92] mb-1">Expiry Date</label>
+                <input
+                  type="date"
+                  min={new Date().toISOString().slice(0, 10)}
+                  value={editingCoupon?.expiryDate || ''}
+                  onChange={(e) => setEditingCoupon({ ...editingCoupon, expiryDate: e.target.value })}
+                  className="w-full bg-[#121212] border border-[#3A3835] px-3 py-2 rounded-xs text-[#FAF8F5]"
+                />
+                <p className="text-[10px] text-[#777] mt-1">Leave blank to use a 30-day validity period.</p>
+              </div>
+
               <button
                 type="submit"
-                className="w-full bg-[#8C7853] hover:bg-[#A08B63] text-[#FAF8F5] py-3 text-xs font-semibold uppercase tracking-wider rounded-xs cursor-pointer"
+                disabled={isSavingCoupon}
+                className="w-full bg-[#8C7853] hover:bg-[#A08B63] text-[#FAF8F5] py-3 text-xs font-semibold uppercase tracking-wider rounded-xs cursor-pointer disabled:opacity-50"
               >
-                Save Coupon
+                {isSavingCoupon ? 'Saving…' : 'Save Coupon'}
               </button>
             </form>
           </div>

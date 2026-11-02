@@ -63,6 +63,7 @@ export interface Coupon {
   discount_value: number;
   min_purchase: number;
   expiry_date: string | null;
+  subscriber_email?: string | null;
   active: boolean;
 }
 

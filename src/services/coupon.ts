@@ -5,42 +5,18 @@
 
 import { supabase } from './client';
 import { Coupon } from '../types/database';
+import { invokeEdgeFunction } from '../utils/supabase';
 
 export async function subscribeAndGenerateCoupon(email: string): Promise<string> {
   const cleanEmail = email.trim().toLowerCase();
-  
-  // 1. Save subscriber
-  const { error: subError } = await supabase
-    .from('subscribers')
-    .insert([{ email: cleanEmail }]);
-
-  if (subError && !subError.message.includes('unique') && !subError.message.includes('duplicate')) {
-    console.warn('[subscribeAndGenerateCoupon subscriber insert warning]:', subError.message);
+  const result = await invokeEdgeFunction<{ success: boolean; couponCode?: string; message?: string }>('subscribe-newsletter', {
+    method: 'POST',
+    body: { email: cleanEmail },
+  });
+  if (!result.success || !result.couponCode) {
+    throw new Error(result.message || 'Unable to create a newsletter coupon.');
   }
-
-  // 2. Generate single-use 10% coupon code
-  const randomSuffix = Math.random().toString(36).substring(2, 6).toUpperCase();
-  const couponCode = `ABAYA10-${randomSuffix}`;
-
-  const { error: couponError } = await supabase
-    .from('coupons')
-    .insert([
-      {
-        code: couponCode,
-        discount_type: 'percentage',
-        discount_value: 10.0,
-        min_purchase: 0,
-        active: true,
-      },
-    ]);
-
-  if (couponError) {
-    console.warn('[subscribeAndGenerateCoupon coupon insert warning]:', couponError.message);
-    // Return the generated coupon code even if database unique conflict or table issue
-    return couponCode;
-  }
-
-  return couponCode;
+  return result.couponCode;
 }
 
 export async function validateCoupon(code: string, subtotal: number): Promise<Coupon | null> {
@@ -53,8 +29,8 @@ export async function validateCoupon(code: string, subtotal: number): Promise<Co
     .maybeSingle();
 
   if (error || !data) {
-    // Also check standard initial demo coupons if database is empty
-    if (cleanCode === 'LACLASSE10' || cleanCode.startsWith('ABAYA10')) {
+    // Keep only the documented static demo code as a fallback.
+    if (cleanCode === 'LACLASSE10') {
       return {
         id: 'coupon_demo',
         code: cleanCode,

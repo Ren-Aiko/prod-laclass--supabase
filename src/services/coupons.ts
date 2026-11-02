@@ -120,12 +120,14 @@ export const fetchCoupons = async (): Promise<Coupon[]> => {
 
     if (Array.isArray(raw)) {
       return raw.map((c) => ({
+        id: c.id,
         code: c.code,
         discountType: c.discount_type,
         discountValue: Number(c.discount_value),
         minPurchase: Number(c.min_purchase || 0),
         expiryDate: c.expiry_date || '2026-12-31',
         active: Boolean(c.active),
+        subscriberEmail: c.subscriber_email || null,
       }));
     }
   } catch (e) {
