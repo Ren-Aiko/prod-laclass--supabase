@@ -25,7 +25,11 @@ export const ReviewsPage: React.FC = () => {
     ? dbReviews.map((r) => ({
         id: r.id,
         productId: r.product_id,
-        productName: products.find((p) => p.id === r.product_id || p.product_id === r.product_id)?.name || 'Haute Couture Abaya',
+        productName: products.find((p) =>
+          p.id === r.product_id ||
+          p.product_id === r.product_id ||
+          p.variants?.some((variant) => variant.id === r.product_id)
+        )?.name || 'LaClassé Abaya',
         customerName: r.customer_name,
         rating: r.rating,
         reviewText: r.comment,
@@ -53,11 +57,11 @@ export const ReviewsPage: React.FC = () => {
   };
 
   return (
-    <div className="bg-[#FCFCFA] min-h-screen py-16">
+    <div className="bg-[#FCFCFC] min-h-screen py-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         <div className="text-center max-w-2xl mx-auto mb-16 space-y-3">
-          <span className="text-[10px] tracking-[0.35em] text-[#8C7853] uppercase font-medium block">
+          <span className="text-[10px] tracking-[0.35em] text-[#B55232] uppercase font-medium block">
             Authentic Feedback
           </span>
           <h1 className="font-serif text-4xl sm:text-5xl text-[#121212] font-medium tracking-wide">
@@ -69,9 +73,9 @@ export const ReviewsPage: React.FC = () => {
         </div>
 
         {/* Overall Rating Stats */}
-        <div className="bg-[#FAF8F5] border border-[#F0ECE1] p-8 rounded-xs mb-16 max-w-xl mx-auto text-center space-y-3">
+        <div className="bg-[#F8F8F8] border border-[#ECECEC] p-8 rounded-xs mb-16 max-w-xl mx-auto text-center space-y-3">
           <div className="font-serif text-5xl font-semibold text-[#121212]">4.9 / 5.0</div>
-          <div className="flex justify-center text-[#D4AF37]">
+          <div className="flex justify-center text-[#E8B7A5]">
             {[...Array(5)].map((_, i) => (
               <Star key={i} className="w-5 h-5 fill-current" />
             ))}
@@ -80,11 +84,11 @@ export const ReviewsPage: React.FC = () => {
         </div>
 
         {/* Submit Review Section */}
-        <div className="bg-[#FAF8F5] border border-[#F0ECE1] p-8 rounded-xs mb-16 max-w-2xl mx-auto">
+        <div className="bg-[#F8F8F8] border border-[#ECECEC] p-8 rounded-xs mb-16 max-w-2xl mx-auto">
           <h3 className="font-serif text-2xl font-medium text-[#121212] mb-4">Share Your Laclassé Experience</h3>
 
           {submitted ? (
-            <div className="bg-[#e8f5e9] border border-[#a5d6a7] text-[#2e7d32] p-4 rounded-xs text-xs flex items-center gap-2">
+            <div className="bg-[#F1F1F1] border border-[#C8C8C8] text-[#676767] p-4 rounded-xs text-xs flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4" />
               <span>Thank you! Your review has been submitted for atelier approval.</span>
             </div>
@@ -96,7 +100,7 @@ export const ReviewsPage: React.FC = () => {
                   <select
                     value={selectedProductId}
                     onChange={(e) => setSelectedProductId(e.target.value)}
-                    className="w-full bg-[#FCFCFA] border border-[#D1CDC7] px-3 py-2 text-xs rounded-xs"
+                    className="w-full bg-[#FCFCFC] border border-[#CDCDCD] px-3 py-2 text-xs rounded-xs"
                   >
                     {products.map((p) => (
                       <option key={p.id} value={p.id}>{p.name}</option>
@@ -111,7 +115,7 @@ export const ReviewsPage: React.FC = () => {
                     value={reviewerName}
                     onChange={(e) => setReviewerName(e.target.value)}
                     placeholder="e.g. Suhana Parveen"
-                    className="w-full bg-[#FCFCFA] border border-[#D1CDC7] px-3 py-2 text-xs rounded-xs"
+                    className="w-full bg-[#FCFCFC] border border-[#CDCDCD] px-3 py-2 text-xs rounded-xs"
                     required
                   />
                 </div>
@@ -122,7 +126,7 @@ export const ReviewsPage: React.FC = () => {
                 <select
                   value={rating}
                   onChange={(e) => setRating(parseInt(e.target.value))}
-                  className="w-full bg-[#FCFCFA] border border-[#D1CDC7] px-3 py-2 text-xs rounded-xs"
+                  className="w-full bg-[#FCFCFC] border border-[#CDCDCD] px-3 py-2 text-xs rounded-xs"
                 >
                   <option value={5}>5 Stars — Exceptional Quality</option>
                   <option value={4}>4 Stars — Very Good</option>
@@ -137,14 +141,14 @@ export const ReviewsPage: React.FC = () => {
                   value={reviewText}
                   onChange={(e) => setReviewText(e.target.value)}
                   placeholder="Tell us about the fabric texture, comfort in warm weather, and craftsmanship..."
-                  className="w-full bg-[#FCFCFA] border border-[#D1CDC7] px-3 py-2 text-xs rounded-xs"
+                  className="w-full bg-[#FCFCFC] border border-[#CDCDCD] px-3 py-2 text-xs rounded-xs"
                   required
                 />
               </div>
 
               <button
                 type="submit"
-                className="bg-[#121212] hover:bg-[#8C7853] text-[#FCFCFA] px-8 py-3 text-xs font-semibold uppercase tracking-[0.2em] rounded-xs transition-colors flex items-center gap-2"
+                className="bg-[#121212] hover:bg-[#B55232] text-[#FCFCFC] px-8 py-3 text-xs font-semibold uppercase tracking-[0.2em] rounded-xs transition-colors flex items-center gap-2"
               >
                 <Send className="w-3.5 h-3.5" />
                 <span>Submit Review</span>
@@ -156,18 +160,18 @@ export const ReviewsPage: React.FC = () => {
         {/* Reviews Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {approvedReviews.map((rev) => (
-            <div key={rev.id} className="bg-[#FAF8F5] border border-[#F0ECE1] p-6 rounded-xs space-y-3 relative">
-              <Quote className="w-6 h-6 text-[#E2DED6] absolute top-4 right-4" />
-              <div className="flex text-[#D4AF37]">
+            <div key={rev.id} className="bg-[#F8F8F8] border border-[#ECECEC] p-6 rounded-xs space-y-3 relative">
+              <Quote className="w-6 h-6 text-[#DEDEDE] absolute top-4 right-4" />
+              <div className="flex text-[#E8B7A5]">
                 {[...Array(5)].map((_, i) => (
-                  <Star key={i} className={`w-3.5 h-3.5 ${i < rev.rating ? 'fill-current' : 'text-[#E0DCD3]'}`} />
+                  <Star key={i} className={`w-3.5 h-3.5 ${i < rev.rating ? 'fill-current' : 'text-[#DCDCDC]'}`} />
                 ))}
               </div>
               <p className="text-xs text-[#444444] leading-relaxed italic font-serif text-sm">"{rev.reviewText}"</p>
               <div className="pt-3 border-t border-[#EAEAEA] flex items-center justify-between text-xs">
                 <div>
                   <span className="font-semibold text-[#121212] block">{rev.customerName}</span>
-                  <span className="text-[10px] text-[#8C7853]">{rev.productName}</span>
+                  <span className="text-[10px] text-[#B55232]">{rev.productName}</span>
                 </div>
                 <span className="text-[10px] text-[#888888]">{rev.date}</span>
               </div>

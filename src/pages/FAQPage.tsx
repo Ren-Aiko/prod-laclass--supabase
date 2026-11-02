@@ -38,11 +38,11 @@ export const FAQPage: React.FC = () => {
   const [openIndex, setOpenIndex] = useState<number | null>(0);
 
   return (
-    <div className="bg-[#FCFCFA] min-h-screen py-16">
+    <div className="bg-[#FCFCFC] min-h-screen py-16">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         
         <div className="text-center max-w-xl mx-auto mb-16 space-y-3">
-          <span className="text-[10px] tracking-[0.35em] text-[#8C7853] uppercase font-medium block">
+          <span className="text-[10px] tracking-[0.35em] text-[#B55232] uppercase font-medium block">
             Client Assistance
           </span>
           <h1 className="font-serif text-4xl sm:text-5xl text-[#121212] font-medium tracking-wide">
@@ -59,19 +59,19 @@ export const FAQPage: React.FC = () => {
             return (
               <div
                 key={idx}
-                className="bg-[#FAF8F5] border border-[#F0ECE1] rounded-xs overflow-hidden transition-colors"
+                className="bg-[#F8F8F8] border border-[#ECECEC] rounded-xs overflow-hidden transition-colors"
               >
                 <button
                   onClick={() => setOpenIndex(isOpen ? null : idx)}
-                  className="w-full text-left p-5 flex items-center justify-between gap-4 font-serif text-lg font-medium text-[#121212] hover:text-[#8C7853] transition-colors"
+                  className="w-full text-left p-5 flex items-center justify-between gap-4 font-serif text-lg font-medium text-[#121212] hover:text-[#B55232] transition-colors"
                 >
                   <span>{faq.q}</span>
-                  <ChevronDown className={`w-5 h-5 text-[#8C7853] transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
+                  <ChevronDown className={`w-5 h-5 text-[#B55232] transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
                 </button>
 
                 {isOpen && (
-                  <div className="p-5 pt-0 text-xs text-[#555555] leading-relaxed border-t border-[#F0ECE1] bg-[#FCFCFA]">
-                    <span className="text-[10px] font-semibold text-[#8C7853] uppercase tracking-widest block mb-1">
+                  <div className="p-5 pt-0 text-xs text-[#555555] leading-relaxed border-t border-[#ECECEC] bg-[#FCFCFC]">
+                    <span className="text-[10px] font-semibold text-[#B55232] uppercase tracking-widest block mb-1">
                       {faq.category}
                     </span>
                     <p>{faq.a}</p>

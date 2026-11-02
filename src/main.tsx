@@ -17,3 +17,10 @@ createRoot(document.getElementById('root')!).render(
     </StoreProvider>
   </StrictMode>,
 );
+
+window.setTimeout(() => {
+  const loadingScreen = document.getElementById('initial-loading-screen');
+  if (!loadingScreen) return;
+  loadingScreen.classList.add('is-hidden');
+  window.setTimeout(() => loadingScreen.remove(), 450);
+}, 800);

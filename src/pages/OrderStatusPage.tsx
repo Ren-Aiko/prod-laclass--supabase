@@ -42,10 +42,10 @@ export const OrderStatusPage: React.FC = () => {
   };
 
   return (
-    <main className="min-h-[60vh] bg-[#FCFCFA] py-16 px-4">
+    <main className="min-h-[60vh] bg-[#FCFCFC] py-16 px-4">
       <div className="max-w-xl mx-auto">
         <div className="text-center mb-10">
-          <span className="text-[10px] tracking-[0.35em] text-[#8C7853] uppercase font-medium block mb-2">
+          <span className="text-[10px] tracking-[0.35em] text-[#B55232] uppercase font-medium block mb-2">
             Order Tracking
           </span>
           <h1 className="font-serif text-3xl sm:text-4xl text-[#121212] font-medium">
@@ -69,7 +69,7 @@ export const OrderStatusPage: React.FC = () => {
               maxLength={80}
               autoComplete="off"
               placeholder="e.g. LC-2026-1234"
-              className="w-full border border-[#D1CDC7] px-3 py-2.5 text-sm focus:outline-none focus:border-[#8C7853]"
+              className="w-full border border-[#CDCDCD] px-3 py-2.5 text-sm focus:outline-none focus:border-[#B55232]"
             />
           </div>
 
@@ -85,14 +85,14 @@ export const OrderStatusPage: React.FC = () => {
               maxLength={254}
               autoComplete="email"
               placeholder="Phone number or email"
-              className="w-full border border-[#D1CDC7] px-3 py-2.5 text-sm focus:outline-none focus:border-[#8C7853]"
+              className="w-full border border-[#CDCDCD] px-3 py-2.5 text-sm focus:outline-none focus:border-[#B55232]"
             />
           </div>
 
           <button
             type="submit"
             disabled={isSearching}
-            className="w-full bg-[#121212] hover:bg-[#8C7853] disabled:opacity-60 text-white py-3 text-xs font-semibold uppercase tracking-[0.2em] flex items-center justify-center gap-2"
+            className="w-full bg-[#121212] hover:bg-[#B55232] disabled:opacity-60 text-white py-3 text-xs font-semibold uppercase tracking-[0.2em] flex items-center justify-center gap-2"
           >
             <Search className="w-4 h-4" />
             {isSearching ? 'Checking...' : 'Check Status'}
@@ -100,15 +100,15 @@ export const OrderStatusPage: React.FC = () => {
         </form>
 
         {errorMessage && (
-          <div role="alert" className="mt-5 flex items-start gap-2 border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+          <div role="alert" className="mt-5 flex items-start gap-2 border border-[#E8B7A5] bg-[#FFF4F0] p-4 text-sm text-[#71301F]">
             <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
             <p>{errorMessage}</p>
           </div>
         )}
 
         {order && (
-          <section aria-live="polite" className="mt-6 border border-[#D1CDC7] bg-[#FAF8F5] p-6">
-            <p className="text-[10px] tracking-[0.25em] uppercase text-[#8C7853] font-semibold">
+          <section aria-live="polite" className="mt-6 border border-[#CDCDCD] bg-[#F8F8F8] p-6">
+            <p className="text-[10px] tracking-[0.25em] uppercase text-[#B55232] font-semibold">
               Order {order.orderNumber}
             </p>
             <h2 className="mt-2 font-serif text-2xl text-[#121212]">
@@ -116,7 +116,7 @@ export const OrderStatusPage: React.FC = () => {
             </h2>
             {(order.courierName || order.trackingNumber) && (
               <div className="mt-4 flex items-start gap-2 text-sm text-[#555555]">
-                <Truck className="w-4 h-4 mt-0.5 text-[#8C7853]" />
+                <Truck className="w-4 h-4 mt-0.5 text-[#B55232]" />
                 <p>
                   {order.courierName && (
                     <>

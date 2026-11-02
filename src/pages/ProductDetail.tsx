@@ -26,7 +26,6 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
   const images = p 
     ? [p.image1, p.image2, p.image3, ...(p.images || [])].filter((img, idx, arr) => Boolean(img) && arr.indexOf(img) === idx)
     : [];
-  if (images.length === 0 && p?.thumbnail) images.push(p.thumbnail);
   if (images.length === 0) images.push('https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=800&auto=format&fit=crop');
 
   // Compute available sizes strictly from active inventory variants
@@ -40,12 +39,19 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
     availableSizes.push('Custom');
   }
 
-  // Available lengths
-  const availableLengths = p?.lengths && p.lengths.length > 0 ? p.lengths : ['56"'];
-
+  const getLengthsForSize = (size: string): string[] => {
+    const sizeVariants = p?.variants?.filter(variant => variant.size === size) || [];
+    if (sizeVariants.length > 0) {
+      return Array.from(new Set(sizeVariants.map(variant => variant.length || '')));
+    }
+    return p?.lengths?.length ? p.lengths : [];
+  };
+  const initialSize = availableSizes[0] || 'Custom';
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
-  const [selectedSize, setSelectedSize] = useState<string>(() => availableSizes[0] || 'L');
-  const [selectedLength, setSelectedLength] = useState<string>(() => availableLengths[0] || '56"');
+  const [selectedSize, setSelectedSize] = useState<string>(initialSize);
+  const [selectedLength, setSelectedLength] = useState<string>(() => getLengthsForSize(initialSize)[0] || '');
+  const availableLengths = getLengthsForSize(selectedSize);
+  const lengthOptions = availableLengths.length > 0 ? availableLengths : [''];
   const [quantity, setQuantity] = useState(1);
   const [addedSuccess, setAddedSuccess] = useState(false);
   const [showSizeGuideInline, setShowSizeGuideInline] = useState(false);
@@ -75,9 +81,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
     const firstStd = sizes.find(s => s !== 'Custom') || 'Custom';
     setSelectedSize(firstStd);
 
-    // Default length: first length
-    const lens = p?.lengths && p.lengths.length > 0 ? p.lengths : ['56"'];
-    setSelectedLength(lens[0] || '56"');
+    setSelectedLength(getLengthsForSize(firstStd)[0] || '');
     setQuantity(1);
     setMeasurementErrors({});
     setCustomValidationMsg(null);
@@ -85,12 +89,12 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
 
   if (!p) {
     return (
-      <div className="bg-[#FCFCFA] min-h-[60vh] flex flex-col items-center justify-center p-6 text-center">
+      <div className="bg-[#FCFCFC] min-h-[60vh] flex flex-col items-center justify-center p-6 text-center">
         <h2 className="font-serif text-2xl text-[#121212] mb-2">Not able to show products at this time.</h2>
         <p className="text-xs text-[#777777] mb-6">The requested product could not be found or the catalog is empty.</p>
         <button
           onClick={onBack}
-          className="bg-[#121212] text-[#FCFCFA] px-6 py-2.5 text-xs font-semibold uppercase tracking-wider rounded-xs cursor-pointer"
+          className="bg-[#121212] text-[#FCFCFC] px-6 py-2.5 text-xs font-semibold uppercase tracking-wider rounded-xs cursor-pointer"
         >
           Return to Catalog
         </button>
@@ -194,14 +198,14 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
   );
 
   return (
-    <div className="bg-[#FCFCFA] min-h-screen py-8">
+    <div className="bg-[#FCFCFC] min-h-screen py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Back Button & Breadcrumbs */}
         <div className="mb-8 flex items-center justify-between text-xs text-[#777777]">
           <button
             onClick={onBack}
-            className="flex items-center gap-1.5 text-[#121212] hover:text-[#8C7853] font-medium transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 text-[#121212] hover:text-[#B55232] font-medium transition-colors cursor-pointer"
           >
             <ArrowLeft className="w-4 h-4" />
             <span>Back to Shop</span>
@@ -217,20 +221,20 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
         </div>
 
         {/* Product Details Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 bg-[#FAF8F5] border border-[#F0ECE1] p-6 sm:p-10 rounded-xs mb-16 shadow-sm">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 bg-[#F8F8F8] border border-[#ECECEC] p-6 sm:p-10 rounded-xs mb-16 shadow-sm">
           
           {/* Left Gallery (7 cols) */}
           <div className="lg:col-span-7 flex flex-col md:flex-row-reverse gap-4">
             {/* Main Image Container */}
-            <div className="flex-1 aspect-[3/4] bg-[#F5F2EA] rounded-xs overflow-hidden relative shadow-md">
+            <div className="flex-1 aspect-[3/4] bg-[#F2F2F2] rounded-xs overflow-hidden relative shadow-md">
               <img
-                src={images[selectedImageIndex] || p.thumbnail}
+                src={images[selectedImageIndex] || p.image1}
                 alt={p.name}
                 className="w-full h-full object-cover object-center transition-all duration-500"
               />
 
               {p.featured && (
-                <div className="absolute top-4 left-4 bg-[#121212] text-[#FCFCFA] text-[9px] font-semibold uppercase tracking-[0.2em] px-3 py-1.5 rounded-xs">
+                <div className="absolute top-4 left-4 bg-[#121212] text-[#FCFCFC] text-[9px] font-semibold uppercase tracking-[0.2em] px-3 py-1.5 rounded-xs">
                   Atelier Signature
                 </div>
               )}
@@ -244,7 +248,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                   onClick={() => setSelectedImageIndex(idx)}
                   className={`w-20 md:w-full aspect-[3/4] rounded-xs overflow-hidden border-2 transition-all relative shrink-0 cursor-pointer ${
                     selectedImageIndex === idx
-                      ? 'border-[#8C7853] shadow-md opacity-100 scale-102'
+                      ? 'border-[#B55232] shadow-md opacity-100 scale-102'
                       : 'border-transparent opacity-60 hover:opacity-100'
                   }`}
                 >
@@ -261,9 +265,9 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
           <div className="lg:col-span-5 flex flex-col justify-between">
             <div>
               {/* Category & Collection */}
-              <div className="flex items-center justify-between text-xs text-[#8C7853] uppercase tracking-[0.25em] font-medium mb-2">
+              <div className="flex items-center justify-between text-xs text-[#B55232] uppercase tracking-[0.25em] font-medium mb-2">
                 <span>{p.collection || `${p.category} Collection`}</span>
-                <span className="bg-[#8C7853]/10 px-2 py-0.5 rounded-xs">{p.fabric}</span>
+                <span className="bg-[#B55232]/10 px-2 py-0.5 rounded-xs">{p.fabric}</span>
               </div>
 
               {/* Product Title */}
@@ -285,7 +289,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                 </div>
 
                 <div className="flex items-center gap-1.5 text-xs">
-                  <div className="flex text-[#D4AF37]">
+                  <div className="flex text-[#E8B7A5]">
                     {[...Array(5)].map((_, i) => (
                       <Star key={i} className="w-4 h-4 fill-current" />
                     ))}
@@ -300,7 +304,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
               </p>
 
               {/* Detailed Fabric Box */}
-              <div className="bg-[#FCFCFA] p-3.5 border border-[#EAEAEA] rounded-xs text-[11px] text-[#666666] leading-relaxed mb-6">
+              <div className="bg-[#FCFCFC] p-3.5 border border-[#EAEAEA] rounded-xs text-[11px] text-[#666666] leading-relaxed mb-6">
                 <strong className="text-[#121212] font-semibold block mb-0.5 uppercase tracking-wider">Fabric & Weave:</strong>
                 {p.detailedFabric}
               </div>
@@ -309,20 +313,20 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
               <div className="mb-6">
                 <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wider mb-2">
                   <span className="text-[#121212]">
-                    Size: <strong className="text-[#8C7853]">{selectedSize}</strong>
+                    Size: <strong className="text-[#B55232]">{selectedSize}</strong>
                   </span>
 
                   {/* Stock Availability Indicator */}
                   {selectedSize === 'Custom' ? (
-                    <span className="text-[11px] text-[#166534] bg-[#dcfce7] px-2 py-0.5 rounded-xs font-medium">
+                    <span className="text-[11px] text-[#515151] bg-[#F4F4F4] px-2 py-0.5 rounded-xs font-medium">
                       Bespoke Tailoring (Made-to-Order)
                     </span>
                   ) : isOutOfStock ? (
-                    <span className="text-[11px] text-[#991b1b] bg-[#fee2e2] px-2 py-0.5 rounded-xs font-bold animate-pulse">
+                    <span className="text-[11px] text-[#B55232] bg-[#E8E8E8] px-2 py-0.5 rounded-xs font-bold animate-pulse">
                       Out of Stock
                     </span>
                   ) : (
-                    <span className="text-[11px] text-[#8C7853] bg-[#8C7853]/10 px-2 py-0.5 rounded-xs font-medium">
+                    <span className="text-[11px] text-[#B55232] bg-[#B55232]/10 px-2 py-0.5 rounded-xs font-medium">
                       In Stock: {currentStock} available
                     </span>
                   )}
@@ -338,18 +342,21 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                     return (
                       <button
                         key={sz}
-                        onClick={() => setSelectedSize(sz)}
+                        onClick={() => {
+                          setSelectedSize(sz);
+                          setSelectedLength(getLengthsForSize(sz)[0] || '');
+                        }}
                         className={`px-4 py-2 text-xs font-semibold rounded-xs border transition-all cursor-pointer relative ${
                           selectedSize === sz
-                            ? 'bg-[#121212] text-[#FCFCFA] border-[#121212] shadow-sm'
+                            ? 'bg-[#121212] text-[#FCFCFC] border-[#121212] shadow-sm'
                             : szOut
-                            ? 'border-[#EAEAEA] bg-[#F5F2EA] text-[#AAAAAA] line-through'
-                            : 'border-[#D1CDC7] bg-[#FCFCFA] text-[#121212] hover:border-[#121212]'
+                            ? 'border-[#EAEAEA] bg-[#F2F2F2] text-[#AAAAAA] line-through'
+                            : 'border-[#CDCDCD] bg-[#FCFCFC] text-[#121212] hover:border-[#121212]'
                         }`}
                       >
                         {sz}
                         {szOut && (
-                          <span className="absolute -top-1.5 -right-1.5 bg-[#991b1b] text-[8px] text-white px-1 rounded-full font-mono font-normal no-underline">
+                          <span className="absolute -top-1.5 -right-1.5 bg-[#B55232] text-[8px] text-white px-1 rounded-full font-mono font-normal no-underline">
                             0
                           </span>
                         )}
@@ -366,7 +373,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                     <button
                       type="button"
                       onClick={() => setShowSizeGuideInline(!showSizeGuideInline)}
-                      className="text-[11px] text-[#8C7853] hover:text-[#121212] underline underline-offset-2 flex items-center gap-1.5 font-medium transition-colors cursor-pointer"
+                      className="text-[11px] text-[#B55232] hover:text-[#121212] underline underline-offset-2 flex items-center gap-1.5 font-medium transition-colors cursor-pointer"
                     >
                       <Ruler className="w-3.5 h-3.5" />
                       <span>
@@ -380,20 +387,20 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                     </button>
 
                     {showSizeGuideInline && (
-                      <div className="mt-3 p-3.5 bg-[#FCFCFA] border border-[#E0DCD3] rounded-xs space-y-2 text-xs">
+                      <div className="mt-3 p-3.5 bg-[#FCFCFC] border border-[#DCDCDC] rounded-xs space-y-2 text-xs">
                         {isLC001to004 ? (
                           <>
                             <div className="flex items-center justify-between pb-1 border-b border-[#EAEAEA]">
                               <strong className="text-[11px] font-semibold uppercase tracking-wider text-[#121212]">
                                 4 COLLECTION Size Chart
                               </strong>
-                              <span className="text-[10px] text-[#8C7853]">Body Measurements in Inches / cm</span>
+                              <span className="text-[10px] text-[#B55232]">Body Measurements in Inches / cm</span>
                             </div>
 
                             <div className="overflow-x-auto">
                               <table className="w-full text-left text-[11px] border-collapse">
                                 <thead>
-                                  <tr className="bg-[#121212] text-[#FCFCFA]">
+                                  <tr className="bg-[#121212] text-[#FCFCFC]">
                                     <th className="p-2 font-medium">Measurement</th>
                                     <th className="p-2 font-medium">L</th>
                                     <th className="p-2 font-medium">XL</th>
@@ -401,31 +408,31 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                                   </tr>
                                 </thead>
                                 <tbody className="divide-y divide-[#EAEAEA] text-[#333333]">
-                                  <tr className="hover:bg-[#FAF8F5]">
+                                  <tr className="hover:bg-[#F8F8F8]">
                                     <td className="p-2 font-semibold">Chest (in)</td>
                                     <td className="p-2">42–44</td>
                                     <td className="p-2">45–47</td>
                                     <td className="p-2">48–50</td>
                                   </tr>
-                                  <tr className="hover:bg-[#FAF8F5]">
+                                  <tr className="hover:bg-[#F8F8F8]">
                                     <td className="p-2 font-semibold">Hip (in)</td>
                                     <td className="p-2">44–46</td>
                                     <td className="p-2">48–50</td>
                                     <td className="p-2">52–54</td>
                                   </tr>
-                                  <tr className="hover:bg-[#FAF8F5]">
+                                  <tr className="hover:bg-[#F8F8F8]">
                                     <td className="p-2 font-semibold">Abaya Length (in)</td>
                                     <td className="p-2">56</td>
                                     <td className="p-2">56</td>
                                     <td className="p-2">56</td>
                                   </tr>
-                                  <tr className="hover:bg-[#FAF8F5]">
+                                  <tr className="hover:bg-[#F8F8F8]">
                                     <td className="p-2 font-semibold">Your Height (cm)</td>
                                     <td className="p-2">159</td>
                                     <td className="p-2">159</td>
                                     <td className="p-2">159</td>
                                   </tr>
-                                  <tr className="hover:bg-[#FAF8F5]">
+                                  <tr className="hover:bg-[#F8F8F8]">
                                     <td className="p-2 font-semibold">Sleeve Length from Neck (in)</td>
                                     <td className="p-2">28</td>
                                     <td className="p-2">28</td>
@@ -441,38 +448,38 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                               <strong className="text-[11px] font-semibold uppercase tracking-wider text-[#121212]">
                                 New Size Guide (Free Size)
                               </strong>
-                              <span className="text-[10px] text-[#8C7853]">Recommended Lengths by Height</span>
+                              <span className="text-[10px] text-[#B55232]">Recommended Lengths by Height</span>
                             </div>
 
                             <div className="overflow-x-auto">
                               <table className="w-full text-left text-[11px] border-collapse">
                                 <thead>
-                                  <tr className="bg-[#121212] text-[#FCFCFA]">
+                                  <tr className="bg-[#121212] text-[#FCFCFC]">
                                     <th className="p-2 font-medium">Garment Size</th>
                                     <th className="p-2 font-medium">Abaya Length</th>
                                     <th className="p-2 font-medium">Customer Height</th>
                                   </tr>
                                 </thead>
                                 <tbody className="divide-y divide-[#EAEAEA] text-[#333333]">
-                                  <tr className="hover:bg-[#FAF8F5]">
+                                  <tr className="hover:bg-[#F8F8F8]">
                                     <td className="p-2 font-semibold" rowSpan={5}>Free Size</td>
-                                    <td className="p-2 font-semibold text-[#8C7853]">52 Inches</td>
+                                    <td className="p-2 font-semibold text-[#B55232]">52 Inches</td>
                                     <td className="p-2">5'0" – 5'2" (152 – 157 cm)</td>
                                   </tr>
-                                  <tr className="hover:bg-[#FAF8F5]">
-                                    <td className="p-2 font-semibold text-[#8C7853]">54 Inches</td>
+                                  <tr className="hover:bg-[#F8F8F8]">
+                                    <td className="p-2 font-semibold text-[#B55232]">54 Inches</td>
                                     <td className="p-2">5'3" – 5'4" (158 – 162 cm)</td>
                                   </tr>
-                                  <tr className="hover:bg-[#FAF8F5]">
-                                    <td className="p-2 font-semibold text-[#8C7853]">56 Inches</td>
+                                  <tr className="hover:bg-[#F8F8F8]">
+                                    <td className="p-2 font-semibold text-[#B55232]">56 Inches</td>
                                     <td className="p-2">5'5" – 5'6" (163 – 167 cm)</td>
                                   </tr>
-                                  <tr className="hover:bg-[#FAF8F5]">
-                                    <td className="p-2 font-semibold text-[#8C7853]">58 Inches</td>
+                                  <tr className="hover:bg-[#F8F8F8]">
+                                    <td className="p-2 font-semibold text-[#B55232]">58 Inches</td>
                                     <td className="p-2">5'7" – 5'8" (168 – 172 cm)</td>
                                   </tr>
-                                  <tr className="hover:bg-[#FAF8F5]">
-                                    <td className="p-2 font-semibold text-[#8C7853]">60 Inches</td>
+                                  <tr className="hover:bg-[#F8F8F8]">
+                                    <td className="p-2 font-semibold text-[#B55232]">60 Inches</td>
                                     <td className="p-2">5'9"+ (173 cm & above)</td>
                                   </tr>
                                 </tbody>
@@ -502,7 +509,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                 <div className="mb-6">
                   <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wider mb-2 text-[#121212]">
                     <span>
-                      Length: <strong className="text-[#8C7853]">{selectedLength}</strong>
+                      Length: <strong className="text-[#B55232]">{selectedLength || 'No specific length'}</strong>
                     </span>
                     {p.variantStock?.[`${selectedSize}_${selectedLength}`] !== undefined && (
                       <span className="text-[10px] text-[#777777] font-normal lowercase">
@@ -512,8 +519,10 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                   </div>
 
                   <div className="flex flex-wrap gap-2">
-                    {availableLengths.map((len) => {
-                      const lenStock = p.variantStock?.[`${selectedSize}_${len}`] ?? 1;
+                    {lengthOptions.map((len) => {
+                      const lenStock = p.variantStock?.[`${selectedSize}_${len}`]
+                        ?? p.sizeStock?.[selectedSize]
+                        ?? 0;
                       const lenOut = lenStock <= 0;
 
                       return (
@@ -522,13 +531,13 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                           onClick={() => setSelectedLength(len)}
                           className={`px-3.5 py-1.5 text-xs font-semibold rounded-xs border transition-all cursor-pointer relative ${
                             selectedLength === len
-                              ? 'bg-[#121212] text-[#FCFCFA] border-[#121212]'
+                              ? 'bg-[#121212] text-[#FCFCFC] border-[#121212]'
                               : lenOut
-                              ? 'border-[#EAEAEA] bg-[#F5F2EA] text-[#AAAAAA] line-through'
-                              : 'border-[#D1CDC7] bg-[#FCFCFA] text-[#121212] hover:border-[#121212]'
+                              ? 'border-[#EAEAEA] bg-[#F2F2F2] text-[#AAAAAA] line-through'
+                              : 'border-[#CDCDCD] bg-[#FCFCFC] text-[#121212] hover:border-[#121212]'
                           }`}
                         >
-                          {len}
+                          {len || 'No specific length'}
                         </button>
                       );
                     })}
@@ -539,7 +548,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
               {/* Quantity */}
               <div className="flex items-center space-x-4 mb-6">
                 <span className="text-xs font-semibold uppercase tracking-wider text-[#121212]">Quantity:</span>
-                <div className="flex items-center border border-[#D1CDC7] rounded-xs bg-[#FCFCFA]">
+                <div className="flex items-center border border-[#CDCDCD] rounded-xs bg-[#FCFCFC]">
                   <button
                     disabled={isOutOfStock}
                     onClick={() => setQuantity(Math.max(1, quantity - 1))}
@@ -567,18 +576,18 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                   disabled={isOutOfStock}
                   className={`flex-1 py-4 text-xs font-semibold uppercase tracking-[0.2em] rounded-xs transition-colors flex items-center justify-center gap-2 shadow-lg cursor-pointer ${
                     isOutOfStock
-                      ? 'bg-[#E5E0D8] text-[#888888] cursor-not-allowed shadow-none'
-                      : 'bg-[#121212] hover:bg-[#8C7853] text-[#FCFCFA]'
+                      ? 'bg-[#E0E0E0] text-[#888888] cursor-not-allowed shadow-none'
+                      : 'bg-[#121212] hover:bg-[#B55232] text-[#FCFCFC]'
                   }`}
                 >
                   {isOutOfStock ? (
                     <>
-                      <AlertCircle className="w-4 h-4 text-[#991b1b]" />
+                      <AlertCircle className="w-4 h-4 text-[#B55232]" />
                       <span>Out of Stock</span>
                     </>
                   ) : addedSuccess ? (
                     <>
-                      <Check className="w-4 h-4 text-[#D4AF37]" />
+                      <Check className="w-4 h-4 text-[#E8B7A5]" />
                       <span>Added to Bag!</span>
                     </>
                   ) : (
@@ -593,8 +602,8 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                   onClick={() => toggleWishlist(p.id)}
                   className={`p-4 border rounded-xs transition-colors cursor-pointer ${
                     isWishlisted
-                      ? 'border-[#121212] bg-[#121212] text-[#D4AF37]'
-                      : 'border-[#D1CDC7] text-[#121212] hover:border-[#121212]'
+                      ? 'border-[#121212] bg-[#121212] text-[#E8B7A5]'
+                      : 'border-[#CDCDCD] text-[#121212] hover:border-[#121212]'
                   }`}
                   title="Wishlist"
                 >
@@ -607,7 +616,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                 href={`https://wa.me/919380509397?text=${whatsappText}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-full bg-[#FCFCFA] border border-[#25D366] text-[#25D366] hover:bg-[#25D366] hover:text-white py-3 text-xs font-semibold uppercase tracking-wider rounded-xs transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full bg-[#25D366] border border-[#25D366] text-white hover:bg-[#1DA851] hover:border-[#1DA851] py-3 text-xs font-semibold uppercase tracking-wider rounded-xs transition-colors flex items-center justify-center gap-2 cursor-pointer"
               >
                 <MessageCircle className="w-4 h-4" />
                 <span>Order via WhatsApp Atelier Concierge</span>
@@ -619,7 +628,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
         </div>
 
         {/* Customer Reviews Section */}
-        <div className="bg-[#FAF8F5] border border-[#F0ECE1] p-6 sm:p-10 rounded-xs mb-16">
+        <div className="bg-[#F8F8F8] border border-[#ECECEC] p-6 sm:p-10 rounded-xs mb-16">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center pb-6 border-b border-[#EAEAEA] mb-8 gap-4">
             <div>
               <h2 className="font-serif text-2xl font-medium text-[#121212]">
@@ -629,7 +638,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
             </div>
 
             <div className="flex items-center gap-2 text-sm font-semibold">
-              <div className="flex text-[#D4AF37]">
+              <div className="flex text-[#E8B7A5]">
                 {[...Array(5)].map((_, i) => (
                   <Star key={i} className="w-4 h-4 fill-current" />
                 ))}
@@ -642,17 +651,17 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
             {/* Reviews List */}
             <div className="lg:col-span-7 space-y-4">
               {productReviews.length === 0 ? (
-                <div className="p-8 text-center bg-[#FCFCFA] border border-[#EAEAEA] rounded-xs text-xs text-[#777777]">
+                <div className="p-8 text-center bg-[#FCFCFC] border border-[#EAEAEA] rounded-xs text-xs text-[#777777]">
                   No published reviews for this bespoke design yet. Be the first to share your thoughts below.
                 </div>
               ) : (
                 productReviews.map((rev) => (
-                  <div key={rev.id} className="p-4 bg-[#FCFCFA] border border-[#EAEAEA] rounded-xs space-y-2">
+                  <div key={rev.id} className="p-4 bg-[#FCFCFC] border border-[#EAEAEA] rounded-xs space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="font-semibold text-xs text-[#121212]">{rev.customerName}</span>
                       <span className="text-[10px] text-[#888888]">{rev.date}</span>
                     </div>
-                    <div className="flex text-[#D4AF37]">
+                    <div className="flex text-[#E8B7A5]">
                       {[...Array(rev.rating)].map((_, i) => (
                         <Star key={i} className="w-3 h-3 fill-current" />
                       ))}
@@ -664,11 +673,11 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
             </div>
 
             {/* Submit Review Form */}
-            <div className="lg:col-span-5 bg-[#FCFCFA] border border-[#EAEAEA] p-6 rounded-xs space-y-4">
+            <div className="lg:col-span-5 bg-[#FCFCFC] border border-[#EAEAEA] p-6 rounded-xs space-y-4">
               <h3 className="font-serif text-lg font-medium text-[#121212]">Write a Review</h3>
               
               {reviewSubmitted && (
-                <div className="p-3 bg-[#dcfce7] text-[#166534] text-xs rounded-xs">
+                <div className="p-3 bg-[#F4F4F4] text-[#515151] text-xs rounded-xs">
                   Thank you! Your review has been submitted and will appear upon moderation.
                 </div>
               )}
@@ -681,7 +690,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                     value={reviewerName}
                     onChange={(e) => setReviewerName(e.target.value)}
                     placeholder="e.g. Fatima Z."
-                    className="w-full px-3 py-2 border border-[#D1CDC7] rounded-xs focus:outline-none focus:border-[#121212]"
+                    className="w-full px-3 py-2 border border-[#CDCDCD] rounded-xs focus:outline-none focus:border-[#121212]"
                     required
                   />
                 </div>
@@ -694,7 +703,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                         type="button"
                         key={star}
                         onClick={() => setReviewRating(star)}
-                        className={`text-lg cursor-pointer ${star <= reviewRating ? 'text-[#D4AF37]' : 'text-gray-300'}`}
+                        className={`text-lg cursor-pointer ${star <= reviewRating ? 'text-[#E8B7A5]' : 'text-gray-300'}`}
                       >
                         ★
                       </button>
@@ -709,14 +718,14 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                     value={reviewText}
                     onChange={(e) => setReviewText(e.target.value)}
                     placeholder="Share your experience with the fabric, cut, and fit..."
-                    className="w-full px-3 py-2 border border-[#D1CDC7] rounded-xs focus:outline-none focus:border-[#121212]"
+                    className="w-full px-3 py-2 border border-[#CDCDCD] rounded-xs focus:outline-none focus:border-[#121212]"
                     required
                   />
                 </div>
 
                 <button
                   type="submit"
-                  className="w-full bg-[#121212] hover:bg-[#8C7853] text-white py-2.5 rounded-xs font-semibold uppercase tracking-wider text-xs transition-colors cursor-pointer"
+                  className="w-full bg-[#121212] hover:bg-[#B55232] text-white py-2.5 rounded-xs font-semibold uppercase tracking-wider text-xs transition-colors cursor-pointer"
                 >
                   Submit Review
                 </button>

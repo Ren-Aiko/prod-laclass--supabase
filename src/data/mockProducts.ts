@@ -35,7 +35,6 @@ export const INITIAL_PRODUCTS: Product[] = [
       'https://images.unsplash.com/photo-1567401893414-76b7b1e5a7a5?q=80&w=900&auto=format&fit=crop',
       'https://images.unsplash.com/photo-1539109136881-3be0616acf4b?q=80&w=900&auto=format&fit=crop'
     ],
-    thumbnail: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=900&auto=format&fit=crop',
     featured: true,
     is_featured: 1,
     newArrival: false,
@@ -83,7 +82,6 @@ export const INITIAL_PRODUCTS: Product[] = [
       'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=900&auto=format&fit=crop',
       'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=900&auto=format&fit=crop'
     ],
-    thumbnail: 'https://images.unsplash.com/photo-1567401893414-76b7b1e5a7a5?q=80&w=900&auto=format&fit=crop',
     featured: true,
     is_featured: 1,
     newArrival: true,
@@ -131,7 +129,6 @@ export const INITIAL_PRODUCTS: Product[] = [
       'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=900&auto=format&fit=crop',
       'https://images.unsplash.com/photo-1567401893414-76b7b1e5a7a5?q=80&w=900&auto=format&fit=crop'
     ],
-    thumbnail: 'https://images.unsplash.com/photo-1539109136881-3be0616acf4b?q=80&w=900&auto=format&fit=crop',
     featured: false,
     is_featured: 0,
     newArrival: true,
@@ -179,7 +176,6 @@ export const INITIAL_PRODUCTS: Product[] = [
       'https://images.unsplash.com/photo-1567401893414-76b7b1e5a7a5?q=80&w=900&auto=format&fit=crop',
       'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=900&auto=format&fit=crop'
     ],
-    thumbnail: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=900&auto=format&fit=crop',
     featured: true,
     is_featured: 1,
     newArrival: false,
@@ -231,7 +227,6 @@ export const INITIAL_PRODUCTS: Product[] = [
       'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=900&auto=format&fit=crop',
       'https://images.unsplash.com/photo-1567401893414-76b7b1e5a7a5?q=80&w=900&auto=format&fit=crop'
     ],
-    thumbnail: 'https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?q=80&w=900&auto=format&fit=crop',
     featured: false,
     is_featured: 0,
     newArrival: true,
@@ -283,7 +278,6 @@ export const INITIAL_PRODUCTS: Product[] = [
       'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=900&auto=format&fit=crop',
       'https://images.unsplash.com/photo-1567401893414-76b7b1e5a7a5?q=80&w=900&auto=format&fit=crop'
     ],
-    thumbnail: 'https://images.unsplash.com/photo-1585487000160-6ebcfceb0d03?q=80&w=900&auto=format&fit=crop',
     featured: true,
     is_featured: 1,
     newArrival: false,
@@ -335,7 +329,6 @@ export const INITIAL_PRODUCTS: Product[] = [
       'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=900&auto=format&fit=crop',
       'https://images.unsplash.com/photo-1567401893414-76b7b1e5a7a5?q=80&w=900&auto=format&fit=crop'
     ],
-    thumbnail: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=900&auto=format&fit=crop',
     featured: false,
     is_featured: 0,
     newArrival: false,
@@ -387,7 +380,6 @@ export const INITIAL_PRODUCTS: Product[] = [
       'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=900&auto=format&fit=crop',
       'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=900&auto=format&fit=crop'
     ],
-    thumbnail: 'https://images.unsplash.com/photo-1567401893414-76b7b1e5a7a5?q=80&w=900&auto=format&fit=crop',
     featured: true,
     is_featured: 1,
     newArrival: false,
@@ -439,7 +431,6 @@ export const INITIAL_PRODUCTS: Product[] = [
       'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=900&auto=format&fit=crop',
       'https://images.unsplash.com/photo-1567401893414-76b7b1e5a7a5?q=80&w=900&auto=format&fit=crop'
     ],
-    thumbnail: 'https://images.unsplash.com/photo-1539109136881-3be0616acf4b?q=80&w=900&auto=format&fit=crop',
     featured: false,
     is_featured: 0,
     newArrival: true,

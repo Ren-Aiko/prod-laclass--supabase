@@ -100,7 +100,29 @@ serve(async (req: Request) => {
         .order('created_at', { ascending: false });
 
       if (error) return errorResponse(error.message, 500, error);
-      return jsonResponse(data || []);
+
+      const reviews = data || [];
+      const productIds = [...new Set(reviews.map((review) => review.product_id).filter(Boolean))];
+      if (productIds.length === 0) return jsonResponse(reviews);
+
+      const [productsByRowId, productsByProductId] = await Promise.all([
+        supabase.from('products').select('id, product_id, name').in('id', productIds),
+        supabase.from('products').select('id, product_id, name').in('product_id', productIds),
+      ]);
+
+      if (productsByRowId.error) return errorResponse(productsByRowId.error.message, 500, productsByRowId.error);
+      if (productsByProductId.error) return errorResponse(productsByProductId.error.message, 500, productsByProductId.error);
+
+      const productNames = new Map<string, string>();
+      for (const product of [...(productsByRowId.data || []), ...(productsByProductId.data || [])]) {
+        if (product.id && product.name) productNames.set(product.id, product.name);
+        if (product.product_id && product.name) productNames.set(product.product_id, product.name);
+      }
+
+      return jsonResponse(reviews.map((review) => ({
+        ...review,
+        product_name: productNames.get(review.product_id) || 'LaClassé Abaya',
+      })));
     }
 
     // PATCH /admin-reviews (Moderate or edit a review)

@@ -17,13 +17,13 @@ export const SearchModal: React.FC<SearchModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 bg-[#121212]/80 backdrop-blur-md flex flex-col items-center pt-16 px-4">
       <div 
-        className="w-full max-w-3xl bg-[#FCFCFA] rounded-xs shadow-2xl border border-[#EAEAEA] p-6 relative overflow-hidden"
+        className="w-full max-w-3xl bg-[#FCFCFC] rounded-xs shadow-2xl border border-[#EAEAEA] p-6 relative overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-center justify-between border-b border-[#EAEAEA] pb-4 mb-6">
           <div className="flex items-center gap-2 flex-1 mr-4">
-            <Search className="w-5 h-5 text-[#8C7853]" />
+            <Search className="w-5 h-5 text-[#B55232]" />
             <input
               type="text"
               value={searchQuery}
@@ -38,7 +38,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({
               setSearchQuery('');
               setIsSearchOpen(false);
             }}
-            className="p-1 text-[#121212] hover:text-[#8C7853]"
+            className="p-1 text-[#121212] hover:text-[#B55232]"
           >
             <X className="w-6 h-6" />
           </button>
@@ -62,15 +62,15 @@ export const SearchModal: React.FC<SearchModalProps> = ({
                   onSelectProduct(product);
                   setIsSearchOpen(false);
                 }}
-                className="flex items-center gap-4 p-3 hover:bg-[#F5F2EA] rounded-xs cursor-pointer transition-colors border border-transparent hover:border-[#EAEAEA]"
+                className="flex items-center gap-4 p-3 hover:bg-[#F2F2F2] rounded-xs cursor-pointer transition-colors border border-transparent hover:border-[#EAEAEA]"
               >
                 <img
-                  src={product.thumbnail || 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=800&auto=format&fit=crop'}
+                  src={product.image1 || 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=800&auto=format&fit=crop'}
                   alt={product.name || 'Product'}
                   className="w-12 h-16 object-cover rounded-xs"
                 />
                 <div className="flex-1">
-                  <div className="text-[10px] uppercase text-[#8C7853] tracking-widest font-medium">
+                  <div className="text-[10px] uppercase text-[#B55232] tracking-widest font-medium">
                     {product.collection} • {product.fabric}
                   </div>
                   <h4 className="font-serif text-sm font-medium text-[#121212]">
@@ -80,7 +80,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({
                     ₹{(product.offerPrice ?? product.price).toLocaleString('en-IN')}
                   </div>
                 </div>
-                <ArrowRight className="w-4 h-4 text-[#8C7853]" />
+                <ArrowRight className="w-4 h-4 text-[#B55232]" />
               </div>
             ))
           )}

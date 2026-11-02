@@ -18,7 +18,7 @@ DELETE FROM products;
 INSERT INTO products (
   product_id, name, slug, category, collection, description, detailed_fabric,
   fabric, price, original_price, size, quantity, length,
-  image1, image2, image3, thumbnail,
+  image1, image2, image3,
   is_featured, is_new_arrival, is_flash_sale, is_active,
   care_instructions, includes_matching_sheila, rating, review_count
 ) VALUES (
@@ -35,7 +35,7 @@ INSERT INTO products (
   'XXL',
   1,
   '56"',
-  NULL, NULL, NULL, NULL,
+  NULL, NULL, NULL,
   true, false, false, true,
   'Dry clean recommended or gentle cold hand wash. Steam lightly on reverse.',
   true, 5.0, 14
@@ -47,7 +47,7 @@ INSERT INTO products (
 INSERT INTO products (
   product_id, name, slug, category, collection, description, detailed_fabric,
   fabric, price, original_price, size, quantity, length,
-  image1, image2, image3, thumbnail,
+  image1, image2, image3,
   is_featured, is_new_arrival, is_flash_sale, is_active,
   care_instructions, includes_matching_sheila, rating, review_count
 ) VALUES
@@ -58,7 +58,7 @@ INSERT INTO products (
   'Indonesian Zoom with micro-texture — structured drape with fluid movement.',
   'Indonesian Zoom', 18999.00, 21999.00,
   'L', 1, '56"',
-  NULL, NULL, NULL, NULL,
+  NULL, NULL, NULL,
   true, true, false, true,
   'Specialist dry clean only. Protect embroidery when pressing.',
   true, 5.0, 9
@@ -70,7 +70,7 @@ INSERT INTO products (
   'Indonesian Zoom with micro-texture — structured drape with fluid movement.',
   'Indonesian Zoom', 18999.00, 21999.00,
   'XL', 1, '56"',
-  NULL, NULL, NULL, NULL,
+  NULL, NULL, NULL,
   true, true, false, true,
   'Specialist dry clean only. Protect embroidery when pressing.',
   true, 5.0, 9
@@ -82,7 +82,7 @@ INSERT INTO products (
   'Indonesian Zoom with micro-texture — structured drape with fluid movement.',
   'Indonesian Zoom', 18999.00, 21999.00,
   'XXL', 1, '56"',
-  NULL, NULL, NULL, NULL,
+  NULL, NULL, NULL,
   true, true, false, true,
   'Specialist dry clean only. Protect embroidery when pressing.',
   true, 5.0, 9
@@ -94,7 +94,7 @@ INSERT INTO products (
 INSERT INTO products (
   product_id, name, slug, category, collection, description, detailed_fabric,
   fabric, price, original_price, size, quantity, length,
-  image1, image2, image3, thumbnail,
+  image1, image2, image3,
   is_featured, is_new_arrival, is_flash_sale, is_active,
   care_instructions, includes_matching_sheila, rating, review_count
 ) VALUES
@@ -105,7 +105,7 @@ INSERT INTO products (
   'Pure Silk Satin weave — luminous sheen with a lightweight, breathable feel.',
   'Silk Satin', 15499.00, 17499.00,
   'L', 1, '56"',
-  NULL, NULL, NULL, NULL,
+  NULL, NULL, NULL,
   false, true, false, true,
   'Dry clean recommended. Low steam with protective cloth.',
   true, 5.0, 6
@@ -117,7 +117,7 @@ INSERT INTO products (
   'Pure Silk Satin weave — luminous sheen with a lightweight, breathable feel.',
   'Silk Satin', 15499.00, 17499.00,
   'XL', 1, '56"',
-  NULL, NULL, NULL, NULL,
+  NULL, NULL, NULL,
   false, true, false, true,
   'Dry clean recommended. Low steam with protective cloth.',
   true, 5.0, 6
@@ -129,7 +129,7 @@ INSERT INTO products (
   'Pure Silk Satin weave — luminous sheen with a lightweight, breathable feel.',
   'Silk Satin', 15499.00, 17499.00,
   'XXL', 1, '56"',
-  NULL, NULL, NULL, NULL,
+  NULL, NULL, NULL,
   false, true, false, true,
   'Dry clean recommended. Low steam with protective cloth.',
   true, 5.0, 6
@@ -141,7 +141,7 @@ INSERT INTO products (
 INSERT INTO products (
   product_id, name, slug, category, collection, description, detailed_fabric,
   fabric, price, original_price, size, quantity, length,
-  image1, image2, image3, thumbnail,
+  image1, image2, image3,
   is_featured, is_new_arrival, is_flash_sale, is_active,
   care_instructions, includes_matching_sheila, rating, review_count
 ) VALUES
@@ -152,7 +152,7 @@ INSERT INTO products (
   'Organza Silk with fine French trim — ethereal, structured, and radiant under ambient chandeliers.',
   'Organza Silk', 19999.00, 23999.00,
   'L', 1, '56"',
-  NULL, NULL, NULL, NULL,
+  NULL, NULL, NULL,
   true, false, false, true,
   'Delicate dry clean only.',
   true, 5.0, 8
@@ -164,7 +164,7 @@ INSERT INTO products (
   'Organza Silk with fine French trim — ethereal, structured, and radiant under ambient chandeliers.',
   'Organza Silk', 19999.00, 23999.00,
   'XL', 1, '56"',
-  NULL, NULL, NULL, NULL,
+  NULL, NULL, NULL,
   true, false, false, true,
   'Delicate dry clean only.',
   true, 5.0, 8
@@ -176,7 +176,7 @@ INSERT INTO products (
   'Organza Silk with fine French trim — ethereal, structured, and radiant under ambient chandeliers.',
   'Organza Silk', 19999.00, 23999.00,
   'XXL', 1, '56"',
-  NULL, NULL, NULL, NULL,
+  NULL, NULL, NULL,
   true, false, false, true,
   'Delicate dry clean only.',
   true, 5.0, 8
@@ -188,7 +188,7 @@ INSERT INTO products (
 INSERT INTO products (
   product_id, name, slug, category, collection, description, detailed_fabric,
   fabric, price, original_price, size, quantity, length,
-  image1, image2, image3, thumbnail,
+  image1, image2, image3,
   is_featured, is_new_arrival, is_flash_sale, is_active,
   care_instructions, includes_matching_sheila, rating, review_count
 ) VALUES
@@ -199,7 +199,7 @@ INSERT INTO products (
   'Korean Chiffon with soft breathable crepe lining — crease-resistant, gentle drape.',
   'Korean Chiffon', 9999.00, 11999.00,
   'Free Size', 1, '52"',
-  NULL, NULL, NULL, NULL,
+  NULL, NULL, NULL,
   false, true, true, true,
   'Machine wash delicate cycle in laundry bag or cold hand wash.',
   true, 5.0, 11
@@ -211,7 +211,7 @@ INSERT INTO products (
   'Korean Chiffon with soft breathable crepe lining — crease-resistant, gentle drape.',
   'Korean Chiffon', 9999.00, 11999.00,
   'Free Size', 1, '54"',
-  NULL, NULL, NULL, NULL,
+  NULL, NULL, NULL,
   false, true, true, true,
   'Machine wash delicate cycle in laundry bag or cold hand wash.',
   true, 5.0, 11
@@ -223,7 +223,7 @@ INSERT INTO products (
   'Korean Chiffon with soft breathable crepe lining — crease-resistant, gentle drape.',
   'Korean Chiffon', 9999.00, 11999.00,
   'Free Size', 1, '56"',
-  NULL, NULL, NULL, NULL,
+  NULL, NULL, NULL,
   false, true, true, true,
   'Machine wash delicate cycle in laundry bag or cold hand wash.',
   true, 5.0, 11
@@ -235,7 +235,7 @@ INSERT INTO products (
   'Korean Chiffon with soft breathable crepe lining — crease-resistant, gentle drape.',
   'Korean Chiffon', 9999.00, 11999.00,
   'Free Size', 1, '58"',
-  NULL, NULL, NULL, NULL,
+  NULL, NULL, NULL,
   false, true, true, true,
   'Machine wash delicate cycle in laundry bag or cold hand wash.',
   true, 5.0, 11
@@ -247,7 +247,7 @@ INSERT INTO products (
   'Korean Chiffon with soft breathable crepe lining — crease-resistant, gentle drape.',
   'Korean Chiffon', 9999.00, 11999.00,
   'Free Size', 1, '60"',
-  NULL, NULL, NULL, NULL,
+  NULL, NULL, NULL,
   false, true, true, true,
   'Machine wash delicate cycle in laundry bag or cold hand wash.',
   true, 5.0, 11
@@ -259,7 +259,7 @@ INSERT INTO products (
 INSERT INTO products (
   product_id, name, slug, category, collection, description, detailed_fabric,
   fabric, price, original_price, size, quantity, length,
-  image1, image2, image3, thumbnail,
+  image1, image2, image3,
   is_featured, is_new_arrival, is_flash_sale, is_active,
   care_instructions, includes_matching_sheila, rating, review_count
 ) VALUES
@@ -270,7 +270,7 @@ INSERT INTO products (
   'Velvet Crêpe blend — rich matte depth with velvet lapel accents.',
   'Velvet Crêpe', 16499.00, 18999.00,
   'Free Size', 1, '52"',
-  NULL, NULL, NULL, NULL,
+  NULL, NULL, NULL,
   true, false, false, true,
   'Dry clean only. Steam from inside out.',
   true, 5.0, 7
@@ -282,7 +282,7 @@ INSERT INTO products (
   'Velvet Crêpe blend — rich matte depth with velvet lapel accents.',
   'Velvet Crêpe', 16499.00, 18999.00,
   'Free Size', 1, '54"',
-  NULL, NULL, NULL, NULL,
+  NULL, NULL, NULL,
   true, false, false, true,
   'Dry clean only. Steam from inside out.',
   true, 5.0, 7
@@ -294,7 +294,7 @@ INSERT INTO products (
   'Velvet Crêpe blend — rich matte depth with velvet lapel accents.',
   'Velvet Crêpe', 16499.00, 18999.00,
   'Free Size', 1, '56"',
-  NULL, NULL, NULL, NULL,
+  NULL, NULL, NULL,
   true, false, false, true,
   'Dry clean only. Steam from inside out.',
   true, 5.0, 7
@@ -306,7 +306,7 @@ INSERT INTO products (
   'Velvet Crêpe blend — rich matte depth with velvet lapel accents.',
   'Velvet Crêpe', 16499.00, 18999.00,
   'Free Size', 1, '58"',
-  NULL, NULL, NULL, NULL,
+  NULL, NULL, NULL,
   true, false, false, true,
   'Dry clean only. Steam from inside out.',
   true, 5.0, 7
@@ -318,7 +318,7 @@ INSERT INTO products (
   'Velvet Crêpe blend — rich matte depth with velvet lapel accents.',
   'Velvet Crêpe', 16499.00, 18999.00,
   'Free Size', 1, '60"',
-  NULL, NULL, NULL, NULL,
+  NULL, NULL, NULL,
   true, false, false, true,
   'Dry clean only. Steam from inside out.',
   true, 5.0, 7
@@ -330,7 +330,7 @@ INSERT INTO products (
 INSERT INTO products (
   product_id, name, slug, category, collection, description, detailed_fabric,
   fabric, price, original_price, size, quantity, length,
-  image1, image2, image3, thumbnail,
+  image1, image2, image3,
   is_featured, is_new_arrival, is_flash_sale, is_active,
   care_instructions, includes_matching_sheila, rating, review_count
 ) VALUES
@@ -341,7 +341,7 @@ INSERT INTO products (
   'Linen Cotton blend — natural breathability with soft enzyme-wash finish.',
   'Linen Cotton', 8999.00, 10499.00,
   'Free Size', 1, '52"',
-  NULL, NULL, NULL, NULL,
+  NULL, NULL, NULL,
   false, false, false, true,
   'Machine wash cold. Line dry in shade.',
   true, 5.0, 5
@@ -353,7 +353,7 @@ INSERT INTO products (
   'Linen Cotton blend — natural breathability with soft enzyme-wash finish.',
   'Linen Cotton', 8999.00, 10499.00,
   'Free Size', 1, '54"',
-  NULL, NULL, NULL, NULL,
+  NULL, NULL, NULL,
   false, false, false, true,
   'Machine wash cold. Line dry in shade.',
   true, 5.0, 5
@@ -365,7 +365,7 @@ INSERT INTO products (
   'Linen Cotton blend — natural breathability with soft enzyme-wash finish.',
   'Linen Cotton', 8999.00, 10499.00,
   'Free Size', 1, '56"',
-  NULL, NULL, NULL, NULL,
+  NULL, NULL, NULL,
   false, false, false, true,
   'Machine wash cold. Line dry in shade.',
   true, 5.0, 5
@@ -377,7 +377,7 @@ INSERT INTO products (
   'Linen Cotton blend — natural breathability with soft enzyme-wash finish.',
   'Linen Cotton', 8999.00, 10499.00,
   'Free Size', 1, '58"',
-  NULL, NULL, NULL, NULL,
+  NULL, NULL, NULL,
   false, false, false, true,
   'Machine wash cold. Line dry in shade.',
   true, 5.0, 5
@@ -389,7 +389,7 @@ INSERT INTO products (
   'Linen Cotton blend — natural breathability with soft enzyme-wash finish.',
   'Linen Cotton', 8999.00, 10499.00,
   'Free Size', 1, '60"',
-  NULL, NULL, NULL, NULL,
+  NULL, NULL, NULL,
   false, false, false, true,
   'Machine wash cold. Line dry in shade.',
   true, 5.0, 5
@@ -401,7 +401,7 @@ INSERT INTO products (
 INSERT INTO products (
   product_id, name, slug, category, collection, description, detailed_fabric,
   fabric, price, original_price, size, quantity, length,
-  image1, image2, image3, thumbnail,
+  image1, image2, image3,
   is_featured, is_new_arrival, is_flash_sale, is_active,
   care_instructions, includes_matching_sheila, rating, review_count
 ) VALUES
@@ -412,7 +412,7 @@ INSERT INTO products (
   'Dubai Nida with hand-applied Gold Zari bullion thread.',
   'Dubai Nida', 22999.00, 26999.00,
   'Free Size', 1, '52"',
-  NULL, NULL, NULL, NULL,
+  NULL, NULL, NULL,
   true, false, false, true,
   'Specialist dry clean only. Store wrapped in acid-free tissue.',
   true, 5.0, 16
@@ -424,7 +424,7 @@ INSERT INTO products (
   'Dubai Nida with hand-applied Gold Zari bullion thread.',
   'Dubai Nida', 22999.00, 26999.00,
   'Free Size', 1, '54"',
-  NULL, NULL, NULL, NULL,
+  NULL, NULL, NULL,
   true, false, false, true,
   'Specialist dry clean only. Store wrapped in acid-free tissue.',
   true, 5.0, 16
@@ -436,7 +436,7 @@ INSERT INTO products (
   'Dubai Nida with hand-applied Gold Zari bullion thread.',
   'Dubai Nida', 22999.00, 26999.00,
   'Free Size', 1, '56"',
-  NULL, NULL, NULL, NULL,
+  NULL, NULL, NULL,
   true, false, false, true,
   'Specialist dry clean only. Store wrapped in acid-free tissue.',
   true, 5.0, 16
@@ -448,7 +448,7 @@ INSERT INTO products (
   'Dubai Nida with hand-applied Gold Zari bullion thread.',
   'Dubai Nida', 22999.00, 26999.00,
   'Free Size', 1, '58"',
-  NULL, NULL, NULL, NULL,
+  NULL, NULL, NULL,
   true, false, false, true,
   'Specialist dry clean only. Store wrapped in acid-free tissue.',
   true, 5.0, 16
@@ -460,7 +460,7 @@ INSERT INTO products (
   'Dubai Nida with hand-applied Gold Zari bullion thread.',
   'Dubai Nida', 22999.00, 26999.00,
   'Free Size', 1, '60"',
-  NULL, NULL, NULL, NULL,
+  NULL, NULL, NULL,
   true, false, false, true,
   'Specialist dry clean only. Store wrapped in acid-free tissue.',
   true, 5.0, 16
@@ -472,7 +472,7 @@ INSERT INTO products (
 INSERT INTO products (
   product_id, name, slug, category, collection, description, detailed_fabric,
   fabric, price, original_price, size, quantity, length,
-  image1, image2, image3, thumbnail,
+  image1, image2, image3,
   is_featured, is_new_arrival, is_flash_sale, is_active,
   care_instructions, includes_matching_sheila, rating, review_count
 ) VALUES
@@ -483,7 +483,7 @@ INSERT INTO products (
   'Indonesian Zoom with micro-Jacquard monogram pattern.',
   'Indonesian Zoom', 12499.00, 14499.00,
   'Free Size', 1, '52"',
-  NULL, NULL, NULL, NULL,
+  NULL, NULL, NULL,
   false, true, false, true,
   'Gentle cycle cold wash. Low steam iron.',
   true, 5.0, 10
@@ -495,7 +495,7 @@ INSERT INTO products (
   'Indonesian Zoom with micro-Jacquard monogram pattern.',
   'Indonesian Zoom', 12499.00, 14499.00,
   'Free Size', 1, '54"',
-  NULL, NULL, NULL, NULL,
+  NULL, NULL, NULL,
   false, true, false, true,
   'Gentle cycle cold wash. Low steam iron.',
   true, 5.0, 10
@@ -507,7 +507,7 @@ INSERT INTO products (
   'Indonesian Zoom with micro-Jacquard monogram pattern.',
   'Indonesian Zoom', 12499.00, 14499.00,
   'Free Size', 1, '56"',
-  NULL, NULL, NULL, NULL,
+  NULL, NULL, NULL,
   false, true, false, true,
   'Gentle cycle cold wash. Low steam iron.',
   true, 5.0, 10
@@ -519,7 +519,7 @@ INSERT INTO products (
   'Indonesian Zoom with micro-Jacquard monogram pattern.',
   'Indonesian Zoom', 12499.00, 14499.00,
   'Free Size', 1, '58"',
-  NULL, NULL, NULL, NULL,
+  NULL, NULL, NULL,
   false, true, false, true,
   'Gentle cycle cold wash. Low steam iron.',
   true, 5.0, 10
@@ -531,7 +531,7 @@ INSERT INTO products (
   'Indonesian Zoom with micro-Jacquard monogram pattern.',
   'Indonesian Zoom', 12499.00, 14499.00,
   'Free Size', 1, '60"',
-  NULL, NULL, NULL, NULL,
+  NULL, NULL, NULL,
   false, true, false, true,
   'Gentle cycle cold wash. Low steam iron.',
   true, 5.0, 10

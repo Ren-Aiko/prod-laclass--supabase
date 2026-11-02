@@ -7,8 +7,8 @@ export const TermsConditionsPage: React.FC = () => {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
         
         {/* Header */}
-        <div className="text-center space-y-3 pb-8 border-b border-[#E8E5DD]">
-          <span className="text-[10px] tracking-[0.35em] uppercase font-semibold text-[#8C7853] block">
+        <div className="text-center space-y-3 pb-8 border-b border-[#E5E5E5]">
+          <span className="text-[10px] tracking-[0.35em] uppercase font-semibold text-[#B55232] block">
             LaClassé Abaya — Legal Notice
           </span>
           <h1 className="font-serif text-4xl sm:text-5xl font-medium tracking-wide text-[#000000]">
@@ -22,7 +22,7 @@ export const TermsConditionsPage: React.FC = () => {
         <div className="space-y-8 text-xs text-[#222222] leading-relaxed">
           
           {/* Item 1 */}
-          <div className="bg-[#E8E5DD]/30 border border-[#E8E5DD] p-6 rounded-xs space-y-3">
+          <div className="bg-[#E5E5E5]/30 border border-[#E5E5E5] p-6 rounded-xs space-y-3">
             <div className="flex items-center gap-2.5">
               <CreditCard className="w-5 h-5 text-[#000000]" />
               <h2 className="font-serif text-xl font-medium text-[#000000]">1. Orders & Payment</h2>
@@ -33,7 +33,7 @@ export const TermsConditionsPage: React.FC = () => {
           </div>
 
           {/* Item 2 */}
-          <div className="bg-[#E8E5DD]/30 border border-[#E8E5DD] p-6 rounded-xs space-y-3">
+          <div className="bg-[#E5E5E5]/30 border border-[#E5E5E5] p-6 rounded-xs space-y-3">
             <div className="flex items-center gap-2.5">
               <Truck className="w-5 h-5 text-[#000000]" />
               <h2 className="font-serif text-xl font-medium text-[#000000]">2. Shipping</h2>
@@ -44,7 +44,7 @@ export const TermsConditionsPage: React.FC = () => {
           </div>
 
           {/* Item 3 */}
-          <div className="bg-[#E8E5DD]/30 border border-[#E8E5DD] p-6 rounded-xs space-y-3">
+          <div className="bg-[#E5E5E5]/30 border border-[#E5E5E5] p-6 rounded-xs space-y-3">
             <div className="flex items-center gap-2.5">
               <RotateCcw className="w-5 h-5 text-[#000000]" />
               <h2 className="font-serif text-xl font-medium text-[#000000]">3. Exchange Policy</h2>
@@ -55,7 +55,7 @@ export const TermsConditionsPage: React.FC = () => {
           </div>
 
           {/* Item 4 */}
-          <div className="bg-[#E8E5DD]/30 border border-[#E8E5DD] p-6 rounded-xs space-y-3">
+          <div className="bg-[#E5E5E5]/30 border border-[#E5E5E5] p-6 rounded-xs space-y-3">
             <div className="flex items-center gap-2.5">
               <FileText className="w-5 h-5 text-[#000000]" />
               <h2 className="font-serif text-xl font-medium text-[#000000]">4. Product Info</h2>
@@ -66,7 +66,7 @@ export const TermsConditionsPage: React.FC = () => {
           </div>
 
           {/* Item 5 */}
-          <div className="bg-[#E8E5DD]/30 border border-[#E8E5DD] p-6 rounded-xs space-y-3">
+          <div className="bg-[#E5E5E5]/30 border border-[#E5E5E5] p-6 rounded-xs space-y-3">
             <div className="flex items-center gap-2.5">
               <ShieldAlert className="w-5 h-5 text-[#000000]" />
               <h2 className="font-serif text-xl font-medium text-[#000000]">5. Cancellation</h2>
@@ -77,7 +77,7 @@ export const TermsConditionsPage: React.FC = () => {
           </div>
 
           {/* Item 6 */}
-          <div className="bg-[#E8E5DD]/30 border border-[#E8E5DD] p-6 rounded-xs space-y-3">
+          <div className="bg-[#E5E5E5]/30 border border-[#E5E5E5] p-6 rounded-xs space-y-3">
             <h2 className="font-serif text-xl font-medium text-[#000000]">6. Governing Law</h2>
             <p className="text-[#444444]">
               Governed by the <strong>Laws of India (Jurisdiction: Mangalore, Karnataka)</strong>.
@@ -86,7 +86,7 @@ export const TermsConditionsPage: React.FC = () => {
 
           {/* Item 7 */}
           <div className="bg-[#000000] text-[#FFFFFF] p-6 rounded-xs space-y-4">
-            <h2 className="font-serif text-xl font-medium text-[#E8E5DD]">7. Atelier Contact</h2>
+            <h2 className="font-serif text-xl font-medium text-[#E5E5E5]">7. Atelier Contact</h2>
             <p className="text-[#CCCCCC]">
               Contact us regarding any inquiries or order assistance:
             </p>
@@ -95,7 +95,7 @@ export const TermsConditionsPage: React.FC = () => {
                 href="https://wa.me/919380509397"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="bg-[#25D366] hover:bg-[#1eb354] text-white px-5 py-2.5 rounded-xs font-semibold flex items-center gap-2"
+                className="bg-[#25D366] hover:bg-[#1DA851] text-white px-5 py-2.5 rounded-xs font-semibold flex items-center gap-2"
               >
                 <MessageCircle className="w-4 h-4" />
                 <span>WhatsApp: 9380509397</span>
@@ -104,7 +104,7 @@ export const TermsConditionsPage: React.FC = () => {
                 href="https://www.instagram.com/laclasseabaya"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="bg-[#FFFFFF] text-[#000000] hover:bg-[#E8E5DD] px-5 py-2.5 rounded-xs font-semibold flex items-center gap-2"
+                className="bg-[#FFFFFF] text-[#000000] hover:bg-[#E5E5E5] px-5 py-2.5 rounded-xs font-semibold flex items-center gap-2"
               >
                 <Instagram className="w-4 h-4" />
                 <span>Instagram: @laclasse.abaya</span>

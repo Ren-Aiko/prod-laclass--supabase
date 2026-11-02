@@ -109,7 +109,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose })
           let variantId: string | null = null;
           if (!isCustom) {
             const matchedVar = item.product.variants?.find(
-              v => v.size === item.selectedSize && (!item.selectedLength || v.length === item.selectedLength)
+              v => v.size === item.selectedSize && (v.length || '') === (item.selectedLength || '')
             );
             variantId = matchedVar?.id || (item.product.id !== item.product.product_id ? item.product.id : null);
           }
@@ -206,15 +206,15 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose })
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#121212]/80 backdrop-blur-md overflow-y-auto">
       <div 
-        className="bg-[#FCFCFA] border border-[#EAEAEA] rounded-xs shadow-2xl w-full max-w-4xl overflow-hidden relative max-h-[92vh] my-auto flex flex-col"
+        className="bg-[#FCFCFC] border border-[#EAEAEA] rounded-xs shadow-2xl w-full max-w-4xl overflow-hidden relative max-h-[92vh] my-auto flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
-        <div className="p-4 sm:p-6 border-b border-[#F0ECE1] bg-[#FAF8F5] flex items-center justify-between">
+        <div className="p-4 sm:p-6 border-b border-[#ECECEC] bg-[#F8F8F8] flex items-center justify-between">
           <div className="flex items-center gap-3">
             <img src={logo} alt="LA.CLASSÈ" className="h-8 w-auto object-contain" />
-            <div className="flex items-center gap-1.5 border-l border-[#E5E0D8] pl-3">
-              <Lock className="w-3.5 h-3.5 text-[#8C7853]" />
+            <div className="flex items-center gap-1.5 border-l border-[#E0E0E0] pl-3">
+              <Lock className="w-3.5 h-3.5 text-[#B55232]" />
               <h2 className="font-serif text-lg font-medium tracking-wide text-[#121212]">
                 {step === 'success' ? 'Order Confirmation' : 'Bespoke Atelier Checkout'}
               </h2>
@@ -222,7 +222,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose })
           </div>
           <button
             onClick={handleResetModal}
-            className="p-1 text-[#121212] hover:text-[#8C7853] cursor-pointer"
+            className="p-1 text-[#121212] hover:text-[#B55232] cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -231,7 +231,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose })
         {/* Modal Body */}
         <div className="overflow-y-auto p-6 flex-1">
           {errorMessage && (
-            <div className="mb-6 p-4 bg-[#fff1f0] border border-[#ffa39e] text-[#cf1322] text-xs rounded-xs flex items-center gap-2.5">
+            <div className="mb-6 p-4 bg-[#F4F4F4] border border-[#FFF4F0] text-[#E8B7A5] text-xs rounded-xs flex items-center gap-2.5">
               <AlertCircle className="w-4 h-4 shrink-0" />
               <span>{errorMessage}</span>
             </div>
@@ -243,7 +243,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose })
               
               <div className="lg:col-span-2 space-y-6">
                 <div>
-                  <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-[#121212] mb-4 pb-2 border-b border-[#F0ECE1]">
+                  <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-[#121212] mb-4 pb-2 border-b border-[#ECECEC]">
                     1. Delivery & Contact Information
                   </h3>
 
@@ -256,7 +256,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose })
                         value={customer.fullName}
                         onChange={handleInputChange}
                         placeholder="e.g. Fatima Zahra"
-                        className="w-full bg-[#FAF8F5] border border-[#D1CDC7] px-3 py-2.5 rounded-xs focus:outline-none focus:border-[#121212]"
+                        className="w-full bg-[#F8F8F8] border border-[#CDCDCD] px-3 py-2.5 rounded-xs focus:outline-none focus:border-[#121212]"
                         required
                       />
                     </div>
@@ -269,7 +269,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose })
                         value={customer.email}
                         onChange={handleInputChange}
                         placeholder="fatima@example.com"
-                        className="w-full bg-[#FAF8F5] border border-[#D1CDC7] px-3 py-2.5 rounded-xs focus:outline-none focus:border-[#121212]"
+                        className="w-full bg-[#F8F8F8] border border-[#CDCDCD] px-3 py-2.5 rounded-xs focus:outline-none focus:border-[#121212]"
                         required
                       />
                     </div>
@@ -282,7 +282,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose })
                         value={customer.phone}
                         onChange={handleInputChange}
                         placeholder="+91 98470 12345"
-                        className="w-full bg-[#FAF8F5] border border-[#D1CDC7] px-3 py-2.5 rounded-xs focus:outline-none focus:border-[#121212]"
+                        className="w-full bg-[#F8F8F8] border border-[#CDCDCD] px-3 py-2.5 rounded-xs focus:outline-none focus:border-[#121212]"
                         required
                       />
                     </div>
@@ -295,7 +295,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose })
                         value={customer.pincode}
                         onChange={handleInputChange}
                         placeholder="e.g. 682036"
-                        className="w-full bg-[#FAF8F5] border border-[#D1CDC7] px-3 py-2.5 rounded-xs focus:outline-none focus:border-[#121212]"
+                        className="w-full bg-[#F8F8F8] border border-[#CDCDCD] px-3 py-2.5 rounded-xs focus:outline-none focus:border-[#121212]"
                         required
                       />
                     </div>
@@ -308,7 +308,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose })
                         value={customer.city}
                         onChange={handleInputChange}
                         placeholder="e.g. Kochi / Kozhikode / Bengaluru"
-                        className="w-full bg-[#FAF8F5] border border-[#D1CDC7] px-3 py-2.5 rounded-xs focus:outline-none focus:border-[#121212]"
+                        className="w-full bg-[#F8F8F8] border border-[#CDCDCD] px-3 py-2.5 rounded-xs focus:outline-none focus:border-[#121212]"
                         required
                       />
                     </div>
@@ -321,7 +321,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose })
                         value={customer.address}
                         onChange={handleInputChange}
                         placeholder="e.g. House #14, Royal Greens, Marine Drive"
-                        className="w-full bg-[#FAF8F5] border border-[#D1CDC7] px-3 py-2.5 rounded-xs focus:outline-none focus:border-[#121212]"
+                        className="w-full bg-[#F8F8F8] border border-[#CDCDCD] px-3 py-2.5 rounded-xs focus:outline-none focus:border-[#121212]"
                         required
                       />
                     </div>
@@ -332,7 +332,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose })
                         name="state"
                         value={customer.state}
                         onChange={handleInputChange}
-                        className="w-full bg-[#FAF8F5] border border-[#D1CDC7] px-3 py-2.5 rounded-xs focus:outline-none focus:border-[#121212]"
+                        className="w-full bg-[#F8F8F8] border border-[#CDCDCD] px-3 py-2.5 rounded-xs focus:outline-none focus:border-[#121212]"
                       >
                         <option value="Kerala">Kerala</option>
                         <option value="Karnataka">Karnataka</option>
@@ -352,7 +352,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose })
                         value={customer.notes}
                         onChange={handleInputChange}
                         placeholder="e.g. Please wrap with luxury gift seal."
-                        className="w-full bg-[#FAF8F5] border border-[#D1CDC7] px-3 py-2 rounded-xs focus:outline-none focus:border-[#121212]"
+                        className="w-full bg-[#F8F8F8] border border-[#CDCDCD] px-3 py-2 rounded-xs focus:outline-none focus:border-[#121212]"
                       />
                     </div>
                   </div>
@@ -361,25 +361,25 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose })
 
               {/* Order Summary Column */}
               <div className="space-y-6">
-                <div className="bg-[#FAF8F5] border border-[#F0ECE1] p-5 rounded-xs space-y-4">
+                <div className="bg-[#F8F8F8] border border-[#ECECEC] p-5 rounded-xs space-y-4">
                   <h3 className="font-serif text-base font-medium text-[#121212] pb-2 border-b border-[#EAEAEA]">
                     Order Summary ({cart.length} {cart.length === 1 ? 'item' : 'items'})
                   </h3>
 
                   <div className="space-y-3 max-h-56 overflow-y-auto pr-1">
                     {cart.map((item) => (
-                      <div key={item.id} className="flex gap-3 text-xs border-b border-[#F0ECE1] pb-2">
+                      <div key={item.id} className="flex gap-3 text-xs border-b border-[#ECECEC] pb-2">
                         <img 
-                          src={item.product.thumbnail || item.product.image1 || 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=400&auto=format&fit=crop'} 
+                          src={item.product.image1 || 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=400&auto=format&fit=crop'}
                           alt={item.product.name} 
                           className="w-12 h-14 object-cover rounded-xs shrink-0" 
                         />
                         <div className="flex-1 min-w-0">
                           <h4 className="font-medium text-[#121212] truncate">{item.product.name}</h4>
                           <span className="text-[10px] text-[#777777] block">
-                            Size: {item.selectedSize} {item.selectedSize !== 'Custom' && item.selectedLength ? `• Length: ${item.selectedLength}` : '• Bespoke Sizing'}
+                            Size: {item.selectedSize} {item.selectedSize === 'Custom' ? '• Bespoke Sizing' : item.selectedLength ? `• Length: ${item.selectedLength}` : '• No specific length'}
                           </span>
-                          <span className="text-[11px] font-semibold text-[#8C7853]">
+                          <span className="text-[11px] font-semibold text-[#B55232]">
                             Qty: {item.quantity} × ₹{(item.product.offerPrice ?? item.product.price).toLocaleString('en-IN')}
                           </span>
                         </div>
@@ -393,14 +393,14 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose })
                       <span>₹{subtotal.toLocaleString('en-IN')}</span>
                     </div>
                     {discountAmount > 0 && (
-                      <div className="flex justify-between text-[#2e7d32]">
+                      <div className="flex justify-between text-[#676767]">
                         <span>Privilege Discount ({appliedCoupon?.code})</span>
                         <span>-₹{discountAmount.toLocaleString('en-IN')}</span>
                       </div>
                     )}
                     <div className="flex justify-between text-[#666666]">
                       <span>Bespoke Packaging & Courier</span>
-                      <span className="text-[#2e7d32]">Complimentary</span>
+                      <span className="text-[#676767]">Complimentary</span>
                     </div>
                     <div className="flex justify-between text-sm font-semibold text-[#121212] pt-2 border-t border-[#EAEAEA]">
                       <span>Total Amount to Pay</span>
@@ -410,7 +410,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose })
 
                   <button
                     type="submit"
-                    className="w-full bg-[#121212] hover:bg-[#8C7853] text-[#FCFCFA] py-3 text-xs font-semibold uppercase tracking-[0.2em] rounded-xs transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                    className="w-full bg-[#121212] hover:bg-[#B55232] text-[#FCFCFC] py-3 text-xs font-semibold uppercase tracking-[0.2em] rounded-xs transition-colors flex items-center justify-center gap-2 cursor-pointer"
                   >
                     <span>Proceed to UPI Payment</span>
                     <ArrowRight className="w-4 h-4" />
@@ -426,7 +426,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose })
             <form onSubmit={handleSubmitOrderWithUtr} className="space-y-8 max-w-2xl mx-auto text-xs">
               
               <div className="text-center space-y-2">
-                <span className="text-[10px] uppercase tracking-[0.25em] text-[#8C7853] font-semibold block">
+                <span className="text-[10px] uppercase tracking-[0.25em] text-[#B55232] font-semibold block">
                   Official Atelier Bank QR
                 </span>
                 <h3 className="font-serif text-2xl font-medium text-[#121212]">
@@ -438,9 +438,9 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose })
               </div>
 
               {/* QR Code Presentation Box */}
-              <div className="bg-[#FAF8F5] border border-[#EAEAEA] p-6 rounded-xs flex flex-col sm:flex-row items-center justify-center gap-8 shadow-inner">
+              <div className="bg-[#F8F8F8] border border-[#EAEAEA] p-6 rounded-xs flex flex-col sm:flex-row items-center justify-center gap-8 shadow-inner">
                 {/* Visual QR Code Card */}
-                <div className="bg-white p-4 rounded-xs border border-[#E0DCD3] shadow-md flex flex-col items-center">
+                <div className="bg-white p-4 rounded-xs border border-[#DCDCDC] shadow-md flex flex-col items-center">
                   <div className="w-48 h-48 bg-[#121212] p-2 rounded-xs flex items-center justify-center relative group">
                     <img 
                       src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(`upi://pay?pa=${upiId}&pn=${encodeURIComponent(upiName)}&am=${grandTotal}&cu=INR&tn=${encodeURIComponent('LaClassé Abaya Order')}`)}`}
@@ -448,7 +448,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose })
                       className="w-full h-full object-contain bg-white p-1"
                     />
                   </div>
-                  <span className="text-[10px] uppercase tracking-wider text-[#8C7853] font-medium mt-2">
+                  <span className="text-[10px] uppercase tracking-wider text-[#B55232] font-medium mt-2">
                     Verified Atelier Merchant
                   </span>
                 </div>
@@ -466,16 +466,16 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose })
                     <div>
                       <span className="text-[10px] text-[#777777] uppercase tracking-wider block">UPI ID</span>
                       <div className="flex items-center gap-2 mt-0.5">
-                        <code className="bg-[#EFECE6] px-2.5 py-1 rounded-xs font-mono text-xs text-[#121212] select-all">
+                        <code className="bg-[#ECECEC] px-2.5 py-1 rounded-xs font-mono text-xs text-[#121212] select-all">
                           {upiId}
                         </code>
                         <button
                           type="button"
                           onClick={handleCopyUpi}
-                          className="p-1.5 bg-[#121212] text-white rounded-xs hover:bg-[#8C7853] transition-colors cursor-pointer"
+                          className="p-1.5 bg-[#121212] text-white rounded-xs hover:bg-[#B55232] transition-colors cursor-pointer"
                           title="Copy UPI ID"
                         >
-                          {copiedUpi ? <Check className="w-3.5 h-3.5 text-[#a5d6a7]" /> : <Copy className="w-3.5 h-3.5" />}
+                          {copiedUpi ? <Check className="w-3.5 h-3.5 text-[#C8C8C8]" /> : <Copy className="w-3.5 h-3.5" />}
                         </button>
                       </div>
                     </div>
@@ -486,7 +486,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose })
                     </div>
                   </div>
 
-                  <div className="text-[11px] text-[#8C7853] font-medium flex items-center gap-1.5">
+                  <div className="text-[11px] text-[#B55232] font-medium flex items-center gap-1.5">
                     <ShieldCheck className="w-4 h-4 shrink-0" />
                     <span>Real-time D1 inventory reservation upon UTR verification</span>
                   </div>
@@ -494,9 +494,9 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose })
               </div>
 
               {/* Required 12-Digit UTR Number Input */}
-              <div className="bg-[#FFFFFF] border border-[#D1CDC7] p-6 rounded-xs space-y-4">
-                <div className="flex items-center gap-2 pb-2 border-b border-[#F0ECE1]">
-                  <Hash className="w-4 h-4 text-[#8C7853]" />
+              <div className="bg-[#FFFFFF] border border-[#CDCDCD] p-6 rounded-xs space-y-4">
+                <div className="flex items-center gap-2 pb-2 border-b border-[#ECECEC]">
+                  <Hash className="w-4 h-4 text-[#B55232]" />
                   <h4 className="font-semibold text-xs uppercase tracking-wider text-[#121212]">
                     Enter UPI Ref / UTR / Transaction ID (12 digits) *
                   </h4>
@@ -515,7 +515,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose })
                       onChange={(e) => setUtrNumber(e.target.value.replace(/[^0-9a-zA-Z]/g, ''))}
                       placeholder="e.g. 427189031456"
                       maxLength={24}
-                      className="w-full bg-[#FAF8F5] border-2 border-[#8C7853]/60 focus:border-[#121212] px-4 py-3 rounded-xs text-sm sm:text-base font-mono tracking-wider text-[#121212] focus:outline-none"
+                      className="w-full bg-[#F8F8F8] border-2 border-[#B55232]/60 focus:border-[#121212] px-4 py-3 rounded-xs text-sm sm:text-base font-mono tracking-wider text-[#121212] focus:outline-none"
                       required
                       autoFocus
                     />
@@ -544,7 +544,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose })
                 <button
                   type="submit"
                   disabled={isSubmitting || utrNumber.trim().length < 10}
-                  className="w-full sm:w-auto bg-[#8C7853] hover:bg-[#A08B63] disabled:opacity-50 disabled:cursor-not-allowed text-[#FCFCFA] px-8 py-3.5 text-xs font-semibold uppercase tracking-[0.2em] rounded-xs shadow-md transition-all flex items-center justify-center gap-2 order-1 sm:order-2 cursor-pointer"
+                  className="w-full sm:w-auto bg-[#B55232] hover:bg-[#B55232] disabled:opacity-50 disabled:cursor-not-allowed text-[#FCFCFC] px-8 py-3.5 text-xs font-semibold uppercase tracking-[0.2em] rounded-xs shadow-md transition-all flex items-center justify-center gap-2 order-1 sm:order-2 cursor-pointer"
                 >
                   {isSubmitting ? (
                     <>
@@ -563,12 +563,12 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose })
           {/* STEP 3: SUCCESS CONFIRMATION SCREEN */}
           {step === 'success' && completedOrder && (
             <div className="text-center py-8 max-w-xl mx-auto space-y-6">
-              <div className="w-16 h-16 bg-[#8C7853]/15 text-[#8C7853] rounded-full flex items-center justify-center mx-auto border border-[#8C7853]">
+              <div className="w-16 h-16 bg-[#B55232]/15 text-[#B55232] rounded-full flex items-center justify-center mx-auto border border-[#B55232]">
                 <CheckCircle2 className="w-10 h-10" />
               </div>
 
               <div>
-                <span className="text-xs uppercase tracking-[0.25em] text-[#8C7853] font-semibold block mb-1">
+                <span className="text-xs uppercase tracking-[0.25em] text-[#B55232] font-semibold block mb-1">
                   Transaction Reference Registered
                 </span>
                 <h3 className="font-serif text-3xl font-medium text-[#121212]">
@@ -581,27 +581,27 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose })
 
               {/* Status and UTR Badge */}
               <div className="flex flex-wrap items-center justify-center gap-3">
-                <div className="inline-flex items-center gap-2 bg-[#FAF8F5] border border-[#8C7853]/40 px-4 py-2 rounded-full text-xs">
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#e65100] animate-pulse" />
+                <div className="inline-flex items-center gap-2 bg-[#F8F8F8] border border-[#B55232]/40 px-4 py-2 rounded-full text-xs">
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#FFF4F0] animate-pulse" />
                   <span className="font-semibold text-[#121212]">
                     Status: {completedOrder.status}
                   </span>
                 </div>
 
-                <div className="inline-flex items-center gap-1.5 bg-[#FAF8F5] border border-[#D1CDC7] px-4 py-2 rounded-full text-xs font-mono">
+                <div className="inline-flex items-center gap-1.5 bg-[#F8F8F8] border border-[#CDCDCD] px-4 py-2 rounded-full text-xs font-mono">
                   <span className="text-[#777777]">UTR:</span>
                   <span className="font-semibold text-[#121212]">{completedOrder.utrNumber}</span>
                 </div>
               </div>
 
               {/* Atelier Note */}
-              <div className="bg-[#FAF8F5] border border-[#F0ECE1] p-5 rounded-xs text-xs text-[#555555] leading-relaxed text-left space-y-2">
+              <div className="bg-[#F8F8F8] border border-[#ECECEC] p-5 rounded-xs text-xs text-[#555555] leading-relaxed text-left space-y-2">
                 <strong className="text-[#121212] block font-semibold">What happens next:</strong>
                 <p>
                   1. Our finance team will cross-reference your submitted UTR (<strong className="font-mono text-[#121212]">{completedOrder.utrNumber}</strong>) against incoming bank transfer credits.
                 </p>
                 <p>
-                  2. Once bank credit is verified, status updates to <strong className="text-[#2e7d32]">Payment Confirmed</strong> and bespoke atelier tailoring proceeds.
+                  2. Once bank credit is verified, status updates to <strong className="text-[#676767]">Payment Confirmed</strong> and bespoke atelier tailoring proceeds.
                 </p>
                 <p>
                   3. Use the Order Status page with your order reference and checkout phone number or email to check confirmation. Once confirmed, the status will say that shipment details are awaited.
@@ -609,7 +609,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose })
               </div>
 
               {/* Order Info Details */}
-              <div className="bg-[#FFFFFF] border border-[#EAEAEA] p-4 rounded-xs text-xs text-left divide-y divide-[#F0ECE1]">
+              <div className="bg-[#FFFFFF] border border-[#EAEAEA] p-4 rounded-xs text-xs text-left divide-y divide-[#ECECEC]">
                 <div className="pb-2 flex justify-between">
                   <span className="text-[#777777]">Customer Name:</span>
                   <span className="font-medium text-[#121212]">{completedOrder.customer.fullName}</span>
@@ -620,7 +620,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose })
                 </div>
                 <div className="pt-2 flex justify-between font-semibold text-sm">
                   <span>Total Amount Paid:</span>
-                  <span className="text-[#8C7853]">₹{completedOrder.grandTotal.toLocaleString('en-IN')}</span>
+                  <span className="text-[#B55232]">₹{completedOrder.grandTotal.toLocaleString('en-IN')}</span>
                 </div>
               </div>
 
@@ -628,7 +628,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose })
                 <button
                   type="button"
                   onClick={handleResetModal}
-                  className="flex-1 bg-[#121212] hover:bg-[#8C7853] text-[#FCFCFA] py-3 text-xs font-semibold uppercase tracking-[0.2em] rounded-xs transition-colors cursor-pointer"
+                  className="flex-1 bg-[#121212] hover:bg-[#B55232] text-[#FCFCFC] py-3 text-xs font-semibold uppercase tracking-[0.2em] rounded-xs transition-colors cursor-pointer"
                 >
                   Continue Shopping
                 </button>
@@ -637,7 +637,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose })
                   href={`https://wa.me/919380509397?text=${encodeURIComponent(`Hello LaClassé Atelier! I have placed order ${completedOrder.orderId} with UTR Ref: ${completedOrder.utrNumber}.`)}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex-1 border border-[#121212] hover:bg-[#FAF8F5] text-[#121212] py-3 text-xs font-semibold uppercase tracking-[0.2em] rounded-xs transition-colors flex items-center justify-center gap-2"
+                  className="flex-1 border border-[#25D366] bg-[#25D366] hover:bg-[#1DA851] hover:border-[#1DA851] text-white py-3 text-xs font-semibold uppercase tracking-[0.2em] rounded-xs transition-colors flex items-center justify-center gap-2"
                 >
                   <span>Chat on WhatsApp Concierge</span>
                   <ExternalLink className="w-3.5 h-3.5" />

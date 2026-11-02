@@ -25,7 +25,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelectProdu
   };
 
   // Map image1 as default, image2 and image3 for hover slideshow/fade
-  const rawImage1 = (product as any).image_1 || product.image1 || (product as any).thumbnail || fallbackImg;
+  const rawImage1 = (product as any).image_1 || product.image1 || fallbackImg;
   const rawImage2 = (product as any).image_2 || product.image2 || (product.images && product.images[1]) || rawImage1;
   const rawImage3 = (product as any).image_3 || product.image3 || (product.images && product.images[2]) || rawImage2;
 
@@ -36,14 +36,16 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelectProdu
   // Bind size variants from selected_variants array
   const variants: string[] = (product as any).selected_variants && (product as any).selected_variants.length > 0
     ? (product as any).selected_variants
-    : (product.sizes && product.sizes.length > 0 ? product.sizes : ['S', 'M', 'L', 'XL']);
-
-  const lengths = product.lengths && product.lengths.length > 0 ? product.lengths : ['52"', '54"', '56"', '58"', '60"'];
+    : (product.sizes && product.sizes.length > 0
+      ? product.sizes.map((size: string | { size: string }) => typeof size === 'string' ? size : size.size)
+      : ['L', 'XL', 'XXL', 'Free Size']);
+  const firstSize = variants[0] || 'L';
+  const getLengthForSize = (size: string) => product.variants?.find(variant => variant.size === size)?.length || '';
 
   const [isHovered, setIsHovered] = useState(false);
   const [hoverSlideIndex, setHoverSlideIndex] = useState(0);
-  const [selectedSize, setSelectedSize] = useState<string>(variants[0] || 'M');
-  const [selectedLength] = useState<string>(lengths[1] || lengths[0] || '54"');
+  const [selectedSize, setSelectedSize] = useState<string>(firstSize);
+  const [selectedLength, setSelectedLength] = useState<string>(getLengthForSize(firstSize));
 
   // Slideshow/fade animation between image_2 and image_3 on hover
   useEffect(() => {
@@ -78,11 +80,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelectProdu
   return (
     <div
       onClick={() => onSelectProduct(product)}
-      className="group cursor-pointer bg-[#FCFCFA] border border-[#F0ECE1] hover:border-[#D1CDC7] transition-all duration-300 flex flex-col justify-between relative rounded-xs overflow-hidden"
+      className="group cursor-pointer bg-[#FCFCFC] border border-[#ECECEC] hover:border-[#CDCDCD] transition-all duration-300 flex flex-col justify-between relative rounded-xs overflow-hidden"
     >
       {/* Product Image Container */}
       <div 
-        className="relative aspect-[3/4] w-full overflow-hidden bg-[#F5F2EA]"
+        className="relative aspect-[3/4] w-full overflow-hidden bg-[#F2F2F2]"
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
@@ -95,18 +97,23 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelectProdu
 
         {/* Badges */}
         <div className="absolute top-3 left-3 flex flex-col gap-1.5 z-10">
+          {product.featured && (
+            <span className="bg-[#E8B7A5] text-[#121212] text-[9px] font-semibold tracking-[0.2em] uppercase px-2.5 py-1 rounded-xs">
+              Featured
+            </span>
+          )}
           {product.newArrival && (
-            <span className="bg-[#121212] text-[#FCFCFA] text-[9px] font-medium tracking-[0.2em] uppercase px-2.5 py-1 rounded-xs">
-              New Season
+            <span className="bg-[#121212] text-[#FCFCFC] text-[9px] font-medium tracking-[0.2em] uppercase px-2.5 py-1 rounded-xs">
+              New Arrival
             </span>
           )}
           {product.flashSale && (
-            <span className="bg-[#8C7853] text-[#FCFCFA] text-[9px] font-medium tracking-[0.2em] uppercase px-2.5 py-1 rounded-xs">
-              Featured Sale
+            <span className="bg-[#B55232] text-[#FCFCFC] text-[9px] font-medium tracking-[0.2em] uppercase px-2.5 py-1 rounded-xs">
+              Flash Sale
             </span>
           )}
           {product.category === 'Bridal' && (
-            <span className="bg-[#D4AF37] text-[#121212] text-[9px] font-semibold tracking-[0.2em] uppercase px-2.5 py-1 rounded-xs">
+            <span className="bg-[#E8B7A5] text-[#121212] text-[9px] font-semibold tracking-[0.2em] uppercase px-2.5 py-1 rounded-xs">
               Bridal Couture
             </span>
           )}
@@ -120,8 +127,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelectProdu
           }}
           className={`absolute top-3 right-3 p-2 rounded-full backdrop-blur-md transition-all duration-300 z-10 ${
             isWishlisted
-              ? 'bg-[#121212] text-[#D4AF37]'
-              : 'bg-white/80 text-[#121212] hover:bg-[#121212] hover:text-[#FCFCFA]'
+              ? 'bg-[#121212] text-[#E8B7A5]'
+              : 'bg-white/80 text-[#121212] hover:bg-[#121212] hover:text-[#FCFCFC]'
           }`}
           title="Add to Wishlist"
           aria-label="Wishlist product"
@@ -136,7 +143,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelectProdu
               e.stopPropagation();
               setQuickViewProduct(product);
             }}
-            className="flex-1 bg-[#FCFCFA]/95 hover:bg-[#121212] hover:text-[#FCFCFA] text-[#121212] text-xs uppercase tracking-[0.15em] font-medium py-2.5 px-3 rounded-xs shadow-lg backdrop-blur-sm transition-colors flex items-center justify-center gap-1.5"
+            className="flex-1 bg-[#FCFCFC]/95 hover:bg-[#121212] hover:text-[#FCFCFC] text-[#121212] text-xs uppercase tracking-[0.15em] font-medium py-2.5 px-3 rounded-xs shadow-lg backdrop-blur-sm transition-colors flex items-center justify-center gap-1.5"
           >
             <Eye className="w-3.5 h-3.5" />
             <span>Quick View</span>
@@ -148,24 +155,24 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelectProdu
       <div className="p-4 flex flex-col justify-between flex-1 space-y-2">
         <div>
           {/* Collection & Fabric Pill */}
-          <div className="flex items-center justify-between text-[10px] text-[#8C7853] uppercase tracking-[0.18em] font-medium mb-1">
+          <div className="flex items-center justify-between text-[10px] text-[#B55232] uppercase tracking-[0.18em] font-medium mb-1">
             <span>{product.collection}</span>
             <span>{product.fabric}</span>
           </div>
 
           {/* Product Title */}
-          <h3 className="font-serif text-base sm:text-lg text-[#121212] font-medium group-hover:text-[#8C7853] transition-colors line-clamp-1">
+          <h3 className="font-serif text-base sm:text-lg text-[#121212] font-medium group-hover:text-[#B55232] transition-colors line-clamp-1">
             {product.name}
           </h3>
 
           {/* Ratings */}
           <div className="flex items-center gap-1 mt-1">
-            <div className="flex text-[#D4AF37]">
+            <div className="flex text-[#E8B7A5]">
               {[...Array(5)].map((_, i) => (
                 <Star
                   key={i}
                   className={`w-3 h-3 ${
-                    i < Math.floor(rating) ? 'fill-current' : 'text-[#E0DCD3]'
+                    i < Math.floor(rating) ? 'fill-current' : 'text-[#DCDCDC]'
                   }`}
                 />
               ))}
@@ -182,11 +189,14 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelectProdu
                 <button
                   key={sz}
                   type="button"
-                  onClick={() => setSelectedSize(sz)}
+                  onClick={() => {
+                    setSelectedSize(sz);
+                    setSelectedLength(getLengthForSize(sz));
+                  }}
                   className={`px-1.5 py-0.5 text-[9px] uppercase font-medium rounded-xs border transition-colors ${
                     selectedSize === sz
-                      ? 'bg-[#121212] text-[#FCFCFA] border-[#121212]'
-                      : 'bg-[#FCFCFA] text-[#777777] border-[#E8E4DA] hover:border-[#8C7853]'
+                      ? 'bg-[#121212] text-[#FCFCFC] border-[#121212]'
+                      : 'bg-[#FCFCFC] text-[#777777] border-[#E4E4E4] hover:border-[#B55232]'
                   }`}
                 >
                   {sz}
@@ -197,7 +207,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelectProdu
         </div>
 
         {/* Pricing & Add to Cart */}
-        <div className="pt-2 border-t border-[#F5F2EA] flex items-center justify-between">
+        <div className="pt-2 border-t border-[#F2F2F2] flex items-center justify-between">
           <div className="flex items-baseline space-x-2">
             <span className="text-sm sm:text-base font-semibold text-[#121212]">
               ₹{effectivePrice.toLocaleString('en-IN')}
@@ -211,7 +221,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelectProdu
 
           <button
             onClick={handleQuickAdd}
-            className="p-2 bg-[#121212] hover:bg-[#8C7853] text-[#FCFCFA] rounded-xs transition-colors flex items-center justify-center gap-1 text-[11px] font-medium tracking-widest uppercase px-3"
+            className="p-2 bg-[#121212] hover:bg-[#B55232] text-[#FCFCFC] rounded-xs transition-colors flex items-center justify-center gap-1 text-[11px] font-medium tracking-widest uppercase px-3"
             title="Add to bag"
           >
             <ShoppingBag className="w-3.5 h-3.5" />

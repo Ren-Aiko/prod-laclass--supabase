@@ -1,18 +1,24 @@
 import React from 'react';
 import { Sparkles, Sun, ShieldCheck, Heart, ArrowRight } from 'lucide-react';
+import { useStore } from '../context/StoreContext';
 
 interface AboutPageProps {
   onExploreShop: () => void;
 }
 
 export const AboutPage: React.FC<AboutPageProps> = ({ onExploreShop }) => {
+  const { products, isLoadingProducts } = useStore();
+  const storyProducts = products
+    .filter((product) => product.image2?.trim())
+    .slice(0, 2);
+
   return (
-    <div className="bg-[#FCFCFA] min-h-screen py-16">
+    <div className="bg-[#FCFCFC] min-h-screen py-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Story Banner */}
         <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">
-          <span className="text-[10px] tracking-[0.35em] text-[#8C7853] uppercase font-medium block">
+          <span className="text-[10px] tracking-[0.35em] text-[#B55232] uppercase font-medium block">
             Our Brand Story
           </span>
           <h1 className="font-serif text-4xl sm:text-6xl text-[#121212] font-normal tracking-wide">
@@ -24,9 +30,9 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onExploreShop }) => {
         </div>
 
         {/* Hero Editorial Image Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center mb-20 bg-[#FAF8F5] border border-[#F0ECE1] p-8 md:p-12 rounded-xs">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center mb-20 bg-[#F8F8F8] border border-[#ECECEC] p-8 md:p-12 rounded-xs">
           <div className="lg:col-span-6 space-y-6">
-            <span className="text-[10px] uppercase tracking-[0.25em] text-[#8C7853] font-semibold">
+            <span className="text-[10px] uppercase tracking-[0.25em] text-[#B55232] font-semibold">
               Crafted For Comfort
             </span>
             <h2 className="font-serif text-3xl sm:text-4xl text-[#121212] font-medium leading-snug">
@@ -41,7 +47,7 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onExploreShop }) => {
 
             <button
               onClick={onExploreShop}
-              className="bg-[#121212] hover:bg-[#8C7853] text-[#FCFCFA] px-8 py-3.5 text-xs font-semibold uppercase tracking-[0.2em] rounded-xs transition-colors flex items-center gap-2"
+              className="bg-[#121212] hover:bg-[#B55232] text-[#FCFCFC] px-8 py-3.5 text-xs font-semibold uppercase tracking-[0.2em] rounded-xs transition-colors flex items-center gap-2"
             >
               <span>Explore The Collection</span>
               <ArrowRight className="w-4 h-4" />
@@ -49,39 +55,48 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onExploreShop }) => {
           </div>
 
           <div className="lg:col-span-6 grid grid-cols-2 gap-4">
-            <img
-              src="https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=800&auto=format&fit=crop"
-              alt="Laclassé Fabric Tailoring"
-              className="w-full h-80 object-cover rounded-xs shadow-md"
-            />
-            <img
-              src="https://images.unsplash.com/photo-1502716119720-b23a93e5fe1b?q=80&w=800&auto=format&fit=crop"
-              alt="Laclassé Abaya Detail"
-              className="w-full h-80 object-cover rounded-xs shadow-md mt-6"
-            />
+            {isLoadingProducts ? (
+              [0, 1].map((item) => (
+                <div key={item} className={`w-full h-80 rounded-xs bg-[#EAEAEA] animate-pulse ${item === 1 ? 'mt-6' : ''}`} />
+              ))
+            ) : storyProducts.length > 0 ? (
+              storyProducts.map((product, index) => (
+                <img
+                  key={product.id}
+                  src={product.image2}
+                  alt={`${product.name} - alternate view`}
+                  className={`w-full h-80 object-cover rounded-xs shadow-md ${index === 1 ? 'mt-6' : ''}`}
+                  loading="lazy"
+                />
+              ))
+            ) : (
+              <p className="col-span-2 self-center text-center text-sm text-[#777777]">
+                Brand story images are unavailable right now.
+              </p>
+            )}
           </div>
         </div>
 
         {/* 3 Core Values */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div className="bg-[#FAF8F5] border border-[#F0ECE1] p-8 rounded-xs space-y-3">
-            <Sparkles className="w-8 h-8 text-[#8C7853]" />
+          <div className="bg-[#F8F8F8] border border-[#ECECEC] p-8 rounded-xs space-y-3">
+            <Sparkles className="w-8 h-8 text-[#B55232]" />
             <h3 className="font-serif text-xl font-medium text-[#121212]">Curated Sourcing</h3>
             <p className="text-xs text-[#666666] leading-relaxed">
               We work directly with textile artisans in Dubai and Indonesia, hand-selecting every roll of Nida, Zoom, and liquid silk satin.
             </p>
           </div>
 
-          <div className="bg-[#FAF8F5] border border-[#F0ECE1] p-8 rounded-xs space-y-3">
-            <Sun className="w-8 h-8 text-[#8C7853]" />
+          <div className="bg-[#F8F8F8] border border-[#ECECEC] p-8 rounded-xs space-y-3">
+            <Sun className="w-8 h-8 text-[#B55232]" />
             <h3 className="font-serif text-xl font-medium text-[#121212]">Climate Engineering</h3>
             <p className="text-xs text-[#666666] leading-relaxed">
               Every garment is lightweight, breathable, and pre-tested to withstand humidity without clinging or sacrificing opacity.
             </p>
           </div>
 
-          <div className="bg-[#FAF8F5] border border-[#F0ECE1] p-8 rounded-xs space-y-3">
-            <ShieldCheck className="w-8 h-8 text-[#8C7853]" />
+          <div className="bg-[#F8F8F8] border border-[#ECECEC] p-8 rounded-xs space-y-3">
+            <ShieldCheck className="w-8 h-8 text-[#B55232]" />
             <h3 className="font-serif text-xl font-medium text-[#121212]">Tailored Precision</h3>
             <p className="text-xs text-[#666666] leading-relaxed">
               Precision lengths ranging from 52 to 60 inches tailored specifically for teenagers, college students, and women.

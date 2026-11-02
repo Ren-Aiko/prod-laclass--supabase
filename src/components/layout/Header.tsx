@@ -77,8 +77,8 @@ export const Header: React.FC<HeaderProps> = ({
     <header
       className={`sticky top-0 z-40 transition-all duration-300 ${
         isScrolled
-          ? 'bg-[#FCFCFA]/90 backdrop-blur-md shadow-sm border-b border-[#EAEAEA] py-1.5'
-          : 'bg-[#FCFCFA] border-b border-[#F0ECE1] py-2'
+          ? 'bg-[#FCFCFC]/90 backdrop-blur-md shadow-sm border-b border-[#EAEAEA] py-1.5'
+          : 'bg-[#FCFCFC] border-b border-[#ECECEC] py-2'
       }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
@@ -90,7 +90,7 @@ export const Header: React.FC<HeaderProps> = ({
             <div className="flex items-center lg:hidden">
               <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="p-2 text-[#121212] hover:text-[#8C7853] transition-colors focus:outline-none"
+                className="p-2 text-[#121212] hover:text-[#B55232] transition-colors focus:outline-none"
                 aria-label="Toggle navigation menu"
               >
                 {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -116,7 +116,7 @@ export const Header: React.FC<HeaderProps> = ({
               <img
                 src={logo}
                 alt="LA.CLASSÈ"
-                className="h-12 sm:h-14 md:h-16 lg:h-20 w-auto object-contain"
+                className="h-12 sm:h-14 md:h-16 lg:h-20 w-auto object-contain scale-[1.75]"
               />
             </button>
           </div>
@@ -128,7 +128,7 @@ export const Header: React.FC<HeaderProps> = ({
             </nav>
             <button
               onClick={onOpenSearch}
-              className="p-2 text-[#121212] hover:text-[#8C7853] transition-colors"
+              className="p-2 text-[#121212] hover:text-[#B55232] transition-colors"
               title="Search products"
               aria-label="Search catalog"
             >
@@ -137,12 +137,12 @@ export const Header: React.FC<HeaderProps> = ({
 
             <button
               onClick={() => setIsCartOpen(true)}
-              className="relative p-2 text-[#121212] hover:text-[#8C7853] transition-colors flex items-center gap-1.5"
+              className="relative p-2 text-[#121212] hover:text-[#B55232] transition-colors flex items-center gap-1.5"
               aria-label="Shopping Cart"
             >
               <ShoppingBag className="w-5 h-5 stroke-[1.5]" />
               {totalItemCount > 0 && (
-                <span className="w-4 h-4 bg-[#121212] text-[#FCFCFA] rounded-full text-[9px] font-semibold flex items-center justify-center">
+                <span className="w-4 h-4 bg-[#121212] text-[#FCFCFC] rounded-full text-[9px] font-semibold flex items-center justify-center">
                   {totalItemCount}
                 </span>
               )}
@@ -156,7 +156,7 @@ export const Header: React.FC<HeaderProps> = ({
       {isMobileMenuOpen && (
         <div className="lg:hidden fixed inset-0 z-50 bg-[#121212]/50 backdrop-blur-sm" onClick={() => setIsMobileMenuOpen(false)}>
           <div 
-            className="w-4/5 max-w-sm bg-[#FCFCFA] h-full shadow-2xl p-6 flex flex-col justify-between overflow-y-auto"
+            className="w-4/5 max-w-sm bg-[#FCFCFC] h-full shadow-2xl p-6 flex flex-col justify-between overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <div>
@@ -177,7 +177,7 @@ export const Header: React.FC<HeaderProps> = ({
                 </button>
                 <button 
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className="p-1 text-[#121212] hover:text-[#8C7853]"
+                  className="p-1 text-[#121212] hover:text-[#B55232]"
                 >
                   <X className="w-6 h-6" />
                 </button>
@@ -192,14 +192,14 @@ export const Header: React.FC<HeaderProps> = ({
                       setIsMobileMenuOpen(false);
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
-                    className={`text-left text-sm uppercase tracking-[0.2em] py-2 border-b border-[#F5F2EA] flex items-center justify-between ${
+                    className={`text-left text-sm uppercase tracking-[0.2em] py-2 border-b border-[#F2F2F2] flex items-center justify-between ${
                       currentTab === link.id
                         ? 'text-[#121212] font-semibold'
                         : 'text-[#666666]'
                     }`}
                   >
                     <span>{link.label}</span>
-                    <Sparkles className="w-3 h-3 text-[#8C7853] opacity-50" />
+                    <Sparkles className="w-3 h-3 text-[#B55232] opacity-50" />
                   </button>
                 ))}
               </div>

@@ -21,7 +21,6 @@ export interface Product {
   image1: string | null;
   image2: string | null;
   image3: string | null;
-  thumbnail: string | null;
   is_featured: boolean;
   is_new_arrival: boolean;
   is_flash_sale: boolean;

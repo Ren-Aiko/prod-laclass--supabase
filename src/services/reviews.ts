@@ -1,6 +1,31 @@
 import { Review } from '../types';
 import { getSupabase, isSupabaseConfigured, invokeEdgeFunction } from '../utils/supabase';
 
+async function fetchProductNames(productIds: string[]): Promise<Map<string, string>> {
+  const ids = [...new Set(productIds.filter(Boolean))];
+  if (ids.length === 0) return new Map();
+
+  const supabase = getSupabase();
+  const [byRowId, byProductId] = await Promise.all([
+    supabase.from('products').select('id, product_id, name').in('id', ids),
+    supabase.from('products').select('id, product_id, name').in('product_id', ids),
+  ]);
+
+  if (byRowId.error) {
+    console.warn('[Review product-name lookup by row ID failed]:', byRowId.error.message);
+  }
+  if (byProductId.error) {
+    console.warn('[Review product-name lookup by product ID failed]:', byProductId.error.message);
+  }
+
+  const names = new Map<string, string>();
+  for (const product of [...(byRowId.data || []), ...(byProductId.data || [])]) {
+    if (product.id && product.name) names.set(product.id, product.name);
+    if (product.product_id && product.name) names.set(product.product_id, product.name);
+  }
+  return names;
+}
+
 export const fetchReviews = async (): Promise<Review[]> => {
   if (!isSupabaseConfigured()) {
     return [];
@@ -17,10 +42,11 @@ export const fetchReviews = async (): Promise<Review[]> => {
 
     if (error || !data) return [];
 
+    const productNames = await fetchProductNames(data.map((review) => review.product_id));
     return data.map((r) => ({
       id: r.id,
       productId: r.product_id,
-      productName: r.product_id,
+      productName: productNames.get(r.product_id) || 'LaClassé Abaya',
       customerName: r.customer_name,
       rating: Number(r.rating || 5),
       reviewText: r.comment || '',
@@ -37,10 +63,11 @@ export const fetchReviews = async (): Promise<Review[]> => {
 /** Admin: fetch all reviews, including those awaiting moderation. */
 export const fetchAdminReviews = async (): Promise<Review[]> => {
   const rows = await invokeEdgeFunction<any[]>('admin-reviews', { method: 'GET' });
+  const productNames = await fetchProductNames((rows || []).map((review) => review.product_id));
   return (rows || []).map((r) => ({
     id: r.id,
     productId: r.product_id,
-    productName: r.product_name || r.product_id,
+    productName: r.product_name || productNames.get(r.product_id) || 'LaClassé Abaya',
     customerName: r.customer_name,
     rating: Number(r.rating || 5),
     reviewText: r.comment || '',

@@ -56,6 +56,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
     isAdminAuthenticated,
     logoutAdmin,
     orders,
+    adminProducts,
     coupons,
     subscribers,
     contacts,
@@ -75,7 +76,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
     restockOrder
   } = useAdmin();
 
-  const { products, categories, dbError, refreshStoreData } = useStore();
+  const { categories, dbError, refreshStoreData } = useStore();
 
   const [activeTab, setActiveTab] = useState<'dashboard' | 'products' | 'orders' | 'coupons' | 'reviews' | 'subscribers' | 'contacts' | 'settings'>('dashboard');
 
@@ -86,6 +87,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
   const [expandedProductGroup, setExpandedProductGroup] = useState<string | null>(null);
   const [productImages, setProductImages] = useState<(File | null)[]>([null, null, null]);
   const [productImagePreviews, setProductImagePreviews] = useState<(string | null)[]>([null, null, null]);
+  const [originalProductImages, setOriginalProductImages] = useState<(string | null)[]>([null, null, null]);
   const [isSavingProduct, setIsSavingProduct] = useState(false);
   const [isUploadingSlot, setIsUploadingSlot] = useState<number | null>(null);
   const [stockEditModal, setStockEditModal] = useState<{ id: string; name: string; size: string; length?: string; quantity: number } | null>(null);
@@ -296,29 +298,34 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
         offerPrice: product.offerPrice ?? null,
         description: product.description,
         collection: product.collection,
-        badge: (product as any).badge || '',
-        newArrival: product.newArrival ?? true,
-        is_new_arrival: product.newArrival ?? true,
+        newArrival: product.newArrival ?? false,
+        is_new_arrival: product.newArrival ?? false,
         featured: product.featured ?? false,
         is_featured: product.featured ?? false,
-        active: product.active !== false,
-        is_active: product.active !== false ? 1 : 0,
+        flashSale: product.flashSale ?? false,
+        is_flash_sale: product.flashSale ?? false,
+        active: product.active ?? true,
+        is_active: product.active ?? true,
       });
       setProductImages([null, null, null]);
       setProductImagePreviews([
-        product.image1 || product.images?.[0] || product.thumbnail || null,
+        product.image1 || product.images?.[0] || null,
+        product.image2 || product.images?.[1] || null,
+        product.image3 || product.images?.[2] || null
+      ]);
+      setOriginalProductImages([
+        product.image1 || product.images?.[0] || null,
         product.image2 || product.images?.[1] || null,
         product.image3 || product.images?.[2] || null
       ]);
       setEditingVariants(
         product.variants && product.variants.length > 0
-          ? product.variants.map(v => ({ id: v.id, size: v.size, length: v.length || '56"', quantity: v.quantity }))
-          : [{ size: product.size || 'Free Size', length: product.length || '56"', quantity: product.quantity ?? 1 }]
+          ? product.variants.map(v => ({ id: v.id, size: v.size, length: v.length || '', quantity: v.quantity }))
+          : [{ size: product.size || 'Free Size', length: product.length || '', quantity: product.quantity ?? 1 }]
       );
     } else {
-      const newPId = `LC00${Math.floor(10 + Math.random() * 90)}`;
+      const newPId = `LC-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`;
       setEditingProduct({
-        id: `prod_${Date.now()}`,
         productId: newPId,
         product_id: newPId,
         name: '',
@@ -330,16 +337,18 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
         original_price: 17999,
         description: '',
         collection: 'Luxury Signature',
-        badge: 'New Arrival',
         featured: false,
         is_featured: false,
-        newArrival: true,
-        is_new_arrival: true,
+        newArrival: false,
+        is_new_arrival: false,
+        flashSale: false,
+        is_flash_sale: false,
         active: true,
-        is_active: 1,
+        is_active: true,
       });
       setProductImages([null, null, null]);
       setProductImagePreviews([null, null, null]);
+      setOriginalProductImages([null, null, null]);
       setEditingVariants([
         { size: 'Free Size', length: '52"', quantity: 1 },
         { size: 'Free Size', length: '54"', quantity: 1 },
@@ -352,8 +361,6 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
   };
 
   const handleRemoveImageSlot = async (slotIndex: number) => {
-    const currentUrl = productImagePreviews[slotIndex];
-
     const newPreviews = [...productImagePreviews];
     newPreviews[slotIndex] = null;
     setProductImagePreviews(newPreviews);
@@ -365,44 +372,6 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
     const keyToUpdate = slotIndex === 0 ? 'image1' : slotIndex === 1 ? 'image2' : 'image3';
     setEditingProduct(prev => prev ? ({ ...prev, [keyToUpdate]: '' }) : null);
 
-    if (currentUrl) {
-      try {
-        await invokeEdgeFunction('r2-images', {
-          method: 'DELETE',
-          body: { url: currentUrl }
-        });
-      } catch {}
-    }
-  };
-
-  const handleAddExtraSize = (product: Product) => {
-    setEditingProduct({
-      id: `prod_${Date.now()}`,
-      productId: product.productId || product.product_id,
-      product_id: product.productId || product.product_id,
-      name: product.name,
-      category: product.category,
-      fabric: product.fabric,
-      price: product.price,
-      originalPrice: product.originalPrice ?? product.original_price,
-      original_price: product.originalPrice ?? product.original_price,
-      description: product.description,
-      collection: product.collection,
-      length: product.length || '56"',
-      size: 'XXL',
-      quantity: 1,
-      image1: product.image1,
-      image2: product.image2,
-      image3: product.image3,
-      featured: product.featured,
-    });
-    setProductImages([null, null, null]);
-    setProductImagePreviews([
-      product.image1 || product.thumbnail || null,
-      product.image2 || null,
-      product.image3 || null
-    ]);
-    setIsProductModalOpen(true);
   };
 
   const handleSaveStock = async (e: React.FormEvent) => {
@@ -421,12 +390,41 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
 
   const handleSaveProductForm = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editingProduct?.name || !editingProduct?.price) {
-      alert('Product name and price are required.');
+    const price = Number(editingProduct?.price);
+    if (!editingProduct?.name?.trim() || !Number.isFinite(price) || price <= 0) {
+      alert('Product name and a valid price greater than zero are required.');
+      return;
+    }
+    if (!editingProduct.productId && !editingProduct.product_id) {
+      alert('Product ID is required.');
+      return;
+    }
+    if (editingVariants.length === 0) {
+      alert('Add at least one size or length variant before saving.');
+      return;
+    }
+
+    const normalizedVariants = editingVariants.map((variant) => ({
+      ...variant,
+      size: variant.size.trim(),
+      length: variant.length.trim(),
+      quantity: Number(variant.quantity),
+    }));
+    const variantKeys = normalizedVariants.map((variant) =>
+      `${variant.size.toUpperCase()}|${variant.length.replace(/["”]/g, '')}`
+    );
+    if (
+      normalizedVariants.some((variant) =>
+        !variant.size || !Number.isInteger(variant.quantity) || variant.quantity < 0
+      ) ||
+      new Set(variantKeys).size !== variantKeys.length
+    ) {
+      alert('Variants need a valid size, whole-number stock, and unique size/length combinations.');
       return;
     }
 
     setIsSavingProduct(true);
+    const uploadedImageUrls: string[] = [];
     try {
       const updatedImages = {
         image1: editingProduct.image1 || '',
@@ -449,6 +447,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
           });
 
           if (uploadData?.url) {
+            uploadedImageUrls.push(uploadData.url);
             if (i === 0) updatedImages.image1 = uploadData.url;
             if (i === 1) updatedImages.image2 = uploadData.url;
             if (i === 2) updatedImages.image3 = uploadData.url;
@@ -456,27 +455,47 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
         }
       }
 
-      // Save each variant configured under this garment
-      if (editingVariants.length > 0) {
-        for (const v of editingVariants) {
-          await saveProduct({
-            ...editingProduct,
-            ...updatedImages,
-            size: v.size,
-            length: v.length,
-            quantity: v.quantity
-          });
-        }
-      } else {
-        await saveProduct({
-          ...editingProduct,
-          ...updatedImages
-        });
-      }
+      const savedImages = [updatedImages.image1, updatedImages.image2, updatedImages.image3].filter(Boolean);
+      await saveProduct({
+        ...editingProduct,
+        ...updatedImages,
+        variants: normalizedVariants.map(({ id, size, length, quantity }) => ({
+          id,
+          size,
+          length: length || undefined,
+          quantity,
+        })),
+        isNewProduct: !editingProduct.id,
+      });
 
+      setEditingProduct(null);
       setIsProductModalOpen(false);
       await refreshAdminData();
+
+      const imagesToDelete = originalProductImages.filter(
+        (url): url is string => Boolean(url && !savedImages.includes(url))
+      );
+      const cleanupResults = await Promise.allSettled(
+        imagesToDelete.map((url) =>
+          invokeEdgeFunction('r2-images', { method: 'DELETE', body: { url } })
+        )
+      );
+      cleanupResults.forEach((result) => {
+        if (result.status === 'rejected') {
+          console.error('[Product image cleanup error]:', result.reason);
+        }
+      });
     } catch (err: any) {
+      const cleanupResults = await Promise.allSettled(
+        uploadedImageUrls.map((url) =>
+          invokeEdgeFunction('r2-images', { method: 'DELETE', body: { url } })
+        )
+      );
+      cleanupResults.forEach((result) => {
+        if (result.status === 'rejected') {
+          console.error('[Uncommitted product image cleanup error]:', result.reason);
+        }
+      });
       alert(`Failed to save product: ${err.message}`);
     } finally {
       setIsSavingProduct(false);
@@ -485,7 +504,25 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
 
   const handleSaveCouponForm = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editingCoupon?.code || !editingCoupon?.discountValue) return;
+    const code = editingCoupon?.code?.trim() || '';
+    const discountValue = Number(editingCoupon?.discountValue);
+    const minPurchase = Number(editingCoupon?.minPurchase || 0);
+    if (!code) {
+      setCouponFeedback({ type: 'error', message: 'Enter a coupon code.' });
+      return;
+    }
+    if (!Number.isFinite(discountValue) || discountValue <= 0) {
+      setCouponFeedback({ type: 'error', message: 'Discount value must be greater than zero.' });
+      return;
+    }
+    if ((editingCoupon?.discountType || 'percentage') === 'percentage' && discountValue > 100) {
+      setCouponFeedback({ type: 'error', message: 'Percentage discount cannot exceed 100%.' });
+      return;
+    }
+    if (!Number.isFinite(minPurchase) || minPurchase < 0) {
+      setCouponFeedback({ type: 'error', message: 'Minimum spend cannot be negative.' });
+      return;
+    }
 
     setIsSavingCoupon(true);
     setCouponFeedback(null);
@@ -493,16 +530,17 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
       const defaultExpiry = new Date();
       defaultExpiry.setDate(defaultExpiry.getDate() + 30);
       const coupon: Coupon = {
-        code: editingCoupon.code.trim().toUpperCase(),
+        code: code.toUpperCase(),
         discountType: editingCoupon.discountType || 'percentage',
-        discountValue: Number(editingCoupon.discountValue),
-        minPurchase: Number(editingCoupon.minPurchase || 0),
+        discountValue,
+        minPurchase,
         expiryDate: editingCoupon.expiryDate || defaultExpiry.toISOString().slice(0, 10),
         active: true,
         subscriberEmail: editingCoupon.subscriberEmail || null,
       };
 
       await saveCoupon(coupon);
+      setEditingCoupon(null);
       setIsCouponModalOpen(false);
       setCouponFeedback({ type: 'success', message: 'Coupon saved to the backend.' });
     } catch (err: any) {
@@ -550,17 +588,17 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
 
   if (!isAdminAuthenticated) {
     return (
-      <div className="bg-[#121212] text-[#FAF8F5] min-h-screen flex items-center justify-center p-4">
+      <div className="bg-[#121212] text-[#F8F8F8] min-h-screen flex items-center justify-center p-4">
         <div className="text-center space-y-4 max-w-md">
-          <Shield className="w-12 h-12 text-[#D4AF37] mx-auto" />
+          <Shield className="w-12 h-12 text-[#E8B7A5] mx-auto" />
           <h2 className="font-serif text-2xl font-medium">Administrator Authorization Required</h2>
-          <p className="text-xs text-[#A09A92]">
+          <p className="text-xs text-[#9B9B9B]">
             Please authenticate using your verified administrator credentials to access the Atelier Dashboard.
           </p>
           {onNavigate && (
             <button
               onClick={() => onNavigate('home')}
-              className="mt-4 px-6 py-2.5 bg-[#8C7853] hover:bg-[#A08B63] text-white text-xs uppercase tracking-widest rounded-xs transition-colors cursor-pointer"
+              className="mt-4 px-6 py-2.5 bg-[#B55232] hover:bg-[#B55232] text-white text-xs uppercase tracking-widest rounded-xs transition-colors cursor-pointer"
             >
               Back to Storefront
             </button>
@@ -571,16 +609,16 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
   }
 
   return (
-    <div className="min-h-screen bg-[#141312] text-[#E8E6E3] flex flex-col md:flex-row">
+    <div className="min-h-screen bg-[#131313] text-[#E6E6E6] flex flex-col md:flex-row">
       
       {/* Sidebar Navigation */}
-      <aside className="w-full md:w-64 bg-[#1C1B1A] border-r border-[#2A2927] p-6 flex flex-col justify-between shrink-0">
+      <aside className="w-full md:w-64 bg-[#1B1B1B] border-r border-[#292929] p-6 flex flex-col justify-between shrink-0">
         <div className="space-y-8">
           <div className="flex items-center gap-3">
             <img src={logo} alt="LA.CLASSÈ" className="h-9 w-auto object-contain brightness-0 invert" />
             <div>
-              <span className="text-[9px] uppercase tracking-[0.25em] text-[#D4AF37] block font-semibold">Atelier Admin</span>
-              <span className="text-xs font-serif font-medium text-[#FAF8F5]">Cloudflare Edition</span>
+              <span className="text-[9px] uppercase tracking-[0.25em] text-[#E8B7A5] block font-semibold">Atelier Admin</span>
+              <span className="text-xs font-serif font-medium text-[#F8F8F8]">Supabase Edition</span>
             </div>
           </div>
 
@@ -588,7 +626,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
             <button
               onClick={() => setActiveTab('dashboard')}
               className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xs transition-colors ${
-                activeTab === 'dashboard' ? 'bg-[#8C7853] text-[#FAF8F5]' : 'text-[#A09A92] hover:bg-[#262422] hover:text-[#FAF8F5]'
+                activeTab === 'dashboard' ? 'bg-[#B55232] text-[#F8F8F8]' : 'text-[#9B9B9B] hover:bg-[#242424] hover:text-[#F8F8F8]'
               }`}
             >
               <LayoutDashboard className="w-4 h-4" />
@@ -598,7 +636,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
             <button
               onClick={() => setActiveTab('orders')}
               className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xs transition-colors ${
-                activeTab === 'orders' ? 'bg-[#8C7853] text-[#FAF8F5]' : 'text-[#A09A92] hover:bg-[#262422] hover:text-[#FAF8F5]'
+                activeTab === 'orders' ? 'bg-[#B55232] text-[#F8F8F8]' : 'text-[#9B9B9B] hover:bg-[#242424] hover:text-[#F8F8F8]'
               }`}
             >
               <div className="flex items-center gap-3">
@@ -606,7 +644,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                 <span>Orders</span>
               </div>
               {orders.filter(o => o.status === 'Paid, Awaiting Confirmation').length > 0 && (
-                <span className="bg-[#e65100] text-white text-[10px] px-2 py-0.5 rounded-full font-bold">
+                <span className="bg-[#EAB308] text-[#422006] text-[10px] px-2 py-0.5 rounded-full font-bold">
                   {orders.filter(o => o.status === 'Paid, Awaiting Confirmation').length}
                 </span>
               )}
@@ -615,17 +653,17 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
             <button
               onClick={() => setActiveTab('products')}
               className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xs transition-colors ${
-                activeTab === 'products' ? 'bg-[#8C7853] text-[#FAF8F5]' : 'text-[#A09A92] hover:bg-[#262422] hover:text-[#FAF8F5]'
+                activeTab === 'products' ? 'bg-[#B55232] text-[#F8F8F8]' : 'text-[#9B9B9B] hover:bg-[#242424] hover:text-[#F8F8F8]'
               }`}
             >
               <Package className="w-4 h-4" />
-              <span>D1 Products ({products.length})</span>
+              <span>Products ({adminProducts.length})</span>
             </button>
 
             <button
               onClick={() => setActiveTab('coupons')}
               className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xs transition-colors ${
-                activeTab === 'coupons' ? 'bg-[#8C7853] text-[#FAF8F5]' : 'text-[#A09A92] hover:bg-[#262422] hover:text-[#FAF8F5]'
+                activeTab === 'coupons' ? 'bg-[#B55232] text-[#F8F8F8]' : 'text-[#9B9B9B] hover:bg-[#242424] hover:text-[#F8F8F8]'
               }`}
             >
               <Tag className="w-4 h-4" />
@@ -635,7 +673,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
             <button
               onClick={() => setActiveTab('subscribers')}
               className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xs transition-colors ${
-                activeTab === 'subscribers' ? 'bg-[#8C7853] text-[#FAF8F5]' : 'text-[#A09A92] hover:bg-[#262422] hover:text-[#FAF8F5]'
+                activeTab === 'subscribers' ? 'bg-[#B55232] text-[#F8F8F8]' : 'text-[#9B9B9B] hover:bg-[#242424] hover:text-[#F8F8F8]'
               }`}
             >
               <div className="flex items-center gap-3">
@@ -648,7 +686,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
             <button
               onClick={() => setActiveTab('reviews')}
               className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xs transition-colors ${
-                activeTab === 'reviews' ? 'bg-[#8C7853] text-[#FAF8F5]' : 'text-[#A09A92] hover:bg-[#262422] hover:text-[#FAF8F5]'
+                activeTab === 'reviews' ? 'bg-[#B55232] text-[#F8F8F8]' : 'text-[#9B9B9B] hover:bg-[#242424] hover:text-[#F8F8F8]'
               }`}
             >
               <Star className="w-4 h-4" />
@@ -658,24 +696,24 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
             <button
               onClick={() => setActiveTab('settings')}
               className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xs transition-colors ${
-                activeTab === 'settings' ? 'bg-[#8C7853] text-[#FAF8F5]' : 'text-[#A09A92] hover:bg-[#262422] hover:text-[#FAF8F5]'
+                activeTab === 'settings' ? 'bg-[#B55232] text-[#F8F8F8]' : 'text-[#9B9B9B] hover:bg-[#242424] hover:text-[#F8F8F8]'
               }`}
             >
               <Settings className="w-4 h-4" />
-              <span>Cloudflare D1 & R2</span>
+              <span>Supabase & R2</span>
             </button>
           </nav>
         </div>
 
-        <div className="pt-8 border-t border-[#2A2927] space-y-4">
-          <div className="text-[10px] text-[#A09A92] leading-relaxed">
+        <div className="pt-8 border-t border-[#292929] space-y-4">
+          <div className="text-[10px] text-[#9B9B9B] leading-relaxed">
             Backend Engine: <br />
-            <strong className="text-[#a5d6a7]">Cloudflare D1 + Workers & R2</strong>
+            <strong className="text-[#C8C8C8]">Supabase + Cloudflare R2</strong>
           </div>
 
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-2 text-xs text-[#ff8080] hover:text-white py-2 uppercase tracking-wider cursor-pointer"
+            className="w-full flex items-center gap-2 text-xs text-[#FFF4F0] hover:text-white py-2 uppercase tracking-wider cursor-pointer"
           >
             <LogOut className="w-4 h-4" />
             <span>Logout Admin</span>
@@ -688,24 +726,24 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
 
         {/* Global Admin Alert Banner (displays exact backend error reason if D1 empty or Worker error) */}
         {(dbError || backendError) && (
-          <div className="bg-[#2d1212] border border-[#a83232] text-[#ffb4b4] p-4 rounded-xs text-xs flex items-start justify-between gap-4 shadow-lg animate-fadeIn">
+          <div className="bg-[#450A0A] border border-[#EF4444] text-[#FCA5A5] p-4 rounded-xs text-xs flex items-start justify-between gap-4 shadow-lg animate-fadeIn">
             <div className="flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-[#ff8080] shrink-0 mt-0.5" />
+              <AlertCircle className="w-5 h-5 text-[#FFF4F0] shrink-0 mt-0.5" />
               <div className="space-y-1">
-                <span className="font-semibold block uppercase tracking-wider text-[11px] text-[#ff8080]">
+                <span className="font-semibold block uppercase tracking-wider text-[11px] text-[#FFF4F0]">
                   Backend Diagnostic Notice:
                 </span>
                 <p className="font-mono text-[11px] leading-relaxed">
                   {dbError || backendError}
                 </p>
-                <p className="text-[10px] text-[#D1CDC7]">
-                  Ensure your Cloudflare Worker is running, has D1 binding <code className="text-[#D4AF37]">env.DB</code>, and schema from <code className="text-[#D4AF37]">schema.sql</code> is executed.
+                <p className="text-[10px] text-[#CDCDCD]">
+                  Ensure your Cloudflare Worker is running, has D1 binding <code className="text-[#E8B7A5]">env.DB</code>, and schema from <code className="text-[#E8B7A5]">schema.sql</code> is executed.
                 </p>
               </div>
             </div>
             <button 
               onClick={() => { refreshStoreData(); refreshAdminData(); }}
-              className="bg-[#1C1B1A] border border-[#4d2222] hover:border-[#ff8080] text-xs px-3 py-1.5 rounded-xs flex items-center gap-1.5 shrink-0 text-[#FAF8F5]"
+              className="bg-[#1B1B1B] border border-[#71301F] hover:border-[#FFF4F0] text-xs px-3 py-1.5 rounded-xs flex items-center gap-1.5 shrink-0 text-[#F8F8F8]"
             >
               <RefreshCw className="w-3.5 h-3.5" />
               <span>Retry</span>
@@ -718,16 +756,16 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
           <div className="space-y-8">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div>
-                <h1 className="font-serif text-3xl font-medium text-[#FAF8F5]">Atelier Executive Dashboard</h1>
-                <p className="text-xs text-[#A09A92] mt-1">Cloudflare D1 & R2 Real-Time Order Metrics</p>
+                <h1 className="font-serif text-3xl font-medium text-[#F8F8F8]">Atelier Executive Dashboard</h1>
+                <p className="text-xs text-[#9B9B9B] mt-1">Supabase & Cloudflare R2 Real-Time Store Metrics</p>
               </div>
 
               <div className="flex gap-2">
                 <button
                   onClick={exportOrdersCSV}
-                  className="bg-[#1C1B1A] border border-[#3A3835] hover:border-[#8C7853] px-4 py-2 text-xs uppercase tracking-wider font-medium text-[#FAF8F5] rounded-xs flex items-center gap-2 cursor-pointer"
+                  className="bg-[#1B1B1B] border border-[#383838] hover:border-[#B55232] px-4 py-2 text-xs uppercase tracking-wider font-medium text-[#F8F8F8] rounded-xs flex items-center gap-2 cursor-pointer"
                 >
-                  <Download className="w-3.5 h-3.5 text-[#D4AF37]" />
+                  <Download className="w-3.5 h-3.5 text-[#E8B7A5]" />
                   <span>Export Orders CSV</span>
                 </button>
               </div>
@@ -735,63 +773,63 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
 
             {/* Metrics Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              <div className="bg-[#1C1B1A] border border-[#2D2B28] p-6 rounded-xs space-y-2">
-                <div className="flex items-center justify-between text-[#A09A92] text-xs font-medium uppercase tracking-wider">
+              <div className="bg-[#1B1B1B] border border-[#2B2B2B] p-6 rounded-xs space-y-2">
+                <div className="flex items-center justify-between text-[#9B9B9B] text-xs font-medium uppercase tracking-wider">
                   <span>Confirmed Revenue</span>
-                  <DollarSign className="w-4 h-4 text-[#D4AF37]" />
+                  <DollarSign className="w-4 h-4 text-[#E8B7A5]" />
                 </div>
-                <div className="font-serif text-3xl font-semibold text-[#FAF8F5]">
+                <div className="font-serif text-3xl font-semibold text-[#F8F8F8]">
                   ₹{stats.totalRevenue.toLocaleString('en-IN')}
                 </div>
-                <span className="text-[10px] text-[#2e7d32] font-semibold">Verified Bank Receipts</span>
+                <span className="text-[10px] text-[#676767] font-semibold">Verified Bank Receipts</span>
               </div>
 
-              <div className="bg-[#1C1B1A] border border-[#2D2B28] p-6 rounded-xs space-y-2">
-                <div className="flex items-center justify-between text-[#A09A92] text-xs font-medium uppercase tracking-wider">
+              <div className="bg-[#1B1B1B] border border-[#2B2B2B] p-6 rounded-xs space-y-2">
+                <div className="flex items-center justify-between text-[#9B9B9B] text-xs font-medium uppercase tracking-wider">
                   <span>Total Orders</span>
-                  <ShoppingBag className="w-4 h-4 text-[#D4AF37]" />
+                  <ShoppingBag className="w-4 h-4 text-[#E8B7A5]" />
                 </div>
-                <div className="font-serif text-3xl font-semibold text-[#FAF8F5]">
+                <div className="font-serif text-3xl font-semibold text-[#F8F8F8]">
                   {stats.totalOrders}
                 </div>
-                <span className="text-[10px] text-[#e65100]">
+                <span className="text-[10px] text-[#FDE047]">
                   {orders.filter(o => o.status === 'Paid, Awaiting Confirmation').length} Awaiting Confirmation
                 </span>
               </div>
 
-              <div className="bg-[#1C1B1A] border border-[#2D2B28] p-6 rounded-xs space-y-2">
-                <div className="flex items-center justify-between text-[#A09A92] text-xs font-medium uppercase tracking-wider">
+              <div className="bg-[#1B1B1B] border border-[#2B2B2B] p-6 rounded-xs space-y-2">
+                <div className="flex items-center justify-between text-[#9B9B9B] text-xs font-medium uppercase tracking-wider">
                   <span>D1 Catalog Products</span>
-                  <Package className="w-4 h-4 text-[#D4AF37]" />
+                  <Package className="w-4 h-4 text-[#E8B7A5]" />
                 </div>
-                <div className="font-serif text-3xl font-semibold text-[#FAF8F5]">
-                  {products.length}
+                <div className="font-serif text-3xl font-semibold text-[#F8F8F8]">
+                  {adminProducts.length}
                 </div>
-                <span className="text-[10px] text-[#A09A92]">Active Pieces in SQLite</span>
+                <span className="text-[10px] text-[#9B9B9B]">Active Pieces in SQLite</span>
               </div>
 
-              <div className="bg-[#1C1B1A] border border-[#2D2B28] p-6 rounded-xs space-y-2">
-                <div className="flex items-center justify-between text-[#A09A92] text-xs font-medium uppercase tracking-wider">
+              <div className="bg-[#1B1B1B] border border-[#2B2B2B] p-6 rounded-xs space-y-2">
+                <div className="flex items-center justify-between text-[#9B9B9B] text-xs font-medium uppercase tracking-wider">
                   <span>Active Categories</span>
-                  <Tag className="w-4 h-4 text-[#D4AF37]" />
+                  <Tag className="w-4 h-4 text-[#E8B7A5]" />
                 </div>
-                <div className="font-serif text-3xl font-semibold text-[#FAF8F5]">
+                <div className="font-serif text-3xl font-semibold text-[#F8F8F8]">
                   {categories.filter(c => c !== 'All').length}
                 </div>
-                <span className="text-[10px] text-[#A09A92]">Dynamic D1 Collections</span>
+                <span className="text-[10px] text-[#9B9B9B]">Dynamic D1 Collections</span>
               </div>
             </div>
 
             {/* Quick Action Banner for Pending Confirmation */}
             {orders.filter(o => o.status === 'Paid, Awaiting Confirmation').length > 0 && (
-              <div className="bg-[#241a10] border border-[#d97706]/40 p-5 rounded-xs flex items-center justify-between">
+              <div className="bg-[#422006] border border-[#EAB308]/40 p-5 rounded-xs flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <Clock className="w-5 h-5 text-[#d97706]" />
+                  <Clock className="w-5 h-5 text-[#FDE047]" />
                   <div>
-                    <h4 className="text-sm font-medium text-[#fde68a]">
+                    <h4 className="text-sm font-medium text-[#FDE047]">
                       {orders.filter(o => o.status === 'Paid, Awaiting Confirmation').length} New Order(s) Need Payment Reconciliation
                     </h4>
-                    <p className="text-xs text-[#d1cdc7]">
+                    <p className="text-xs text-[#CDCDCD]">
                       Customers have uploaded bank transfer receipts awaiting verification.
                     </p>
                   </div>
@@ -801,7 +839,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                     setOrderStatusFilter('Paid, Awaiting Confirmation');
                     setActiveTab('orders');
                   }}
-                  className="bg-[#d97706] hover:bg-[#b45309] text-white px-4 py-2 rounded-xs text-xs uppercase tracking-wider font-semibold"
+                  className="bg-[#EAB308] hover:bg-[#CA8A04] text-[#422006] px-4 py-2 rounded-xs text-xs uppercase tracking-wider font-semibold"
                 >
                   Review Proofs
                 </button>
@@ -815,15 +853,15 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
           <div className="space-y-6">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div>
-                <h1 className="font-serif text-3xl font-medium text-[#FAF8F5]">Orders & State Machine</h1>
-                <p className="text-xs text-[#A09A92]">
+                <h1 className="font-serif text-3xl font-medium text-[#F8F8F8]">Orders & State Machine</h1>
+                <p className="text-xs text-[#9B9B9B]">
                   Manage order lifecycle: Paid, Awaiting Confirmation &rarr; Payment Confirmed &rarr; Shipped &rarr; Delivered.
                 </p>
               </div>
 
               <button
                 onClick={exportOrdersCSV}
-                className="bg-[#8C7853] hover:bg-[#A08B63] text-[#FAF8F5] px-4 py-2 text-xs font-semibold uppercase tracking-wider rounded-xs flex items-center gap-2 cursor-pointer"
+                className="bg-[#B55232] hover:bg-[#B55232] text-[#F8F8F8] px-4 py-2 text-xs font-semibold uppercase tracking-wider rounded-xs flex items-center gap-2 cursor-pointer"
               >
                 <Download className="w-4 h-4" />
                 <span>Export CSV</span>
@@ -831,24 +869,24 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
             </div>
 
             {/* Filter Bar */}
-            <div className="bg-[#1C1B1A] border border-[#2D2B28] p-4 rounded-xs flex flex-col sm:flex-row items-center justify-between gap-4 text-xs">
+            <div className="bg-[#1B1B1B] border border-[#2B2B2B] p-4 rounded-xs flex flex-col sm:flex-row items-center justify-between gap-4 text-xs">
               <div className="relative w-full sm:w-72">
                 <input
                   type="text"
                   value={orderSearch}
                   onChange={(e) => setOrderSearch(e.target.value)}
                   placeholder="Search Order ID, name, or phone..."
-                  className="w-full bg-[#121212] border border-[#3A3835] px-3 py-2 pl-8 rounded-xs text-[#FAF8F5] focus:outline-none focus:border-[#D4AF37]"
+                  className="w-full bg-[#121212] border border-[#383838] px-3 py-2 pl-8 rounded-xs text-[#F8F8F8] focus:outline-none focus:border-[#E8B7A5]"
                 />
                 <Search className="w-3.5 h-3.5 text-[#888888] absolute left-2.5 top-3" />
               </div>
 
               <div className="flex items-center gap-3 w-full sm:w-auto">
-                <span className="text-[#A09A92] shrink-0">Filter Status:</span>
+                <span className="text-[#9B9B9B] shrink-0">Filter Status:</span>
                 <select
                   value={orderStatusFilter}
                   onChange={(e) => setOrderStatusFilter(e.target.value)}
-                  className="w-full sm:w-auto bg-[#121212] border border-[#3A3835] px-3 py-2 rounded-xs text-[#FAF8F5] focus:outline-none"
+                  className="w-full sm:w-auto bg-[#121212] border border-[#383838] px-3 py-2 rounded-xs text-[#F8F8F8] focus:outline-none"
                 >
                   <option value="All">All Statuses ({orders.length})</option>
                   <option value="Paid, Awaiting Confirmation">Paid, Awaiting Confirmation</option>
@@ -861,10 +899,10 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
             </div>
 
             {/* Orders Table */}
-            <div className="bg-[#1C1B1A] border border-[#2D2B28] rounded-xs overflow-x-auto">
+            <div className="bg-[#1B1B1B] border border-[#2B2B2B] rounded-xs overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead>
-                  <tr className="border-b border-[#2D2B28] text-[#A09A92] uppercase text-[10px] tracking-wider bg-[#141312]">
+                  <tr className="border-b border-[#2B2B2B] text-[#9B9B9B] uppercase text-[10px] tracking-wider bg-[#131313]">
                     <th className="p-3.5">Order ID & Date</th>
                     <th className="p-3.5">Customer & Delivery</th>
                     <th className="p-3.5">Ordered Items</th>
@@ -874,7 +912,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                     <th className="p-3.5 text-right">State Machine Action</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#2D2B28] text-[#D1CDC7]">
+                <tbody className="divide-y divide-[#2B2B2B] text-[#CDCDCD]">
                   {orders
                     .filter(o => {
                       if (orderStatusFilter !== 'All' && o.status !== orderStatusFilter) return false;
@@ -888,18 +926,18 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                       return true;
                     })
                     .map((ord) => (
-                      <tr key={ord.orderId} className="hover:bg-[#242220]">
+                      <tr key={ord.orderId} className="hover:bg-[#222222]">
                         <td className="p-3.5">
-                          <span className="font-semibold text-[#FAF8F5] block font-mono">{ord.orderId}</span>
-                          <span className="text-[10px] text-[#A09A92]">{ord.date}</span>
+                          <span className="font-semibold text-[#F8F8F8] block font-mono">{ord.orderId}</span>
+                          <span className="text-[10px] text-[#9B9B9B]">{ord.date}</span>
                         </td>
 
                         <td className="p-3.5 max-w-xs">
-                          <strong className="text-[#FAF8F5] block">{ord.customer.fullName}</strong>
-                          <span className="text-[10px] text-[#A09A92] block">{ord.customer.phone}</span>
+                          <strong className="text-[#F8F8F8] block">{ord.customer.fullName}</strong>
+                          <span className="text-[10px] text-[#9B9B9B] block">{ord.customer.phone}</span>
                           <span className="text-[10px] text-[#888888] line-clamp-1">{ord.customer.address}</span>
                           {(ord.customer?.notes || ord.notes) && (
-                            <div className="text-[10px] text-[#D4AF37] italic mt-1 leading-tight line-clamp-2">
+                            <div className="text-[10px] text-[#E8B7A5] italic mt-1 leading-tight line-clamp-2">
                               "{ord.customer?.notes || ord.notes}"
                             </div>
                           )}
@@ -910,7 +948,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                             <div key={idx} className="text-[11px] mb-1">
                               <div>{i.name} ({i.size}{i.length ? ` / ${i.length}` : ''}) x{i.quantity}</div>
                               {i.custom_measurements && (
-                                <div className="text-[9px] text-[#D4AF37] leading-tight">
+                                <div className="text-[9px] text-[#E8B7A5] leading-tight">
                                   Bespoke Measurements attached
                                 </div>
                               )}
@@ -919,10 +957,10 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                         </td>
 
                         <td className="p-3.5">
-                          <div className="font-semibold text-[#FAF8F5]">
+                          <div className="font-semibold text-[#F8F8F8]">
                             ₹{ord.grandTotal.toLocaleString('en-IN')}
                           </div>
-                          <span className="text-[10px] text-[#A09A92] block">
+                          <span className="text-[10px] text-[#9B9B9B] block">
                             {ord.paymentMethod || ord.payment_method || 'Bank Transfer'}
                           </span>
                           <div className="mt-1">
@@ -931,34 +969,34 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
 
                               if (resStatus === 'committed') {
                                 return (
-                                  <span className="text-[9px] text-[#6ee7b7] bg-[#064e3b]/60 px-1.5 py-0.5 rounded-xs inline-block">
+                                  <span className="text-[9px] text-[#86EFAC] bg-[#14532D]/60 px-1.5 py-0.5 rounded-xs inline-block">
                                     ✓ Stock Locked
                                   </span>
                                 );
                               }
                               if (resStatus === 'released') {
                                 return (
-                                  <span className="text-[9px] text-[#a1a1aa] bg-[#27272a] px-1.5 py-0.5 rounded-xs inline-block">
+                                  <span className="text-[9px] text-[#A2A2A2] bg-[#272727] px-1.5 py-0.5 rounded-xs inline-block">
                                     Stock Released
                                   </span>
                                 );
                               }
                               if (resStatus === 'reserved') {
                                 return (
-                                  <span className="text-[9px] text-[#fde047] bg-[#422006] px-1.5 py-0.5 rounded-xs inline-block">
+                                  <span className="text-[9px] text-[#FDE047] bg-[#422006] px-1.5 py-0.5 rounded-xs inline-block">
                                     Stock Reserved
                                   </span>
                                 );
                               }
                               if (resStatus === 'expired') {
                                 return (
-                                  <span className="text-[9px] text-[#fca5a5] bg-[#450a0a] px-1.5 py-0.5 rounded-xs inline-block font-semibold">
+                                  <span className="text-[9px] text-[#FCA5A5] bg-[#450A0A] px-1.5 py-0.5 rounded-xs inline-block font-semibold">
                                     Legacy Expired Reservation
                                   </span>
                                 );
                               }
                               return (
-                                <span className="text-[9px] text-[#A09A92]">
+                                <span className="text-[9px] text-[#9B9B9B]">
                                   {resStatus}
                                 </span>
                               );
@@ -970,19 +1008,19 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                         <td className="p-3.5">
                           <div className="space-y-1.5">
                             {(ord.utrNumber || ord.utr_number) ? (
-                              <div className="flex items-center gap-1.5 bg-[#141312] border border-[#3A3835] px-2 py-1 rounded-xs w-fit">
-                                <Hash className="w-3 h-3 text-[#D4AF37]" />
-                                <span className="font-mono text-[11px] text-[#FAF8F5] font-semibold tracking-wide">
+                              <div className="flex items-center gap-1.5 bg-[#131313] border border-[#383838] px-2 py-1 rounded-xs w-fit">
+                                <Hash className="w-3 h-3 text-[#E8B7A5]" />
+                                <span className="font-mono text-[11px] text-[#F8F8F8] font-semibold tracking-wide">
                                   {ord.utrNumber || ord.utr_number}
                                 </span>
                                 <button
                                   type="button"
                                   onClick={() => handleCopyUtr(ord.utrNumber || ord.utr_number || '')}
                                   title="Copy UTR to reconcile bank credit"
-                                  className="text-[#A09A92] hover:text-[#D4AF37] p-0.5 cursor-pointer ml-1"
+                                  className="text-[#9B9B9B] hover:text-[#E8B7A5] p-0.5 cursor-pointer ml-1"
                                 >
                                   {copiedUtr === (ord.utrNumber || ord.utr_number) ? (
-                                    <Check className="w-3 h-3 text-[#6ee7b7]" />
+                                    <Check className="w-3 h-3 text-[#CACACA]" />
                                   ) : (
                                     <Copy className="w-3 h-3" />
                                   )}
@@ -995,7 +1033,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                             {ord.paymentProofUrl && (
                               <button
                                 onClick={() => setViewingProofUrl(ord.paymentProofUrl || null)}
-                                className="inline-flex items-center gap-1 px-2 py-0.5 bg-[#262422] hover:bg-[#3D3A36] text-[#D4AF37] border border-[#3D3A36] rounded-xs text-[10px] cursor-pointer"
+                                className="inline-flex items-center gap-1 px-2 py-0.5 bg-[#242424] hover:bg-[#3A3A3A] text-[#E8B7A5] border border-[#3A3A3A] rounded-xs text-[10px] cursor-pointer"
                               >
                                 <Eye className="w-3 h-3" />
                                 <span>Receipt Screenshot</span>
@@ -1009,20 +1047,20 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                           <div className="space-y-1">
                             <span className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-semibold ${
                               ord.status === 'Paid, Awaiting Confirmation'
-                                ? 'bg-[#422006] text-[#fde047] border border-[#d97706]/40'
+                                ? 'bg-[#422006] text-[#FDE047] border border-[#EAB308]/40'
                                 : ord.status === 'Payment Confirmed'
-                                ? 'bg-[#064e3b] text-[#6ee7b7] border border-[#10b981]/40'
+                                ? 'bg-[#14532D] text-[#86EFAC] border border-[#22C55E]/40'
                                 : ord.status === 'Shipped'
-                                ? 'bg-[#1e1b4b] text-[#a5b4fc] border border-[#6366f1]/40'
+                                ? 'bg-[#422006] text-[#FDE047] border border-[#EAB308]/40'
                                 : ord.status === 'Delivered'
-                                ? 'bg-[#14532d] text-[#86efac] border border-[#22c55e]/40'
-                                : 'bg-[#450a0a] text-[#fca5a5]'
+                                ? 'bg-[#14532D] text-[#86EFAC] border border-[#22C55E]/40'
+                                : 'bg-[#450A0A] text-[#FCA5A5] border border-[#EF4444]/40'
                             }`}>
                               {ord.status}
                             </span>
 
                             {ord.courierName && ord.trackingNumber && (
-                              <div className="text-[9px] text-[#A09A92] font-mono">
+                              <div className="text-[9px] text-[#9B9B9B] font-mono">
                                 {ord.courierName}: {ord.trackingNumber}
                               </div>
                             )}
@@ -1038,7 +1076,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                               <div className="flex flex-col gap-1.5 items-end">
                                 <button
                                   onClick={() => handleConfirmPayment(ord.orderId)}
-                                  className="px-2.5 py-1 bg-[#065f46] hover:bg-[#047857] text-[#FAF8F5] text-[10px] font-semibold rounded-xs shadow-sm flex items-center gap-1 cursor-pointer"
+                                  className="px-2.5 py-1 bg-[#166534] hover:bg-[#14532D] text-white text-[10px] font-semibold rounded-xs shadow-sm flex items-center gap-1 cursor-pointer"
                                   title={isReleased ? 'Verify inventory availability and recover order' : undefined}
                                 >
                                   <Check className="w-3 h-3" />
@@ -1046,7 +1084,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                                 </button>
                                 <button
                                   onClick={() => handleRejectPayment(ord.orderId)}
-                                  className="px-2.5 py-1 bg-[#3a1818] hover:bg-[#5a1818] text-[#fca5a5] text-[10px] font-medium rounded-xs cursor-pointer"
+                                  className="px-2.5 py-1 bg-[#B91C1C] hover:bg-[#991B1B] text-white text-[10px] font-medium rounded-xs cursor-pointer"
                                 >
                                   <span>Reject Payment</span>
                                 </button>
@@ -1057,7 +1095,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                           {ord.status === 'Payment Confirmed' && (
                             <button
                               onClick={() => handleOpenShipDialog(ord.orderId)}
-                              className="px-3 py-1.5 bg-[#8C7853] hover:bg-[#A08B63] text-[#FAF8F5] text-[11px] font-semibold rounded-xs shadow-sm flex items-center gap-1 ml-auto cursor-pointer"
+                              className="px-3 py-1.5 bg-[#A16207] hover:bg-[#854D0E] text-white text-[11px] font-semibold rounded-xs shadow-sm flex items-center gap-1 ml-auto cursor-pointer"
                             >
                               <Truck className="w-3.5 h-3.5" />
                               <span>Mark as Shipped</span>
@@ -1068,14 +1106,14 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                             <div className="flex flex-col gap-1.5 items-end">
                               <button
                                 onClick={() => handleMarkDelivered(ord.orderId)}
-                                className="px-3 py-1.5 bg-[#166534] hover:bg-[#15803d] text-[#FAF8F5] text-[11px] font-semibold rounded-xs shadow-sm flex items-center gap-1 cursor-pointer"
+                                className="px-3 py-1.5 bg-[#166534] hover:bg-[#14532D] text-white text-[11px] font-semibold rounded-xs shadow-sm flex items-center gap-1 cursor-pointer"
                               >
                                 <CheckCircle2 className="w-3.5 h-3.5" />
                                 <span>Mark as Delivered</span>
                               </button>
                               <button
                                 onClick={() => handleOpenShipDialog(ord.orderId, 'Shipped')}
-                                className="text-[10px] text-[#D4AF37] hover:text-[#FAF8F5] cursor-pointer"
+                                className="text-[10px] text-[#E8B7A5] hover:text-[#F8F8F8] cursor-pointer"
                               >
                                 Edit Shipment Details
                               </button>
@@ -1084,12 +1122,12 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
 
                           {ord.status === 'Delivered' && (
                             <div className="flex flex-col gap-1 items-end">
-                              <span className="text-[10px] text-[#2e7d32] font-semibold block">
+                              <span className="text-[10px] text-[#86EFAC] font-semibold block">
                                 ✓ Completed
                               </span>
                               <button
                                 onClick={() => handleOpenShipDialog(ord.orderId, 'Delivered')}
-                                className="text-[10px] text-[#D4AF37] hover:text-[#FAF8F5] cursor-pointer"
+                                className="text-[10px] text-[#E8B7A5] hover:text-[#F8F8F8] cursor-pointer"
                               >
                                 Edit Shipment Details
                               </button>
@@ -1099,13 +1137,13 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                           {(ord.status === 'Cancelled' || ord.status === 'Refunded') && (
                             <div className="space-y-1">
                               {ord.restocked_at || ord.reservation_status === 'released' ? (
-                                <span className="text-[10px] text-[#22c55e] font-medium block">
+                                <span className="text-[10px] text-[#86EFAC] font-medium block">
                                   ✓ Restocked {ord.restocked_at ? new Date(ord.restocked_at).toLocaleTimeString() : ''}
                                 </span>
                               ) : (
                                 <button
                                   onClick={() => handleRestockOrder(ord.orderId)}
-                                  className="px-2.5 py-1 bg-[#d97706] hover:bg-[#b45309] text-white text-[10px] font-semibold rounded-xs shadow-sm flex items-center gap-1 ml-auto cursor-pointer"
+                                  className="px-2.5 py-1 bg-[#166534] hover:bg-[#14532D] text-white text-[10px] font-semibold rounded-xs shadow-sm flex items-center gap-1 ml-auto cursor-pointer"
                                   title="Release reserved units back to active inventory"
                                 >
                                   <RotateCcw className="w-3 h-3" />
@@ -1120,8 +1158,8 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
 
                   {orders.length === 0 && (
                     <tr>
-                      <td colSpan={7} className="p-8 text-center text-xs text-[#A09A92]">
-                        No orders recorded in Cloudflare D1 yet.
+                      <td colSpan={7} className="p-8 text-center text-xs text-[#9B9B9B]">
+                        No orders recorded in Supabase yet.
                       </td>
                     </tr>
                   )}
@@ -1136,9 +1174,9 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
           <div className="space-y-6">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div>
-                <h1 className="font-serif text-3xl font-medium text-[#FAF8F5]">Cloudflare D1 Products Catalog</h1>
-                <p className="text-xs text-[#A09A92]">
-                  Garments grouped by Product ID in Cloudflare D1 with active inventory variants and Cloudflare R2 assets.
+                <h1 className="font-serif text-3xl font-medium text-[#F8F8F8]">Products Catalog</h1>
+                <p className="text-xs text-[#9B9B9B]">
+                  Garments grouped by Product ID, including inactive storefront listings and all inventory variants.
                 </p>
               </div>
 
@@ -1147,16 +1185,16 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                   type="button"
                   disabled={isReleasingExpired}
                   onClick={handleReleaseExpired}
-                  className="bg-[#1C1B1A] border border-[#3A3835] hover:border-[#D4AF37] text-[#FAF8F5] px-3.5 py-2 text-xs font-medium rounded-xs flex items-center gap-2 cursor-pointer transition-colors"
+                  className="bg-[#1B1B1B] border border-[#383838] hover:border-[#E8B7A5] text-[#F8F8F8] px-3.5 py-2 text-xs font-medium rounded-xs flex items-center gap-2 cursor-pointer transition-colors"
                   title="Run scheduled job to release expired stock reservations back to inventory"
                 >
-                  <RotateCcw className={`w-3.5 h-3.5 text-[#D4AF37] ${isReleasingExpired ? 'animate-spin' : ''}`} />
+                  <RotateCcw className={`w-3.5 h-3.5 text-[#E8B7A5] ${isReleasingExpired ? 'animate-spin' : ''}`} />
                   <span>Release Expired Reservations</span>
                 </button>
 
                 <button
                   onClick={() => handleOpenProductModal()}
-                  className="bg-[#8C7853] hover:bg-[#A08B63] text-[#FAF8F5] px-5 py-2 text-xs font-semibold uppercase tracking-wider rounded-xs flex items-center gap-2 cursor-pointer"
+                  className="bg-[#B55232] hover:bg-[#B55232] text-[#F8F8F8] px-5 py-2 text-xs font-semibold uppercase tracking-wider rounded-xs flex items-center gap-2 cursor-pointer"
                 >
                   <Plus className="w-4 h-4" />
                   <span>Create New Product</span>
@@ -1165,10 +1203,10 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
             </div>
 
             {/* Products Table */}
-            <div className="bg-[#1C1B1A] border border-[#2D2B28] rounded-xs overflow-x-auto">
+            <div className="bg-[#1B1B1B] border border-[#2B2B2B] rounded-xs overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead>
-                  <tr className="border-b border-[#2D2B28] text-[#A09A92] uppercase text-[10px] tracking-wider bg-[#141312]">
+                  <tr className="border-b border-[#2B2B2B] text-[#9B9B9B] uppercase text-[10px] tracking-wider bg-[#131313]">
                     <th className="p-3.5">Image</th>
                     <th className="p-3.5">Garment & Product ID</th>
                     <th className="p-3.5">Category & Fabric</th>
@@ -1179,29 +1217,29 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                     <th className="p-3.5 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#2D2B28] text-[#D1CDC7]">
-                  {products.map((p) => {
+                <tbody className="divide-y divide-[#2B2B2B] text-[#CDCDCD]">
+                  {adminProducts.map((p) => {
                     const pKey = String(p.productId || p.product_id || p.id);
                     const isExpanded = expandedProductGroup === pKey;
                     const totalQty = p.totalStock !== undefined 
                       ? Number(p.totalStock) 
                       : (p.variants && p.variants.length > 0 ? p.variants.reduce((acc, v) => acc + (v.quantity || 0), 0) : Number(p.quantity ?? 0));
-                    const varList = p.variants && p.variants.length > 0 ? p.variants : [{ id: p.id, size: p.size, length: p.length || '56"', quantity: p.quantity ?? 1 }];
+                    const varList = p.variants && p.variants.length > 0 ? p.variants : [{ id: p.id, size: p.size, length: p.length || '', quantity: p.quantity ?? 1 }];
 
                     return (
                       <React.Fragment key={p.id}>
-                        <tr className={`hover:bg-[#242220] transition-colors ${isExpanded ? 'bg-[#201e1c]' : ''}`}>
+                        <tr className={`hover:bg-[#222222] transition-colors ${isExpanded ? 'bg-[#1E1E1E]' : ''}`}>
                           <td className="p-3.5">
                             <img 
-                              src={p.thumbnail || p.image1 || p.images?.[0] || 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=200&auto=format&fit=crop'} 
+                              src={p.image1 || p.images?.[0] || 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=200&auto=format&fit=crop'}
                               alt={p.name} 
-                              className="w-10 h-12 object-cover rounded-xs border border-[#3A3835]" 
+                              className="w-10 h-12 object-cover rounded-xs border border-[#383838]"
                             />
                           </td>
                           <td className="p-3.5">
-                            <span className="font-semibold text-[#FAF8F5] block">{p.name}</span>
+                            <span className="font-semibold text-[#F8F8F8] block">{p.name}</span>
                             <div className="flex items-center gap-2 mt-0.5">
-                              <span className="text-[10px] text-[#D4AF37] font-mono font-semibold bg-[#262422] px-1.5 py-0.5 rounded-xs">
+                              <span className="text-[10px] text-[#E8B7A5] font-mono font-semibold bg-[#242424] px-1.5 py-0.5 rounded-xs">
                                 {pKey}
                               </span>
                               <span className="text-[10px] text-[#888888] font-mono truncate max-w-[140px]">
@@ -1210,13 +1248,13 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                             </div>
                           </td>
                           <td className="p-3.5">
-                            <span className="bg-[#262422] text-[#FAF8F5] px-2 py-0.5 rounded-xs text-[10px] font-medium block w-fit">
+                            <span className="bg-[#242424] text-[#F8F8F8] px-2 py-0.5 rounded-xs text-[10px] font-medium block w-fit">
                               {p.category}
                             </span>
-                            <span className="text-[10px] text-[#A09A92] mt-0.5 block">{p.fabric}</span>
+                            <span className="text-[10px] text-[#9B9B9B] mt-0.5 block">{p.fabric}</span>
                           </td>
                           <td className="p-3.5">
-                            <div className="font-semibold text-[#FAF8F5]">
+                            <div className="font-semibold text-[#F8F8F8]">
                               ₹{(p.offerPrice ?? p.price).toLocaleString('en-IN')}
                             </div>
                             {(p.originalPrice ?? p.original_price) && (
@@ -1227,23 +1265,33 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                           </td>
                           <td className="p-3.5">
                             {totalQty > 0 ? (
-                              <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#064e3b] text-[#6ee7b7] border border-[#10b981]/30">
+                              <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#14532D] text-[#86EFAC] border border-[#22C55E]/30">
                                 {totalQty} in stock
                               </span>
                             ) : (
-                              <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#450a0a] text-[#fca5a5] border border-[#ef4444]/30">
+                              <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#450A0A] text-[#FCA5A5] border border-[#EF4444]/30">
                                 Out of Stock
                               </span>
                             )}
                           </td>
                           <td className="p-3.5">
                             <div className="space-y-1">
-                              <span className={`inline-block px-2 py-0.5 rounded-xs text-[10px] font-semibold ${p.active !== false ? 'bg-[#14532d] text-[#86efac]' : 'bg-[#27272a] text-[#a1a1aa]'}`}>
-                                {p.active !== false ? 'Active' : 'Draft'}
+                              <span className={`inline-block px-2 py-0.5 rounded-xs text-[10px] font-semibold ${p.active ? 'bg-[#14532D] text-[#86EFAC]' : 'bg-[#450A0A] text-[#FCA5A5]'}`}>
+                                {p.active ? 'Active' : 'Inactive · hidden'}
                               </span>
                               {p.featured && (
-                                <span className="text-[#D4AF37] text-[10px] font-medium block">
+                                <span className="text-[#FDE047] text-[10px] font-medium block">
                                   ★ Featured
+                                </span>
+                              )}
+                              {p.newArrival && (
+                                <span className="text-[#86EFAC] text-[10px] font-medium block">
+                                  New Arrival
+                                </span>
+                              )}
+                              {p.flashSale && (
+                                <span className="text-[#FCA5A5] text-[10px] font-medium block">
+                                  Flash Sale
                                 </span>
                               )}
                             </div>
@@ -1252,7 +1300,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                             <button
                               type="button"
                               onClick={() => setExpandedProductGroup(isExpanded ? null : pKey)}
-                              className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-[#262422] hover:bg-[#3D3A36] text-[#D4AF37] border border-[#3D3A36] rounded-xs text-[10px] font-medium cursor-pointer transition-colors"
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-[#242424] hover:bg-[#3A3A3A] text-[#E8B7A5] border border-[#3A3A3A] rounded-xs text-[10px] font-medium cursor-pointer transition-colors"
                               title="Toggle inventory variants list"
                             >
                               <Layers className="w-3 h-3" />
@@ -1263,7 +1311,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                           <td className="p-3.5 text-right space-x-2">
                             <button
                               onClick={() => handleOpenProductModal(p)}
-                              className="p-1.5 bg-[#2A2927] hover:bg-[#8C7853] text-[#FAF8F5] rounded-xs cursor-pointer"
+                              className="p-1.5 bg-[#292929] hover:bg-[#B55232] text-[#F8F8F8] rounded-xs cursor-pointer"
                               title="Edit Garment & Variants"
                             >
                               <Edit className="w-3.5 h-3.5" />
@@ -1271,10 +1319,11 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                             <button
                               onClick={() => {
                                 if (confirm(`Delete garment ${p.name} and all its variants?`)) {
-                                  deleteProduct(p.id, true);
+                                  void deleteProduct(p.productId || p.product_id || p.id, true)
+                                    .catch((error: Error) => alert(`Failed to delete garment: ${error.message}`));
                                 }
                               }}
-                              className="p-1.5 bg-[#3a1818] hover:bg-[#990000] text-[#ff8080] hover:text-white rounded-xs cursor-pointer"
+                              className="p-1.5 bg-[#B91C1C] hover:bg-[#991B1B] text-white rounded-xs cursor-pointer"
                               title="Delete Garment Group"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
@@ -1284,34 +1333,34 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
 
                         {/* Expander Sub-row: Individual Variant Stock Breakdown */}
                         {isExpanded && (
-                          <tr className="bg-[#171615]">
-                            <td colSpan={8} className="p-4 border-t border-b border-[#2D2B28]">
-                              <div className="bg-[#121212] border border-[#3A3835] p-3 rounded-xs space-y-2">
-                                <div className="flex items-center justify-between border-b border-[#2D2B28] pb-2">
-                                  <span className="text-[11px] font-semibold text-[#D4AF37] uppercase tracking-wider flex items-center gap-1.5">
+                          <tr className="bg-[#161616]">
+                            <td colSpan={8} className="p-4 border-t border-b border-[#2B2B2B]">
+                              <div className="bg-[#121212] border border-[#383838] p-3 rounded-xs space-y-2">
+                                <div className="flex items-center justify-between border-b border-[#2B2B2B] pb-2">
+                                  <span className="text-[11px] font-semibold text-[#E8B7A5] uppercase tracking-wider flex items-center gap-1.5">
                                     <Layers className="w-3.5 h-3.5" />
                                     Active Inventory Variants for {p.name} ({pKey})
                                   </span>
-                                  <span className="text-[10px] text-[#A09A92]">
+                                  <span className="text-[10px] text-[#9B9B9B]">
                                     Click "Quick Edit" to adjust available stock quantity
                                   </span>
                                 </div>
 
                                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2.5 pt-1">
                                   {varList.map((v, vIdx) => (
-                                    <div key={v.id || vIdx} className="bg-[#1C1B1A] border border-[#2D2B28] p-2.5 rounded-xs flex flex-col justify-between space-y-2">
+                                    <div key={v.id || vIdx} className="bg-[#1B1B1B] border border-[#2B2B2B] p-2.5 rounded-xs flex flex-col justify-between space-y-2">
                                       <div>
                                         <div className="flex items-center justify-between text-[11px]">
-                                          <span className="font-semibold text-[#FAF8F5]">{v.size}</span>
-                                          <span className="text-[#A09A92] font-mono">{v.length || '56"'}</span>
+                                          <span className="font-semibold text-[#F8F8F8]">{v.size}</span>
+                                          <span className="text-[#9B9B9B] font-mono">{v.length || 'No length'}</span>
                                         </div>
                                         <div className="text-[10px] text-[#888888] font-mono mt-0.5 truncate" title={v.id}>
                                           ID: {v.id || `${pKey}-${v.size}-${v.length}`}
                                         </div>
                                       </div>
 
-                                      <div className="flex items-center justify-between pt-1 border-t border-[#262422]">
-                                        <span className={`text-xs font-mono font-bold ${v.quantity > 0 ? 'text-[#6ee7b7]' : 'text-[#ff8080]'}`}>
+                                      <div className="flex items-center justify-between pt-1 border-t border-[#242424]">
+                                        <span className={`text-xs font-mono font-bold ${v.quantity > 0 ? 'text-[#CACACA]' : 'text-[#FFF4F0]'}`}>
                                           {v.quantity} in stock
                                         </span>
                                         <button
@@ -1323,7 +1372,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                                             length: v.length,
                                             quantity: v.quantity
                                           })}
-                                          className="text-[10px] px-2 py-0.5 bg-[#262422] hover:bg-[#8C7853] text-[#FAF8F5] rounded-xs cursor-pointer font-medium"
+                                          className="text-[10px] px-2 py-0.5 bg-[#242424] hover:bg-[#B55232] text-[#F8F8F8] rounded-xs cursor-pointer font-medium"
                                         >
                                           Quick Edit
                                         </button>
@@ -1339,10 +1388,10 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                     );
                   })}
 
-                  {products.length === 0 && (
+                  {adminProducts.length === 0 && (
                     <tr>
-                      <td colSpan={8} className="p-8 text-center text-xs text-[#A09A92]">
-                        No products currently in Cloudflare D1. Click "Create New Product" above to add the first piece!
+                      <td colSpan={8} className="p-8 text-center text-xs text-[#9B9B9B]">
+                        No products are in Supabase yet. Click "Create New Product" above to add the first piece.
                       </td>
                     </tr>
                   )}
@@ -1357,32 +1406,33 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
           <div className="space-y-6">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div>
-                <h1 className="font-serif text-3xl font-medium text-[#FAF8F5]">Promo Codes & Vouchers</h1>
+                <h1 className="font-serif text-3xl font-medium text-[#F8F8F8]">Promo Codes & Vouchers</h1>
 
             {couponFeedback && (
-              <div className={`p-3 text-xs rounded-xs ${couponFeedback.type === 'success' ? 'bg-[#1b5e20] text-[#a5d6a7]' : 'bg-[#3a1818] text-[#ffaaaa]'}`}>
+              <div className={`p-3 text-xs rounded-xs ${couponFeedback.type === 'success' ? 'bg-[#14532D] text-[#86EFAC]' : 'bg-[#450A0A] text-[#FCA5A5]'}`}>
                 {couponFeedback.message}
               </div>
             )}
-                <p className="text-xs text-[#A09A92]">Manage active percentage and flat amount discount vouchers.</p>
+                <p className="text-xs text-[#9B9B9B]">Manage active percentage and flat amount discount vouchers.</p>
               </div>
 
               <button
                 onClick={() => {
                   setEditingCoupon({});
+                  setCouponFeedback(null);
                   setIsCouponModalOpen(true);
                 }}
-                className="bg-[#8C7853] text-[#FAF8F5] px-5 py-2.5 text-xs font-semibold uppercase tracking-wider rounded-xs flex items-center gap-2 cursor-pointer"
+                className="bg-[#B55232] text-[#F8F8F8] px-5 py-2.5 text-xs font-semibold uppercase tracking-wider rounded-xs flex items-center gap-2 cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
                 <span>Create New Coupon</span>
               </button>
             </div>
 
-            <div className="bg-[#1C1B1A] border border-[#2D2B28] rounded-xs overflow-x-auto">
+            <div className="bg-[#1B1B1B] border border-[#2B2B2B] rounded-xs overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead>
-                  <tr className="border-b border-[#2D2B28] text-[#A09A92] uppercase text-[10px] tracking-wider bg-[#141312]">
+                  <tr className="border-b border-[#2B2B2B] text-[#9B9B9B] uppercase text-[10px] tracking-wider bg-[#131313]">
                     <th className="p-3.5">Coupon Code</th>
                     <th className="p-3.5">Discount Type</th>
                     <th className="p-3.5">Value</th>
@@ -1392,25 +1442,25 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                     <th className="p-3.5 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#2D2B28] text-[#D1CDC7]">
+                <tbody className="divide-y divide-[#2B2B2B] text-[#CDCDCD]">
                   {coupons.map((c) => (
-                    <tr key={c.code} className="hover:bg-[#242220]">
-                      <td className="p-3.5 font-mono font-semibold text-[#D4AF37]">{c.code}</td>
+                    <tr key={c.code} className="hover:bg-[#222222]">
+                      <td className="p-3.5 font-mono font-semibold text-[#E8B7A5]">{c.code}</td>
                       <td className="p-3.5 uppercase">{c.discountType}</td>
-                      <td className="p-3.5 font-semibold text-[#FAF8F5]">
+                      <td className="p-3.5 font-semibold text-[#F8F8F8]">
                         {c.discountType === 'percentage' ? `${c.discountValue}% OFF` : `₹${c.discountValue} OFF`}
                       </td>
                       <td className="p-3.5">₹{c.minPurchase.toLocaleString('en-IN')}</td>
                       <td className="p-3.5">{c.subscriberEmail || '—'}</td>
                       <td className="p-3.5">
-                        <span className={`px-2 py-0.5 rounded-full text-[10px] ${c.active ? 'bg-[#1b5e20] text-[#a5d6a7]' : 'bg-[#424242] text-[#e0e0e0]'}`}>
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] ${c.active ? 'bg-[#14532D] text-[#86EFAC]' : 'bg-[#450A0A] text-[#FCA5A5]'}`}>
                           {c.active ? 'Active' : 'Expired'}
                         </span>
                       </td>
                       <td className="p-3.5 text-right">
                         <button
                           onClick={() => deleteCoupon(c.code)}
-                          className="p-1.5 bg-[#3a1818] hover:bg-[#990000] text-[#ff8080] hover:text-white rounded-xs"
+                          className="p-1.5 bg-[#B91C1C] hover:bg-[#991B1B] text-white rounded-xs"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -1428,43 +1478,43 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
           <div className="space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
-                <h1 className="font-serif text-3xl font-medium text-[#FAF8F5]">Newsletter Subscribers</h1>
-                <p className="text-xs text-[#A09A92]">Subscriber records and their newsletter welcome coupons.</p>
+                <h1 className="font-serif text-3xl font-medium text-[#F8F8F8]">Newsletter Subscribers</h1>
+                <p className="text-xs text-[#9B9B9B]">Subscriber records and their newsletter welcome coupons.</p>
               </div>
               <button
                 type="button"
                 onClick={() => refreshAdminData()}
-                className="px-4 py-2 bg-[#262422] hover:bg-[#3A3835] text-[#FAF8F5] rounded-xs text-xs flex items-center gap-2"
+                className="px-4 py-2 bg-[#242424] hover:bg-[#383838] text-[#F8F8F8] rounded-xs text-xs flex items-center gap-2"
               >
                 <RefreshCw className="w-3.5 h-3.5" /> Refresh
               </button>
             </div>
-            <div className="bg-[#1C1B1A] border border-[#2D2B28] rounded-xs overflow-x-auto">
+            <div className="bg-[#1B1B1B] border border-[#2B2B2B] rounded-xs overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead>
-                  <tr className="border-b border-[#2D2B28] text-[#A09A92] uppercase text-[10px] tracking-wider bg-[#141312]">
+                  <tr className="border-b border-[#2B2B2B] text-[#9B9B9B] uppercase text-[10px] tracking-wider bg-[#131313]">
                     <th className="p-3.5">Email Address</th>
                     <th className="p-3.5">Subscribed On</th>
                     <th className="p-3.5">Newsletter Coupon</th>
                     <th className="p-3.5">Coupon Status</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#2D2B28] text-[#D1CDC7]">
+                <tbody className="divide-y divide-[#2B2B2B] text-[#CDCDCD]">
                   {subscribers.length === 0 ? (
-                    <tr><td colSpan={4} className="p-8 text-center text-[#A09A92]">No newsletter subscribers yet.</td></tr>
+                    <tr><td colSpan={4} className="p-8 text-center text-[#9B9B9B]">No newsletter subscribers yet.</td></tr>
                   ) : subscribers.map((subscriber) => {
                     const linkedCoupon = coupons.find(c => c.subscriberEmail?.toLowerCase() === subscriber.email.toLowerCase());
                     return (
-                      <tr key={subscriber.id || subscriber.email} className="hover:bg-[#242220]">
-                        <td className="p-3.5 font-medium text-[#FAF8F5]">{subscriber.email}</td>
+                      <tr key={subscriber.id || subscriber.email} className="hover:bg-[#222222]">
+                        <td className="p-3.5 font-medium text-[#F8F8F8]">{subscriber.email}</td>
                         <td className="p-3.5">{subscriber.subscribedAt ? new Date(subscriber.subscribedAt).toLocaleString() : '—'}</td>
-                        <td className="p-3.5 font-mono text-[#D4AF37]">{linkedCoupon?.code || '—'}</td>
+                        <td className="p-3.5 font-mono text-[#E8B7A5]">{linkedCoupon?.code || '—'}</td>
                         <td className="p-3.5">
                           {linkedCoupon ? (
-                            <span className={`px-2 py-0.5 rounded-full text-[10px] ${linkedCoupon.active ? 'bg-[#1b5e20] text-[#a5d6a7]' : 'bg-[#424242] text-[#e0e0e0]'}`}>
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] ${linkedCoupon.active ? 'bg-[#14532D] text-[#86EFAC]' : 'bg-[#450A0A] text-[#FCA5A5]'}`}>
                               {linkedCoupon.active ? 'Active' : 'Inactive'}
                             </span>
-                          ) : <span className="text-[#777]">No linked coupon</span>}
+                          ) : <span className="text-[#777777]">No linked coupon</span>}
                         </td>
                       </tr>
                     );
@@ -1480,43 +1530,50 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
           <div className="space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
-                <h1 className="font-serif text-3xl font-medium text-[#FAF8F5]">Client Reviews Moderation</h1>
-                <p className="text-xs text-[#A09A92]">New customer reviews appear here as unapproved. Approve to publish or reject to keep hidden.</p>
+                <h1 className="font-serif text-3xl font-medium text-[#F8F8F8]">Client Reviews Moderation</h1>
+                <p className="text-xs text-[#9B9B9B]">New customer reviews appear here as unapproved. Approve to publish or reject to keep hidden.</p>
               </div>
             </div>
 
             {reviewFeedback && (
-              <div className={`p-3 text-xs rounded-xs ${reviewFeedback.type === 'success' ? 'bg-[#1b5e20] text-[#a5d6a7]' : 'bg-[#3a1818] text-[#ffaaaa]'}`}>
+              <div className={`p-3 text-xs rounded-xs ${reviewFeedback.type === 'success' ? 'bg-[#14532D] text-[#86EFAC]' : 'bg-[#450A0A] text-[#FCA5A5]'}`}>
                 {reviewFeedback.message}
               </div>
             )}
 
             <div className="space-y-4">
               {reviews.length === 0 ? (
-                <div className="bg-[#1C1B1A] border border-[#2D2B28] p-8 text-center text-xs text-[#A09A92]">
+                <div className="bg-[#1B1B1B] border border-[#2B2B2B] p-8 text-center text-xs text-[#9B9B9B]">
                   No client reviews submitted yet.
                 </div>
               ) : (
-                reviews.map((r) => (
-                  <div key={r.id} className="bg-[#1C1B1A] border border-[#2D2B28] p-4 rounded-xs">
+                reviews.map((r) => {
+                  const product = adminProducts.find((item) =>
+                    item.id === r.productId ||
+                    item.productId === r.productId ||
+                    item.product_id === r.productId ||
+                    item.variants?.some((variant) => variant.id === r.productId)
+                  );
+                  return (
+                  <div key={r.id} className="bg-[#1B1B1B] border border-[#2B2B2B] p-4 rounded-xs">
                     <div className="flex items-start justify-between gap-4">
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
-                          <strong className="text-[#FAF8F5]">{r.customerName}</strong>
-                          <span className="text-[#D4AF37]" aria-label={`${r.rating} out of 5 stars`}>{'★'.repeat(r.rating)}{'☆'.repeat(Math.max(0, 5 - r.rating))}</span>
-                          <span className={`px-2 py-0.5 rounded-full text-[10px] ${r.approved ? 'bg-[#1b5e20] text-[#a5d6a7]' : 'bg-[#424242] text-[#e0e0e0]'}`}>
+                          <strong className="text-[#F8F8F8]">{r.customerName}</strong>
+                          <span className="text-[#E8B7A5]" aria-label={`${r.rating} out of 5 stars`}>{'★'.repeat(r.rating)}{'☆'.repeat(Math.max(0, 5 - r.rating))}</span>
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] ${r.approved ? 'bg-[#14532D] text-[#86EFAC]' : 'bg-[#422006] text-[#FDE047]'}`}>
                             {r.approved ? 'Approved' : 'Pending / Rejected'}
                           </span>
                         </div>
-                        <p className="text-[10px] text-[#777] mt-1">Product: {r.productName || r.productId} · {r.date || 'Date unavailable'}</p>
-                        <p className="text-xs text-[#A09A92] mt-2 whitespace-pre-wrap">{r.reviewText}</p>
+                        <p className="text-[10px] text-[#777777] mt-1">Product: {product?.name || r.productName || 'LaClassé Abaya'} · {r.date || 'Date unavailable'}</p>
+                        <p className="text-xs text-[#9B9B9B] mt-2 whitespace-pre-wrap">{r.reviewText}</p>
                       </div>
                       <div className="relative flex shrink-0 items-center gap-2">
                         <button
                           type="button"
                           disabled={processingReviewId === r.id}
                           onClick={() => handleReviewApproval(r.id, true)}
-                          className="px-3 py-1.5 text-xs rounded-xs font-semibold bg-[#1b5e20] text-[#a5d6a7] disabled:opacity-50"
+                          className="px-3 py-1.5 text-xs rounded-xs font-semibold bg-[#166534] hover:bg-[#14532D] text-white disabled:opacity-50"
                         >
                           {processingReviewId === r.id && processingReviewApproval === true ? 'Saving…' : 'Approve'}
                         </button>
@@ -1524,7 +1581,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                           type="button"
                           disabled={processingReviewId === r.id}
                           onClick={() => handleReviewApproval(r.id, false)}
-                          className="px-3 py-1.5 text-xs rounded-xs font-semibold bg-[#3a1818] text-[#ffaaaa] disabled:opacity-50"
+                          className="px-3 py-1.5 text-xs rounded-xs font-semibold bg-[#B91C1C] hover:bg-[#991B1B] text-white disabled:opacity-50"
                         >
                           {processingReviewId === r.id && processingReviewApproval === false ? 'Saving…' : 'Reject'}
                         </button>
@@ -1533,16 +1590,16 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                           aria-label={`More actions for ${r.customerName}'s review`}
                           aria-expanded={reviewActionMenuId === r.id}
                           onClick={() => setReviewActionMenuId(current => current === r.id ? null : r.id)}
-                          className="p-1.5 text-[#A09A92] hover:bg-[#3A3835] rounded-xs"
+                          className="p-1.5 text-[#9B9B9B] hover:bg-[#383838] rounded-xs"
                         >
                           <MoreVertical className="w-4 h-4" />
                         </button>
                         {reviewActionMenuId === r.id && (
-                          <div className="absolute right-0 top-full z-20 mt-1 w-32 bg-[#262422] border border-[#3A3835] rounded-xs shadow-xl">
+                          <div className="absolute right-0 top-full z-20 mt-1 w-32 bg-[#242424] border border-[#383838] rounded-xs shadow-xl">
                             <button
                               type="button"
                               onClick={() => { setEditingReview({ ...r }); setReviewActionMenuId(null); }}
-                              className="w-full px-3 py-2 text-left text-xs text-[#FAF8F5] hover:bg-[#3A3835] flex items-center gap-2"
+                              className="w-full px-3 py-2 text-left text-xs text-[#F8F8F8] hover:bg-[#383838] flex items-center gap-2"
                             >
                               <Edit className="w-3.5 h-3.5" /> Edit review
                             </button>
@@ -1551,7 +1608,8 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                       </div>
                     </div>
                   </div>
-                ))
+                  );
+                })
               )}
             </div>
           </div>
@@ -1561,28 +1619,28 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
         {activeTab === 'settings' && (
           <div className="space-y-6 max-w-2xl">
             <div>
-              <h1 className="font-serif text-3xl font-medium text-[#FAF8F5]">Supabase Backend Configuration</h1>
-              <p className="text-xs text-[#A09A92] mt-1">
+              <h1 className="font-serif text-3xl font-medium text-[#F8F8F8]">Supabase Backend Configuration</h1>
+              <p className="text-xs text-[#9B9B9B] mt-1">
                 LaClassé operates on Supabase PostgreSQL, Supabase Edge Functions, and Cloudflare R2 object storage.
               </p>
             </div>
 
             {settingsSavedMsg && (
-              <div className="p-3 bg-[#1b5e20] text-[#a5d6a7] text-xs rounded-xs flex items-center gap-2">
+              <div className="p-3 bg-[#4B4B4B] text-[#C8C8C8] text-xs rounded-xs flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4" />
                 <span>Supabase connection settings updated successfully!</span>
               </div>
             )}
 
-            <form onSubmit={handleSaveSettings} className="bg-[#1C1B1A] border border-[#2D2B28] p-6 rounded-xs space-y-4 text-xs">
+            <form onSubmit={handleSaveSettings} className="bg-[#1B1B1B] border border-[#2B2B2B] p-6 rounded-xs space-y-4 text-xs">
               <div>
-                <label className="block text-[#A09A92] mb-1 font-medium">Supabase Project URL</label>
+                <label className="block text-[#9B9B9B] mb-1 font-medium">Supabase Project URL</label>
                 <input
                   type="url"
                   value={settingsSupabaseUrl}
                   onChange={(e) => setSettingsSupabaseUrl(e.target.value)}
                   placeholder="https://xyzcompany.supabase.co"
-                  className="w-full bg-[#121212] border border-[#3A3835] px-3 py-2 rounded-xs text-[#FAF8F5]"
+                  className="w-full bg-[#121212] border border-[#383838] px-3 py-2 rounded-xs text-[#F8F8F8]"
                 />
                 <span className="text-[10px] text-[#777777] mt-1 block">
                   Found in Supabase Dashboard → Project Settings → API → Project URL.
@@ -1590,13 +1648,13 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
               </div>
 
               <div>
-                <label className="block text-[#A09A92] mb-1 font-medium">Supabase Publishable / Anon Key</label>
+                <label className="block text-[#9B9B9B] mb-1 font-medium">Supabase Publishable / Anon Key</label>
                 <input
                   type="password"
                   value={settingsAnonKey}
                   onChange={(e) => setSettingsAnonKey(e.target.value)}
                   placeholder="sb_publishable_... or anon JWT"
-                  className="w-full bg-[#121212] border border-[#3A3835] px-3 py-2 rounded-xs text-[#FAF8F5]"
+                  className="w-full bg-[#121212] border border-[#383838] px-3 py-2 rounded-xs text-[#F8F8F8]"
                 />
                 <span className="text-[10px] text-[#777777] mt-1 block">
                   Found in Supabase Dashboard → Project Settings → API → Project API Keys → anon / public.
@@ -1604,34 +1662,34 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
               </div>
 
               <div>
-                <label className="block text-[#A09A92] mb-1 font-medium">Cloudflare R2 Public Delivery URL</label>
+                <label className="block text-[#9B9B9B] mb-1 font-medium">Cloudflare R2 Public Delivery URL</label>
                 <input
                   type="url"
                   value={settingsR2Url}
                   onChange={(e) => setSettingsR2Url(e.target.value)}
                   placeholder="https://pub-de5214d2b1044125bc4e13a67637a92c.r2.dev"
-                  className="w-full bg-[#121212] border border-[#3A3835] px-3 py-2 rounded-xs text-[#FAF8F5]"
+                  className="w-full bg-[#121212] border border-[#383838] px-3 py-2 rounded-xs text-[#F8F8F8]"
                 />
                 <span className="text-[10px] text-[#777777] mt-1 block">
-                  Public R2 bucket domain or custom domain (e.g. <code className="text-[#D4AF37]">https://pub-de5214d2b1044125bc4e13a67637a92c.r2.dev</code>).
+                  Public R2 bucket domain or custom domain (e.g. <code className="text-[#E8B7A5]">https://pub-de5214d2b1044125bc4e13a67637a92c.r2.dev</code>).
                 </span>
               </div>
 
               <button
                 type="submit"
-                className="bg-[#8C7853] hover:bg-[#A08B63] text-white px-5 py-2.5 rounded-xs font-semibold uppercase tracking-wider text-xs cursor-pointer"
+                className="bg-[#B55232] hover:bg-[#B55232] text-white px-5 py-2.5 rounded-xs font-semibold uppercase tracking-wider text-xs cursor-pointer"
               >
                 Save Backend Settings
               </button>
             </form>
 
-            <div className="bg-[#1C1B1A] border border-[#2D2B28] p-6 rounded-xs space-y-3 text-xs">
-              <strong className="text-[#D4AF37] block font-semibold">Cloudflare R2 Object Storage:</strong>
-              <p className="text-[#A09A92]">
-                Product images and media assets continue to be securely stored in Cloudflare R2 and served via your configured CDN domain, managed via the <code className="text-[#FAF8F5]">r2-images</code> Supabase Edge Function.
+            <div className="bg-[#1B1B1B] border border-[#2B2B2B] p-6 rounded-xs space-y-3 text-xs">
+              <strong className="text-[#E8B7A5] block font-semibold">Cloudflare R2 Object Storage:</strong>
+              <p className="text-[#9B9B9B]">
+                Product images and media assets continue to be securely stored in Cloudflare R2 and served via your configured CDN domain, managed via the <code className="text-[#F8F8F8]">r2-images</code> Supabase Edge Function.
               </p>
-              <ul className="list-disc pl-4 space-y-1 text-[#A09A92]">
-                <li>Product images: <code className="text-[#FAF8F5]">laclasse/products/&lt;productId&gt;/img-&lt;slot&gt;-&lt;timestamp&gt;.&lt;ext&gt;</code></li>
+              <ul className="list-disc pl-4 space-y-1 text-[#9B9B9B]">
+                <li>Product images: <code className="text-[#F8F8F8]">laclasse/products/&lt;productId&gt;/img-&lt;slot&gt;-&lt;timestamp&gt;.&lt;ext&gt;</code></li>
                 <li>MIME types accepted: JPEG, PNG, WebP (max 10MB per asset)</li>
               </ul>
             </div>
@@ -1642,47 +1700,47 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
 
       {editingReview && (
         <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-          <form onSubmit={handleSaveReview} className="bg-[#1C1B1A] border border-[#2D2B28] rounded-xs p-6 max-w-lg w-full space-y-4">
-            <div className="flex items-center justify-between border-b border-[#2D2B28] pb-3">
-              <h3 className="font-serif text-xl text-[#FAF8F5]">Edit Customer Review</h3>
-              <button type="button" onClick={() => setEditingReview(null)} className="text-[#A09A92] hover:text-white" aria-label="Close edit review">
+          <form onSubmit={handleSaveReview} className="bg-[#1B1B1B] border border-[#2B2B2B] rounded-xs p-6 max-w-lg w-full space-y-4">
+            <div className="flex items-center justify-between border-b border-[#2B2B2B] pb-3">
+              <h3 className="font-serif text-xl text-[#F8F8F8]">Edit Customer Review</h3>
+              <button type="button" onClick={() => setEditingReview(null)} className="text-[#9B9B9B] hover:text-white" aria-label="Close edit review">
                 <X className="w-5 h-5" />
               </button>
             </div>
             <div>
-              <label className="block text-xs text-[#A09A92] mb-1">Customer name</label>
+              <label className="block text-xs text-[#9B9B9B] mb-1">Customer name</label>
               <input
                 required
                 minLength={2}
                 value={editingReview.customerName}
                 onChange={(e) => setEditingReview({ ...editingReview, customerName: e.target.value })}
-                className="w-full bg-[#121212] border border-[#3A3835] px-3 py-2 text-sm text-[#FAF8F5] rounded-xs"
+                className="w-full bg-[#121212] border border-[#383838] px-3 py-2 text-sm text-[#F8F8F8] rounded-xs"
               />
             </div>
             <div>
-              <label className="block text-xs text-[#A09A92] mb-1">Rating</label>
+              <label className="block text-xs text-[#9B9B9B] mb-1">Rating</label>
               <select
                 value={editingReview.rating}
                 onChange={(e) => setEditingReview({ ...editingReview, rating: Number(e.target.value) })}
-                className="w-full bg-[#121212] border border-[#3A3835] px-3 py-2 text-sm text-[#FAF8F5] rounded-xs"
+                className="w-full bg-[#121212] border border-[#383838] px-3 py-2 text-sm text-[#F8F8F8] rounded-xs"
               >
                 {[5, 4, 3, 2, 1].map(rating => <option key={rating} value={rating}>{rating} star{rating === 1 ? '' : 's'}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-xs text-[#A09A92] mb-1">Review</label>
+              <label className="block text-xs text-[#9B9B9B] mb-1">Review</label>
               <textarea
                 required
                 minLength={5}
                 rows={5}
                 value={editingReview.reviewText}
                 onChange={(e) => setEditingReview({ ...editingReview, reviewText: e.target.value })}
-                className="w-full resize-y bg-[#121212] border border-[#3A3835] px-3 py-2 text-sm text-[#FAF8F5] rounded-xs"
+                className="w-full resize-y bg-[#121212] border border-[#383838] px-3 py-2 text-sm text-[#F8F8F8] rounded-xs"
               />
             </div>
             <div className="flex justify-end gap-3 pt-1">
-              <button type="button" onClick={() => setEditingReview(null)} className="px-4 py-2 bg-[#262422] text-[#A09A92] text-xs rounded-xs">Cancel</button>
-              <button type="submit" disabled={isSavingReview} className="px-4 py-2 bg-[#8C7853] text-white text-xs font-semibold rounded-xs disabled:opacity-50">
+              <button type="button" onClick={() => setEditingReview(null)} className="px-4 py-2 bg-[#242424] text-[#9B9B9B] text-xs rounded-xs">Cancel</button>
+              <button type="submit" disabled={isSavingReview} className="px-4 py-2 bg-[#B55232] text-white text-xs font-semibold rounded-xs disabled:opacity-50">
                 {isSavingReview ? 'Saving…' : 'Save changes'}
               </button>
             </div>
@@ -1693,13 +1751,13 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
       {/* MODAL: VIEW PAYMENT SCREENSHOT PROOF */}
       {viewingProofUrl && (
         <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-[#1C1B1A] border border-[#2D2B28] rounded-xs p-6 max-w-lg w-full space-y-4 max-h-[90vh] flex flex-col">
-            <div className="flex items-center justify-between border-b border-[#2D2B28] pb-3">
+          <div className="bg-[#1B1B1B] border border-[#2B2B2B] rounded-xs p-6 max-w-lg w-full space-y-4 max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between border-b border-[#2B2B2B] pb-3">
               <div className="flex items-center gap-2">
-                <Shield className="w-4 h-4 text-[#D4AF37]" />
-                <h3 className="font-serif text-lg font-medium text-[#FAF8F5]">Customer Payment Proof</h3>
+                <Shield className="w-4 h-4 text-[#E8B7A5]" />
+                <h3 className="font-serif text-lg font-medium text-[#F8F8F8]">Customer Payment Proof</h3>
               </div>
-              <button onClick={() => setViewingProofUrl(null)} className="text-[#A09A92] hover:text-white">
+              <button onClick={() => setViewingProofUrl(null)} className="text-[#9B9B9B] hover:text-white">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -1717,7 +1775,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                 href={viewingProofUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-xs text-[#D4AF37] hover:underline flex items-center gap-1"
+                className="text-xs text-[#E8B7A5] hover:underline flex items-center gap-1"
               >
                 <span>Open Original Image</span>
                 <ExternalLink className="w-3.5 h-3.5" />
@@ -1725,7 +1783,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
 
               <button
                 onClick={() => setViewingProofUrl(null)}
-                className="px-4 py-2 bg-[#262422] hover:bg-[#3D3A36] text-white text-xs rounded-xs"
+                className="px-4 py-2 bg-[#242424] hover:bg-[#3A3A3A] text-white text-xs rounded-xs"
               >
                 Close Preview
               </button>
@@ -1737,43 +1795,43 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
       {/* MODAL: MARK AS SHIPPED DIALOG */}
       {shippingOrderId && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-[#1C1B1A] border border-[#2D2B28] rounded-xs p-6 max-w-md w-full space-y-4">
-            <div className="flex items-center justify-between border-b border-[#2D2B28] pb-3">
+          <div className="bg-[#1B1B1B] border border-[#2B2B2B] rounded-xs p-6 max-w-md w-full space-y-4">
+            <div className="flex items-center justify-between border-b border-[#2B2B2B] pb-3">
               <div className="flex items-center gap-2">
-                <Truck className="w-5 h-5 text-[#8C7853]" />
-                <h3 className="font-serif text-lg font-medium text-[#FAF8F5]">Dispatch & Courier Details</h3>
+                <Truck className="w-5 h-5 text-[#B55232]" />
+                <h3 className="font-serif text-lg font-medium text-[#F8F8F8]">Dispatch & Courier Details</h3>
               </div>
-              <button onClick={() => setShippingOrderId(null)} className="text-[#A09A92] hover:text-white">
+              <button onClick={() => setShippingOrderId(null)} className="text-[#9B9B9B] hover:text-white">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <form onSubmit={handleSubmitShipDialog} className="space-y-4 text-xs">
               <div>
-                <span className="text-[#A09A92] block mb-1">Order Reference</span>
-                <strong className="text-sm font-mono text-[#FAF8F5]">{shippingOrderId}</strong>
+                <span className="text-[#9B9B9B] block mb-1">Order Reference</span>
+                <strong className="text-sm font-mono text-[#F8F8F8]">{shippingOrderId}</strong>
               </div>
 
               <div>
-                <label className="block text-[#A09A92] mb-1 font-medium">Courier Partner *</label>
+                <label className="block text-[#9B9B9B] mb-1 font-medium">Courier Partner *</label>
                 <input
                   type="text"
                   value={courierName}
                   onChange={(e) => setCourierName(e.target.value)}
                   placeholder="e.g. BlueDart Express, DTDC, DHL, Delhivery"
-                  className="w-full bg-[#121212] border border-[#3A3835] px-3 py-2 rounded-xs text-[#FAF8F5]"
+                  className="w-full bg-[#121212] border border-[#383838] px-3 py-2 rounded-xs text-[#F8F8F8]"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-[#A09A92] mb-1 font-medium">Tracking Number / AWB *</label>
+                <label className="block text-[#9B9B9B] mb-1 font-medium">Tracking Number / AWB *</label>
                 <input
                   type="text"
                   value={trackingNumber}
                   onChange={(e) => setTrackingNumber(e.target.value)}
                   placeholder="e.g. BD82739174IN"
-                  className="w-full bg-[#121212] border border-[#3A3835] px-3 py-2 rounded-xs text-[#FAF8F5] font-mono"
+                  className="w-full bg-[#121212] border border-[#383838] px-3 py-2 rounded-xs text-[#F8F8F8] font-mono"
                   required
                 />
               </div>
@@ -1782,7 +1840,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                 <button
                   type="button"
                   onClick={() => setShippingOrderId(null)}
-                  className="flex-1 bg-[#262422] text-[#A09A92] py-2.5 rounded-xs"
+                  className="flex-1 bg-[#242424] text-[#9B9B9B] py-2.5 rounded-xs"
                 >
                   Cancel
                 </button>
@@ -1790,7 +1848,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                 <button
                   type="submit"
                   disabled={isShippingUpdating}
-                  className="flex-1 bg-[#8C7853] hover:bg-[#A08B63] text-white py-2.5 font-semibold uppercase tracking-wider rounded-xs flex items-center justify-center gap-2 cursor-pointer"
+                  className="flex-1 bg-[#B55232] hover:bg-[#B55232] text-white py-2.5 font-semibold uppercase tracking-wider rounded-xs flex items-center justify-center gap-2 cursor-pointer"
                 >
                   {isShippingUpdating ? <Loader2 className="w-4 h-4 animate-spin" /> : <span>{shippingOrderStatus === 'Shipped' ? 'Save Shipment Details' : 'Save Tracking Details'}</span>}
                 </button>
@@ -1803,155 +1861,146 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
       {/* MODAL: CREATE / EDIT PRODUCT (WITH UP TO 3 R2 IMAGE UPLOADS & VARIANT MANAGEMENT) */}
       {isProductModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-[#1C1B1A] border border-[#2D2B28] text-[#FAF8F5] rounded-xs p-6 max-w-2xl w-full my-auto space-y-4 max-h-[92vh] overflow-y-auto">
-            <div className="flex justify-between items-center border-b border-[#2D2B28] pb-3">
+          <div className="bg-[#1B1B1B] border border-[#2B2B2B] text-[#F8F8F8] rounded-xs p-6 max-w-2xl w-full my-auto space-y-4 max-h-[92vh] overflow-y-auto">
+            <div className="flex justify-between items-center border-b border-[#2B2B2B] pb-3">
               <div>
                 <h3 className="font-serif text-xl font-medium">
                   {editingProduct?.id ? 'Edit Garment & Variants (D1 + R2)' : 'Add New Garment (D1 + R2)'}
                 </h3>
-                <span className="text-[10px] text-[#A09A92]">
+                <span className="text-[10px] text-[#9B9B9B]">
                   Manage shared garment metadata, Cloudflare R2 assets, and inventory variants.
                 </span>
               </div>
-              <button onClick={() => setIsProductModalOpen(false)} className="text-[#A09A92] hover:text-white">
+              <button onClick={() => setIsProductModalOpen(false)} className="text-[#9B9B9B] hover:text-white">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <form onSubmit={handleSaveProductForm} className="space-y-4 text-xs">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-[#A09A92] mb-1 font-medium">Product Name *</label>
+                  <label className="block text-[#9B9B9B] mb-1 font-medium">Product Name *</label>
                   <input
                     type="text"
                     value={editingProduct?.name || ''}
                     onChange={(e) => setEditingProduct({ ...editingProduct, name: e.target.value })}
                     placeholder="e.g. Noir Royal Sovereign Silk Abaya"
-                    className="w-full bg-[#121212] border border-[#3A3835] px-3 py-2 rounded-xs text-[#FAF8F5]"
+                    className="w-full bg-[#121212] border border-[#383838] px-3 py-2 rounded-xs text-[#F8F8F8]"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[#A09A92] mb-1 font-medium">Product ID / Code *</label>
+                  <label className="block text-[#9B9B9B] mb-1 font-medium">Product ID / Code *</label>
                   <input
                     type="text"
                     value={editingProduct?.productId || editingProduct?.product_id || ''}
                     onChange={(e) => setEditingProduct({ ...editingProduct, productId: e.target.value, product_id: e.target.value })}
                     placeholder="e.g. LC001"
-                    className="w-full bg-[#121212] border border-[#3A3835] px-3 py-2 rounded-xs text-[#FAF8F5] font-mono"
+                    disabled={Boolean(editingProduct?.id)}
+                    className="w-full bg-[#121212] border border-[#383838] px-3 py-2 rounded-xs text-[#F8F8F8] font-mono"
                     required
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[#A09A92] mb-1 font-medium">Slug (URL Path)</label>
+                  <label className="block text-[#9B9B9B] mb-1 font-medium">Slug (URL Path)</label>
                   <input
                     type="text"
                     value={editingProduct?.slug || ''}
                     onChange={(e) => setEditingProduct({ ...editingProduct, slug: e.target.value })}
                     placeholder="e.g. noir-royal-silk-abaya"
-                    className="w-full bg-[#121212] border border-[#3A3835] px-3 py-2 rounded-xs text-[#FAF8F5] font-mono"
+                    className="w-full bg-[#121212] border border-[#383838] px-3 py-2 rounded-xs text-[#F8F8F8] font-mono"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[#A09A92] mb-1 font-medium">Category *</label>
+                  <label className="block text-[#9B9B9B] mb-1 font-medium">Category *</label>
                   <input
                     type="text"
                     value={editingProduct?.category || ''}
                     onChange={(e) => setEditingProduct({ ...editingProduct, category: e.target.value as any })}
                     placeholder="e.g. Luxury, Bridal, Premium, Casual"
-                    className="w-full bg-[#121212] border border-[#3A3835] px-3 py-2 rounded-xs text-[#FAF8F5]"
+                    className="w-full bg-[#121212] border border-[#383838] px-3 py-2 rounded-xs text-[#F8F8F8]"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[#A09A92] mb-1 font-medium">Fabric Type *</label>
+                  <label className="block text-[#9B9B9B] mb-1 font-medium">Fabric Type *</label>
                   <input
                     type="text"
                     value={editingProduct?.fabric || ''}
                     onChange={(e) => setEditingProduct({ ...editingProduct, fabric: e.target.value as any })}
                     placeholder="e.g. Dubai Nida, Indonesian Zoom"
-                    className="w-full bg-[#121212] border border-[#3A3835] px-3 py-2 rounded-xs text-[#FAF8F5]"
+                    className="w-full bg-[#121212] border border-[#383838] px-3 py-2 rounded-xs text-[#F8F8F8]"
                     required
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[#A09A92] mb-1 font-medium">Selling Price (INR) *</label>
+                  <label className="block text-[#9B9B9B] mb-1 font-medium">Selling Price (INR) *</label>
                   <input
                     type="number"
                     value={editingProduct?.price || ''}
                     onChange={(e) => setEditingProduct({ ...editingProduct, price: parseFloat(e.target.value) })}
                     placeholder="14999"
-                    className="w-full bg-[#121212] border border-[#3A3835] px-3 py-2 rounded-xs text-[#FAF8F5] font-mono"
+                    className="w-full bg-[#121212] border border-[#383838] px-3 py-2 rounded-xs text-[#F8F8F8] font-mono"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[#A09A92] mb-1 font-medium">Original / Strikethrough Price (INR)</label>
+                  <label className="block text-[#9B9B9B] mb-1 font-medium">Original / Strikethrough Price (INR)</label>
                   <input
                     type="number"
                     value={editingProduct?.originalPrice ?? editingProduct?.original_price ?? ''}
                     onChange={(e) => setEditingProduct({ ...editingProduct, originalPrice: parseFloat(e.target.value), original_price: parseFloat(e.target.value) })}
                     placeholder="17999"
-                    className="w-full bg-[#121212] border border-[#3A3835] px-3 py-2 rounded-xs text-[#FAF8F5] font-mono"
+                    className="w-full bg-[#121212] border border-[#383838] px-3 py-2 rounded-xs text-[#F8F8F8] font-mono"
                   />
                 </div>
 
-                <div>
-                  <label className="block text-[#A09A92] mb-1 font-medium">Badge / Ribbon (Optional)</label>
-                  <input
-                    type="text"
-                    value={(editingProduct as any)?.badge || ''}
-                    onChange={(e) => setEditingProduct({ ...editingProduct, badge: e.target.value } as any)}
-                    placeholder="e.g. Exclusive, Bestseller, Limited"
-                    className="w-full bg-[#121212] border border-[#3A3835] px-3 py-2 rounded-xs text-[#FAF8F5]"
-                  />
-                </div>
               </div>
 
               <div>
-                <label className="block text-[#A09A92] mb-1 font-medium">Description</label>
+                <label className="block text-[#9B9B9B] mb-1 font-medium">Description</label>
                 <textarea
                   rows={2}
                   value={editingProduct?.description || ''}
                   onChange={(e) => setEditingProduct({ ...editingProduct, description: e.target.value })}
                   placeholder="Bespoke craftsmanship details, embellishments, cut..."
-                  className="w-full bg-[#121212] border border-[#3A3835] px-3 py-2 rounded-xs text-[#FAF8F5]"
+                  className="w-full bg-[#121212] border border-[#383838] px-3 py-2 rounded-xs text-[#F8F8F8]"
                 />
               </div>
 
               {/* 3 INDEPENDENT IMAGE FIELDS (image1, image2, image3) */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <label className="block text-[#A09A92] font-medium">
+                  <label className="block text-[#9B9B9B] font-medium">
                     Product Images (Cloudflare R2 Bucket: image1, image2, image3)
                   </label>
-                  <span className="text-[10px] text-[#A09A92]">Reused across all variants of this garment</span>
+                  <span className="text-[10px] text-[#9B9B9B]">Reused across all variants of this garment</span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   {[0, 1, 2].map((idx) => {
                     const preview = productImagePreviews[idx];
-                    const slotTitle = idx === 0 ? 'image1 (Primary Thumbnail)' : idx === 1 ? 'image2 (Lookbook Angle)' : 'image3 (Fabric Detail)';
+                    const slotTitle = idx === 0 ? 'image1 (Primary)' : idx === 1 ? 'image2 (Lookbook Angle)' : 'image3 (Fabric Detail)';
                     return (
-                      <div key={idx} className="bg-[#121212] border border-[#3A3835] p-3 rounded-xs space-y-2 flex flex-col justify-between">
+                      <div key={idx} className="bg-[#121212] border border-[#383838] p-3 rounded-xs space-y-2 flex flex-col justify-between">
                         <div>
                           <div className="flex items-center justify-between mb-1.5">
-                            <span className="text-[10px] font-semibold text-[#D4AF37] uppercase">{slotTitle}</span>
+                            <span className="text-[10px] font-semibold text-[#E8B7A5] uppercase">{slotTitle}</span>
                             {preview && (
                               <button
                                 type="button"
                                 onClick={() => handleRemoveImageSlot(idx)}
-                                className="text-[10px] text-[#ff8080] hover:text-white flex items-center gap-0.5 cursor-pointer"
+                                className="text-[10px] text-[#FFF4F0] hover:text-white flex items-center gap-0.5 cursor-pointer"
                                 title="Remove image"
                               >
                                 <Trash2 className="w-3 h-3" />
@@ -1961,7 +2010,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                           </div>
 
                           {preview ? (
-                            <div className="relative group rounded-xs overflow-hidden h-28 bg-[#1C1B1A] flex items-center justify-center border border-[#2D2B28]">
+                            <div className="relative group rounded-xs overflow-hidden h-28 bg-[#1B1B1B] flex items-center justify-center border border-[#2B2B2B]">
                               <img
                                 src={preview}
                                 alt={`Slot ${idx + 1}`}
@@ -1969,7 +2018,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                               />
                             </div>
                           ) : (
-                            <div className="h-28 bg-[#181716] border border-dashed border-[#3A3835] rounded-xs flex flex-col items-center justify-center text-[#666666] gap-1">
+                            <div className="h-28 bg-[#171717] border border-dashed border-[#383838] rounded-xs flex flex-col items-center justify-center text-[#666666] gap-1">
                               <ImageIcon className="w-6 h-6 text-[#555555]" />
                               <span className="text-[10px]">No image assigned</span>
                             </div>
@@ -1977,8 +2026,8 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                         </div>
 
                         <div>
-                          <label className="w-full bg-[#262422] hover:bg-[#3D3A36] text-[#FAF8F5] border border-[#3D3A36] text-[10px] py-1.5 px-2 rounded-xs flex items-center justify-center gap-1.5 cursor-pointer font-medium transition-colors">
-                            <Upload className="w-3 h-3 text-[#D4AF37]" />
+                          <label className="w-full bg-[#242424] hover:bg-[#3A3A3A] text-[#F8F8F8] border border-[#3A3A3A] text-[10px] py-1.5 px-2 rounded-xs flex items-center justify-center gap-1.5 cursor-pointer font-medium transition-colors">
+                            <Upload className="w-3 h-3 text-[#E8B7A5]" />
                             <span>{preview ? 'Replace Image' : 'Upload Image'}</span>
                             <input
                               type="file"
@@ -1995,11 +2044,11 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
               </div>
 
               {/* VARIANT STOCK MANAGEMENT (Size, Length, Stock) */}
-              <div className="bg-[#121212] border border-[#3A3835] p-3 rounded-xs space-y-2.5">
+              <div className="bg-[#121212] border border-[#383838] p-3 rounded-xs space-y-2.5">
                 <div className="flex items-center justify-between">
                   <div>
-                    <span className="text-xs font-semibold text-[#FAF8F5] block">Inventory Variants for Garment</span>
-                    <span className="text-[10px] text-[#A09A92]">Configure sizes, lengths, and quantities for this piece.</span>
+                    <span className="text-xs font-semibold text-[#F8F8F8] block">Inventory Variants for Garment</span>
+                    <span className="text-[10px] text-[#9B9B9B]">Configure sizes, lengths, and quantities for this piece.</span>
                   </div>
                   <button
                     type="button"
@@ -2009,7 +2058,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                         { size: 'Free Size', length: '56"', quantity: 1 }
                       ]);
                     }}
-                    className="text-[10px] bg-[#262422] hover:bg-[#3D3A36] text-[#D4AF37] border border-[#3D3A36] px-2.5 py-1 rounded-xs flex items-center gap-1 font-medium cursor-pointer"
+                    className="text-[10px] bg-[#242424] hover:bg-[#3A3A3A] text-[#E8B7A5] border border-[#3A3A3A] px-2.5 py-1 rounded-xs flex items-center gap-1 font-medium cursor-pointer"
                   >
                     <Plus className="w-3 h-3" />
                     <span>Add Variant</span>
@@ -2018,37 +2067,44 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
 
                 <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
                   {editingVariants.map((v, vIdx) => (
-                    <div key={vIdx} className="grid grid-cols-12 gap-2 items-center bg-[#1A1918] p-2 rounded-xs border border-[#2D2B28]">
+                    <div key={vIdx} className="grid grid-cols-12 gap-2 items-center bg-[#191919] p-2 rounded-xs border border-[#2B2B2B]">
                       <div className="col-span-4">
-                        <label className="text-[9px] text-[#A09A92] block mb-0.5">Size</label>
-                        <input
-                          type="text"
+                        <label className="text-[9px] text-[#9B9B9B] block mb-0.5">Size</label>
+                        <select
                           value={v.size}
                           onChange={(e) => {
                             const updated = [...editingVariants];
                             updated[vIdx] = { ...updated[vIdx], size: e.target.value };
                             setEditingVariants(updated);
                           }}
-                          placeholder="e.g. Free Size, XXL, L"
-                          className="w-full bg-[#121212] border border-[#3A3835] px-2 py-1 rounded-xs text-[#FAF8F5] text-xs"
-                        />
+                          className="w-full bg-[#121212] border border-[#383838] px-2 py-1 rounded-xs text-[#F8F8F8] text-xs"
+                        >
+                          <option value="L">L</option>
+                          <option value="XL">XL</option>
+                          <option value="XXL">XXL</option>
+                          <option value="Free Size">Free Size</option>
+                          <option value="Custom">Custom</option>
+                        </select>
                       </div>
                       <div className="col-span-4">
-                        <label className="text-[9px] text-[#A09A92] block mb-0.5">Length</label>
-                        <input
-                          type="text"
-                          value={v.length}
+                        <label className="text-[9px] text-[#9B9B9B] block mb-0.5">Length</label>
+                        <select
+                          value={v.length || ''}
                           onChange={(e) => {
                             const updated = [...editingVariants];
                             updated[vIdx] = { ...updated[vIdx], length: e.target.value };
                             setEditingVariants(updated);
                           }}
-                          placeholder="e.g. 56&quot;"
-                          className="w-full bg-[#121212] border border-[#3A3835] px-2 py-1 rounded-xs text-[#FAF8F5] text-xs"
-                        />
+                          className="w-full bg-[#121212] border border-[#383838] px-2 py-1 rounded-xs text-[#F8F8F8] text-xs"
+                        >
+                          <option value="">No specific length</option>
+                          {['52"', '54"', '56"', '58"', '60"'].map((length) => (
+                            <option key={length} value={length}>{length}</option>
+                          ))}
+                        </select>
                       </div>
                       <div className="col-span-3">
-                        <label className="text-[9px] text-[#A09A92] block mb-0.5">Quantity</label>
+                        <label className="text-[9px] text-[#9B9B9B] block mb-0.5">Quantity</label>
                         <input
                           type="number"
                           min="0"
@@ -2058,7 +2114,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                             updated[vIdx] = { ...updated[vIdx], quantity: Math.max(0, parseInt(e.target.value, 10) || 0) };
                             setEditingVariants(updated);
                           }}
-                          className="w-full bg-[#121212] border border-[#3A3835] px-2 py-1 rounded-xs text-[#FAF8F5] text-xs font-mono font-bold"
+                          className="w-full bg-[#121212] border border-[#383838] px-2 py-1 rounded-xs text-[#F8F8F8] text-xs font-mono font-bold"
                         />
                       </div>
                       <div className="col-span-1 text-right pt-3">
@@ -2068,7 +2124,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                             onClick={() => {
                               setEditingVariants(editingVariants.filter((_, idx) => idx !== vIdx));
                             }}
-                            className="text-[#ff8080] hover:text-white p-1 cursor-pointer"
+                            className="text-[#FFF4F0] hover:text-white p-1 cursor-pointer"
                             title="Remove variant"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -2080,14 +2136,14 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                 </div>
               </div>
 
-              {/* CHECKBOXES: isNewArrival, isFeatured, isActive */}
-              <div className="flex flex-wrap gap-4 pt-1 border-t border-[#2D2B28]">
+              {/* Product visibility and merchandising flags */}
+              <div className="flex flex-wrap gap-4 pt-1 border-t border-[#2B2B2B]">
                 <label className="flex items-center gap-2 cursor-pointer text-xs">
                   <input
                     type="checkbox"
-                    checked={editingProduct?.featured || false}
-                    onChange={(e) => setEditingProduct({ ...editingProduct, featured: e.target.checked, is_featured: e.target.checked ? 1 : 0 } as any)}
-                    className="accent-[#8C7853]"
+                    checked={Boolean(editingProduct?.featured)}
+                    onChange={(e) => setEditingProduct({ ...editingProduct, featured: e.target.checked, is_featured: e.target.checked })}
+                    className="accent-[#B55232]"
                   />
                   <span>Featured Collection Piece</span>
                 </label>
@@ -2095,9 +2151,9 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                 <label className="flex items-center gap-2 cursor-pointer text-xs">
                   <input
                     type="checkbox"
-                    checked={editingProduct?.newArrival !== false}
-                    onChange={(e) => setEditingProduct({ ...editingProduct, newArrival: e.target.checked, is_new_arrival: e.target.checked ? 1 : 0 } as any)}
-                    className="accent-[#8C7853]"
+                    checked={Boolean(editingProduct?.newArrival)}
+                    onChange={(e) => setEditingProduct({ ...editingProduct, newArrival: e.target.checked, is_new_arrival: e.target.checked })}
+                    className="accent-[#B55232]"
                   />
                   <span>New Arrival Flag</span>
                 </label>
@@ -2105,9 +2161,19 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                 <label className="flex items-center gap-2 cursor-pointer text-xs">
                   <input
                     type="checkbox"
-                    checked={editingProduct?.active !== false}
-                    onChange={(e) => setEditingProduct({ ...editingProduct, active: e.target.checked, is_active: e.target.checked ? 1 : 0 } as any)}
-                    className="accent-[#8C7853]"
+                    checked={Boolean(editingProduct?.flashSale)}
+                    onChange={(e) => setEditingProduct({ ...editingProduct, flashSale: e.target.checked, is_flash_sale: e.target.checked })}
+                    className="accent-[#B55232]"
+                  />
+                  <span>Flash Sale</span>
+                </label>
+
+                <label className="flex items-center gap-2 cursor-pointer text-xs">
+                  <input
+                    type="checkbox"
+                    checked={editingProduct?.active ?? true}
+                    onChange={(e) => setEditingProduct({ ...editingProduct, active: e.target.checked, is_active: e.target.checked })}
+                    className="accent-[#B55232]"
                   />
                   <span>Active in Storefront</span>
                 </label>
@@ -2116,15 +2182,15 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
               <button
                 type="submit"
                 disabled={isSavingProduct}
-                className="w-full bg-[#8C7853] hover:bg-[#A08B63] text-[#FAF8F5] py-3 text-xs font-semibold uppercase tracking-wider rounded-xs flex items-center justify-center gap-2 cursor-pointer transition-colors"
+                className="w-full bg-[#B55232] hover:bg-[#B55232] text-[#F8F8F8] py-3 text-xs font-semibold uppercase tracking-wider rounded-xs flex items-center justify-center gap-2 cursor-pointer transition-colors"
               >
                 {isSavingProduct ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Writing to D1 & Syncing R2 Assets...</span>
+                    <span>Saving garment and variants...</span>
                   </>
                 ) : (
-                  <span>Save Garment & All Variants to D1</span>
+                  <span>Save Garment & All Variants</span>
                 )}
               </button>
             </form>
@@ -2135,22 +2201,22 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
       {/* MODAL: QUICK EDIT VARIANT STOCK */}
       {stockEditModal && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-[#1C1B1A] border border-[#2D2B28] text-[#FAF8F5] rounded-xs p-6 max-w-sm w-full space-y-4">
-            <div className="flex justify-between items-center border-b border-[#2D2B28] pb-3">
+          <div className="bg-[#1B1B1B] border border-[#2B2B2B] text-[#F8F8F8] rounded-xs p-6 max-w-sm w-full space-y-4">
+            <div className="flex justify-between items-center border-b border-[#2B2B2B] pb-3">
               <div>
-                <h3 className="font-serif text-lg font-medium text-[#FAF8F5]">Quick Stock Update</h3>
-                <span className="text-[10px] text-[#A09A92]">{stockEditModal.name}</span>
+                <h3 className="font-serif text-lg font-medium text-[#F8F8F8]">Quick Stock Update</h3>
+                <span className="text-[10px] text-[#9B9B9B]">{stockEditModal.name}</span>
               </div>
-              <button onClick={() => setStockEditModal(null)} className="text-[#A09A92] hover:text-white">
+              <button onClick={() => setStockEditModal(null)} className="text-[#9B9B9B] hover:text-white">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <form onSubmit={handleSaveStock} className="space-y-4 text-xs">
-              <div className="bg-[#121212] p-3 rounded-xs border border-[#3A3835] space-y-1">
+              <div className="bg-[#121212] p-3 rounded-xs border border-[#383838] space-y-1">
                 <div className="flex justify-between text-xs">
-                  <span className="text-[#A09A92]">Variant:</span>
-                  <span className="font-semibold text-[#D4AF37]">{stockEditModal.size} {stockEditModal.length ? `• ${stockEditModal.length}` : ''}</span>
+                  <span className="text-[#9B9B9B]">Variant:</span>
+                  <span className="font-semibold text-[#E8B7A5]">{stockEditModal.size} {stockEditModal.length ? `• ${stockEditModal.length}` : ''}</span>
                 </div>
                 <div className="text-[10px] text-[#777777] font-mono">
                   ID: {stockEditModal.id}
@@ -2158,13 +2224,13 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
               </div>
 
               <div>
-                <label className="block text-[#A09A92] mb-1 font-medium">Available Units in Stock *</label>
+                <label className="block text-[#9B9B9B] mb-1 font-medium">Available Units in Stock *</label>
                 <input
                   type="number"
                   min="0"
                   value={stockEditModal.quantity}
                   onChange={(e) => setStockEditModal({ ...stockEditModal, quantity: Math.max(0, parseInt(e.target.value, 10) || 0) })}
-                  className="w-full bg-[#121212] border border-[#3A3835] px-3 py-2 rounded-xs text-[#FAF8F5] font-mono text-base font-bold focus:outline-none focus:border-[#D4AF37]"
+                  className="w-full bg-[#121212] border border-[#383838] px-3 py-2 rounded-xs text-[#F8F8F8] font-mono text-base font-bold focus:outline-none focus:border-[#E8B7A5]"
                   required
                   autoFocus
                 />
@@ -2174,14 +2240,14 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                 <button
                   type="button"
                   onClick={() => setStockEditModal(null)}
-                  className="flex-1 bg-[#262422] text-[#A09A92] py-2 rounded-xs"
+                  className="flex-1 bg-[#242424] text-[#9B9B9B] py-2 rounded-xs"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isUpdatingStock}
-                  className="flex-1 bg-[#8C7853] hover:bg-[#A08B63] text-white py-2 font-semibold uppercase tracking-wider rounded-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                  className="flex-1 bg-[#B55232] hover:bg-[#B55232] text-white py-2 font-semibold uppercase tracking-wider rounded-xs flex items-center justify-center gap-1.5 cursor-pointer"
                 >
                   {isUpdatingStock ? <Loader2 className="w-4 h-4 animate-spin" /> : <span>Update Stock</span>}
                 </button>
@@ -2194,34 +2260,34 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
       {/* MODAL: CREATE / EDIT COUPON */}
       {isCouponModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-[#1C1B1A] border border-[#2D2B28] text-[#FAF8F5] rounded-xs p-6 max-w-md w-full space-y-4">
-            <div className="flex justify-between items-center border-b border-[#2D2B28] pb-3">
+          <div className="bg-[#1B1B1B] border border-[#2B2B2B] text-[#F8F8F8] rounded-xs p-6 max-w-md w-full space-y-4">
+            <div className="flex justify-between items-center border-b border-[#2B2B2B] pb-3">
               <h3 className="font-serif text-xl font-medium">Create Promo Coupon</h3>
-              <button onClick={() => setIsCouponModalOpen(false)} className="text-[#A09A92]">
+              <button onClick={() => setIsCouponModalOpen(false)} className="text-[#9B9B9B]">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <form onSubmit={handleSaveCouponForm} className="space-y-4 text-xs">
               <div>
-                <label className="block text-[#A09A92] mb-1">Coupon Code *</label>
+                <label className="block text-[#9B9B9B] mb-1">Coupon Code *</label>
                 <input
                   type="text"
                   value={editingCoupon?.code || ''}
                   onChange={(e) => setEditingCoupon({ ...editingCoupon, code: e.target.value })}
                   placeholder="e.g. EID2026"
-                  className="w-full bg-[#121212] border border-[#3A3835] px-3 py-2 rounded-xs text-[#FAF8F5] uppercase font-mono"
+                  className="w-full bg-[#121212] border border-[#383838] px-3 py-2 rounded-xs text-[#F8F8F8] uppercase font-mono"
                   required
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[#A09A92] mb-1">Type</label>
+                  <label className="block text-[#9B9B9B] mb-1">Type</label>
                   <select
                     value={editingCoupon?.discountType || 'percentage'}
                     onChange={(e) => setEditingCoupon({ ...editingCoupon, discountType: e.target.value as any })}
-                    className="w-full bg-[#121212] border border-[#3A3835] px-3 py-2 rounded-xs text-[#FAF8F5]"
+                    className="w-full bg-[#121212] border border-[#383838] px-3 py-2 rounded-xs text-[#F8F8F8]"
                   >
                     <option value="percentage">Percentage (%)</option>
                     <option value="flat">Flat Amount (₹)</option>
@@ -2229,45 +2295,49 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                 </div>
 
                 <div>
-                  <label className="block text-[#A09A92] mb-1">Discount Value *</label>
+                  <label className="block text-[#9B9B9B] mb-1">Discount Value *</label>
                   <input
                     type="number"
+                    min="0.01"
+                    step="0.01"
                     value={editingCoupon?.discountValue || ''}
                     onChange={(e) => setEditingCoupon({ ...editingCoupon, discountValue: parseFloat(e.target.value) })}
                     placeholder="15 or 1000"
-                    className="w-full bg-[#121212] border border-[#3A3835] px-3 py-2 rounded-xs text-[#FAF8F5]"
+                    className="w-full bg-[#121212] border border-[#383838] px-3 py-2 rounded-xs text-[#F8F8F8]"
                     required
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-[#A09A92] mb-1">Minimum Spend (INR)</label>
+                <label className="block text-[#9B9B9B] mb-1">Minimum Spend (INR)</label>
                 <input
                   type="number"
+                  min="0"
+                  step="0.01"
                   value={editingCoupon?.minPurchase || 0}
                   onChange={(e) => setEditingCoupon({ ...editingCoupon, minPurchase: parseFloat(e.target.value) })}
                   placeholder="5000"
-                  className="w-full bg-[#121212] border border-[#3A3835] px-3 py-2 rounded-xs text-[#FAF8F5]"
+                  className="w-full bg-[#121212] border border-[#383838] px-3 py-2 rounded-xs text-[#F8F8F8]"
                 />
               </div>
 
               <div>
-                <label className="block text-[#A09A92] mb-1">Expiry Date</label>
+                <label className="block text-[#9B9B9B] mb-1">Expiry Date</label>
                 <input
                   type="date"
                   min={new Date().toISOString().slice(0, 10)}
                   value={editingCoupon?.expiryDate || ''}
                   onChange={(e) => setEditingCoupon({ ...editingCoupon, expiryDate: e.target.value })}
-                  className="w-full bg-[#121212] border border-[#3A3835] px-3 py-2 rounded-xs text-[#FAF8F5]"
+                  className="w-full bg-[#121212] border border-[#383838] px-3 py-2 rounded-xs text-[#F8F8F8]"
                 />
-                <p className="text-[10px] text-[#777] mt-1">Leave blank to use a 30-day validity period.</p>
+                <p className="text-[10px] text-[#777777] mt-1">Leave blank to use a 30-day validity period.</p>
               </div>
 
               <button
                 type="submit"
                 disabled={isSavingCoupon}
-                className="w-full bg-[#8C7853] hover:bg-[#A08B63] text-[#FAF8F5] py-3 text-xs font-semibold uppercase tracking-wider rounded-xs cursor-pointer disabled:opacity-50"
+                className="w-full bg-[#B55232] hover:bg-[#B55232] text-[#F8F8F8] py-3 text-xs font-semibold uppercase tracking-wider rounded-xs cursor-pointer disabled:opacity-50"
               >
                 {isSavingCoupon ? 'Saving…' : 'Save Coupon'}
               </button>
