@@ -244,6 +244,11 @@ export const Footer: React.FC<FooterProps> = ({ setActiveTab, onNavigate, onSele
                 </button>
               </li>
               <li>
+                <button onClick={() => { handleTab('order-status'); window.scrollTo(0,0); }} className="hover:text-[#FAF8F5] transition-colors">
+                  Check Order Status
+                </button>
+              </li>
+              <li>
                 <button onClick={() => { handleTab('about'); window.scrollTo(0,0); }} className="hover:text-[#FAF8F5] transition-colors">
                   Our Brand Story
                 </button>

@@ -67,6 +67,41 @@ serve(async (req: Request) => {
     const supabase = getServiceClient();
     const body = await req.json().catch(() => ({}));
 
+    if (body.action === 'lookup-order-status') {
+      const orderNumber = String(body.order_number || '').trim().toUpperCase();
+      const contact = String(body.contact || '').trim();
+
+      if (!orderNumber || orderNumber.length > 80 || !contact || contact.length > 254) {
+        return errorResponse('Enter a valid order reference and checkout phone number or email.', 400);
+      }
+
+      const { data: order, error: lookupError } = await supabase
+        .from('orders')
+        .select('order_number, customer_email, customer_phone, payment_status, courier_name, tracking_number')
+        .eq('order_number', orderNumber)
+        .maybeSingle();
+
+      if (lookupError) {
+        console.error('[create-order order status lookup error]:', lookupError);
+        return errorResponse('Unable to check order status right now. Please try again later.', 500);
+      }
+
+      const matchesContact = order && (contact.includes('@')
+        ? String(order.customer_email || '').trim().toLowerCase() === contact.toLowerCase()
+        : String(order.customer_phone || '').replace(/\D/g, '') === contact.replace(/\D/g, ''));
+
+      if (!order || !matchesContact) {
+        return errorResponse('Order not found. Check the reference and checkout contact details, then try again.', 404);
+      }
+
+      return jsonResponse({
+        orderNumber: order.order_number,
+        status: order.payment_status,
+        courierName: order.courier_name || undefined,
+        trackingNumber: order.tracking_number || undefined,
+      }, 200);
+    }
+
     // Customer details validation
     const customerName = String(body.customer_name || body.customerName || body.customer?.fullName || '').trim();
     const customerEmail = String(body.customer_email || body.email || body.customer?.email || '').trim();
@@ -121,8 +156,6 @@ serve(async (req: Request) => {
       console.warn('[create-order RPC Error, attempting direct fallback]:', dbError);
 
       const generatedId = crypto.randomUUID();
-      const expiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString();
-
       const { data: directOrder, error: directOrderErr } = await supabase
         .from('orders')
         .insert({
@@ -142,7 +175,7 @@ serve(async (req: Request) => {
           payment_status: 'Paid, Awaiting Confirmation',
           payment_method: 'UPI_QR_MANUAL',
           reservation_status: 'reserved',
-          reservation_expires_at: expiresAt,
+          reservation_expires_at: null,
           items: orderPayload.items,
         })
         .select()

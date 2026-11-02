@@ -62,7 +62,7 @@ CREATE TABLE IF NOT EXISTS public.orders (
   payment_proof_url TEXT,
   reservation_status TEXT NOT NULL DEFAULT 'reserved' 
     CHECK (reservation_status IN ('reserved', 'committed', 'released', 'expired')),
-  reservation_expires_at TIMESTAMPTZ,
+  reservation_expires_at TIMESTAMPTZ, -- Legacy field; customer order reservations do not expire
   restocked_at TIMESTAMPTZ,
   courier_name TEXT,
   tracking_number TEXT,

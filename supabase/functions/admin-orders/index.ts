@@ -83,6 +83,24 @@ async function requireAdmin(req: Request) {
   return { user, admin: adminRecord };
 }
 
+async function resolveOrderId(supabase: ReturnType<typeof getServiceClient>, orderReference: string): Promise<string | null> {
+  if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(orderReference)) {
+    return orderReference;
+  }
+
+  const { data, error } = await supabase
+    .from('orders')
+    .select('id')
+    .eq('order_number', orderReference)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`Could not find order: ${error.message}`);
+  }
+
+  return data?.id || null;
+}
+
 serve(async (req: Request) => {
   const cors = handleCors(req);
   if (cors) return cors;
@@ -119,8 +137,11 @@ serve(async (req: Request) => {
 
       // If transitioning to "Payment Confirmed", execute PostgreSQL confirm_order_payment RPC
       if (status === 'Payment Confirmed') {
+        const orderUuid = await resolveOrderId(supabase, id);
+        if (!orderUuid) return errorResponse('Order not found.', 404);
+
         const { data: confirmedOrder, error: confError } = await supabase.rpc('confirm_order_payment', {
-          p_order_id: id,
+          p_order_id: orderUuid,
         });
 
         if (confError) {
@@ -139,10 +160,11 @@ serve(async (req: Request) => {
       if (courierName) updateData.courier_name = courierName;
       if (trackingNumber) updateData.tracking_number = trackingNumber;
 
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
       const { data: updatedOrder, error: upError } = await supabase
         .from('orders')
         .update(updateData)
-        .or(`id.eq.${id},order_number.eq.${id}`)
+        .eq(isUuid ? 'id' : 'order_number', id)
         .select()
         .single();
 
@@ -157,8 +179,11 @@ serve(async (req: Request) => {
       const action = String(body.action || '').trim();
 
       if (action === 'restock' && orderId) {
+        const orderUuid = await resolveOrderId(supabase, orderId);
+        if (!orderUuid) return errorResponse('Order not found.', 404);
+
         const { data: restocked, error: restockErr } = await supabase.rpc('restock_order_explicit', {
-          p_order_id: orderId,
+          p_order_id: orderUuid,
         });
 
         if (restockErr) {

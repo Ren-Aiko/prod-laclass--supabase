@@ -25,6 +25,24 @@ CREATE TRIGGER trg_orders_updated_at
   BEFORE UPDATE ON orders
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
+CREATE OR REPLACE FUNCTION public.keep_order_reservations_until_resolved()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  IF NEW.reservation_status = 'reserved'
+     AND NEW.payment_status = 'Paid, Awaiting Confirmation' THEN
+    NEW.reservation_expires_at := NULL;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_order_reservations_do_not_expire ON orders;
+CREATE TRIGGER trg_order_reservations_do_not_expire
+  BEFORE INSERT OR UPDATE ON orders
+  FOR EACH ROW EXECUTE FUNCTION public.keep_order_reservations_until_resolved();
+
 DROP TRIGGER IF EXISTS trg_coupons_updated_at ON coupons;
 CREATE TRIGGER trg_coupons_updated_at
   BEFORE UPDATE ON coupons
@@ -80,7 +98,6 @@ DECLARE
   v_custom_m JSONB;
   
   v_coupon_row RECORD;
-  v_expiry_interval INTERVAL := '30 minutes';
 BEGIN
   -- Extract customer fields
   v_customer_name := trim(COALESCE(p_order->>'customer_name', ''));
@@ -305,7 +322,7 @@ BEGIN
     'Paid, Awaiting Confirmation',
     'UPI_QR_MANUAL',
     'reserved',
-    now() + v_expiry_interval,
+    NULL,
     v_notes,
     now(),
     now()
@@ -369,16 +386,15 @@ BEGIN
     'amount', v_subtotal,
     'discount_amount', v_discount,
     'shipping_fee', v_shipping_fee,
-    'expires_in_minutes', 30,
-    'message', 'Order created and stock reserved for 30 minutes.'
+    'message', 'Order created and stock reserved until confirmed or cancelled.'
   );
 END;
 $$;
 
 -- =====================================================================
 -- 3. RELEASE EXPIRED RESERVATIONS (Idempotent & Safe)
--- Releases reservations past their 30-min window where payment is not confirmed.
--- Restores stock to standard variants exactly once.
+-- Legacy cleanup for reservations that were assigned an expiry by older code.
+-- New customer orders do not expire.
 -- =====================================================================
 CREATE OR REPLACE FUNCTION public.release_expired_reservations()
 RETURNS JSONB
@@ -466,8 +482,8 @@ BEGIN
     RAISE EXCEPTION 'Order not found.';
   END IF;
 
-  -- Case A: Normal active reservation
-  IF v_order.reservation_status = 'reserved' AND v_order.reservation_expires_at > now() THEN
+  -- Stock was decremented when the order was created; a reserved order remains active.
+  IF v_order.reservation_status = 'reserved' THEN
     UPDATE orders
     SET payment_status = 'Payment Confirmed',
         reservation_status = 'committed',

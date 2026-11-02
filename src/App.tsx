@@ -21,6 +21,7 @@ import { AdminPage } from './pages/AdminPage';
 import { ShippingReturnsPage } from './pages/ShippingReturnsPage';
 import { PrivacyPolicyPage } from './pages/PrivacyPolicyPage';
 import { TermsConditionsPage } from './pages/TermsConditionsPage';
+import { OrderStatusPage } from './pages/OrderStatusPage';
 
 import { Product, CategoryType } from './types';
 import { useStore } from './context/StoreContext';
@@ -81,6 +82,10 @@ export function App() {
     }
     if (path === '/contact') {
       setCurrentPage('contact');
+      return;
+    }
+    if (path === '/order-status') {
+      setCurrentPage('order-status');
       return;
     }
     if (path === '/shipping-returns') {
@@ -212,6 +217,10 @@ export function App() {
 
           {currentPage === 'contact' && (
             <ContactPage />
+          )}
+
+          {currentPage === 'order-status' && (
+            <OrderStatusPage />
           )}
 
           {currentPage === 'shipping-returns' && (

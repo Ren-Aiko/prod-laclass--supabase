@@ -123,7 +123,6 @@ export const createOrder = async (order: Order): Promise<{ success: boolean; id:
 
       // 2. Fallback: Direct insert into orders table
       const orderId = crypto.randomUUID();
-      const expiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString();
       const { data: directOrder, error: directErr } = await supabase
         .from('orders')
         .insert({
@@ -143,7 +142,7 @@ export const createOrder = async (order: Order): Promise<{ success: boolean; id:
           payment_status: 'Paid, Awaiting Confirmation',
           payment_method: 'UPI_QR_MANUAL',
           reservation_status: 'reserved',
-          reservation_expires_at: expiresAt,
+          reservation_expires_at: null,
           items: payload.items,
         })
         .select()
@@ -192,6 +191,32 @@ export const fetchOrders = async (): Promise<Order[]> => {
     console.error('[fetchOrders Error]:', err);
     throw err;
   }
+};
+
+export interface CustomerOrderStatus {
+  orderNumber: string;
+  status: OrderStatus;
+  courierName?: string;
+  trackingNumber?: string;
+}
+
+export const fetchCustomerOrderStatus = async (
+  orderNumber: string,
+  contact: string
+): Promise<CustomerOrderStatus> => {
+  const result = await invokeEdgeFunction<CustomerOrderStatus & {
+    courier_name?: string | null;
+    tracking_number?: string | null;
+  }>('create-order', {
+    method: 'POST',
+    body: { action: 'lookup-order-status', order_number: orderNumber, contact },
+  });
+
+  return {
+    ...result,
+    courierName: result.courierName || result.courier_name || undefined,
+    trackingNumber: result.trackingNumber || result.tracking_number || undefined,
+  };
 };
 
 /**

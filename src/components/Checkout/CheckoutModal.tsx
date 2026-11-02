@@ -604,7 +604,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose })
                   2. Once bank credit is verified, status updates to <strong className="text-[#2e7d32]">Payment Confirmed</strong> and bespoke atelier tailoring proceeds.
                 </p>
                 <p>
-                  3. You will receive dispatch updates with your courier tracking number on WhatsApp and email.
+                  3. Use the Order Status page with your order reference and checkout phone number or email to check confirmation. Once confirmed, the status will say that shipment details are awaited.
                 </p>
               </div>
 

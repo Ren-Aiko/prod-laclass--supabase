@@ -8,7 +8,6 @@
  *  - env.DB           (D1 Database binding)
  *  - env.BUCKET       (R2 Bucket binding)
  *  - env.ADMIN_SECRET (Secret string for Bearer token auth, default: 'laclasse-secret-2026')
- *  - env.RESERVATION_EXPIRY_MINUTES (Stock reservation expiry in minutes, default: 30)
  *  - env.R2_PUBLIC_URL (Optional public custom domain or CDN URL for R2 bucket)
  */
 
@@ -112,7 +111,7 @@ export async function releaseExpiredReservations(env) {
     return { releasedCount: 0, orderIds: [] };
   }
 
-  // Find orders where reservation has expired, status is 'reserved', and not confirmed/shipped
+  // Legacy cleanup for orders created with an expiry by older code.
   const { results: expiredOrders } = await env.DB.prepare(
     `SELECT id, items, reservation_status, payment_status, reservation_expires_at, notes 
      FROM orders 
@@ -245,7 +244,6 @@ export default {
           status: 'online',
           d1: Boolean(env.DB),
           r2: Boolean(env.BUCKET),
-          reservationExpiryMinutes: Number(env.RESERVATION_EXPIRY_MINUTES || 30),
           timestamp: new Date().toISOString()
         });
       }
@@ -668,7 +666,7 @@ export default {
       // Validates custom measurements if Custom.
       // Validates stock and reserves atomically using conditional updates.
       // Rolls back on any failure.
-      // Sets reservation_expires_at to UTC now + 30 min.
+      // Customer orders do not expire; the cart is not persisted as a server reservation.
       // Sets reservation_status = 'reserved'.
       // -------------------------------------------------------------
       if (path === '/api/orders' && method === 'POST') {
@@ -892,9 +890,7 @@ export default {
 
         // =============================================================
         // 4. Create Order & Order Items
-        // Expiry set to UTC 30 min from now
         // =============================================================
-        const expiryMinutes = parseInt(env.RESERVATION_EXPIRY_MINUTES || '30', 10);
         const orderId = body.id || `LC-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
         const initialStatus = 'Paid, Awaiting Confirmation';
         const reservationStatus = 'reserved';
@@ -911,7 +907,7 @@ export default {
               ?, ?, ?, ?, ?,
               ?, ?, ?, ?, ?,
               ?, ?, 'UPI_QR_MANUAL', ?,
-              datetime('now', '+${expiryMinutes} minutes'), ?, datetime('now'), datetime('now')
+              NULL, ?, datetime('now'), datetime('now')
             )`
           ).bind(
             orderId, customerName, email, phone, address,
@@ -960,8 +956,7 @@ export default {
           amount: calculatedSubtotal,
           discount_amount: discountAmount,
           shipping_fee: shippingFee,
-          expires_in_minutes: expiryMinutes,
-          message: 'Order created and stock reserved for 30 minutes. The atelier will reconcile your UTR against bank credits.'
+          message: 'Order created and stock reserved until confirmed or cancelled. The atelier will reconcile your UTR against bank credits.'
         }, 201);
       }
 
@@ -1079,46 +1074,8 @@ export default {
           if (currentReservation === 'committed') {
             nextReservationStatus = 'committed';
           } else if (currentReservation === 'reserved') {
-            // Check if reservation is still active
-            const { results: expiryCheck } = await env.DB.prepare(
-              `SELECT (datetime('now') <= reservation_expires_at) as is_valid FROM orders WHERE id = ?`
-            ).bind(orderId).all();
-
-            const isValid = Boolean(expiryCheck?.[0]?.is_valid);
-
-            if (isValid) {
-              nextReservationStatus = 'committed';
-            } else {
-              // Expired reservation recovery process:
-              // Check current stock and attempt re-reservation
-              let itemsList = [];
-              try { itemsList = JSON.parse(currentOrder.items); } catch {}
-
-              const reReserved = [];
-              for (const itm of itemsList) {
-                if (itm.product_variant_id && normalizeSize(itm.size) !== 'Custom') {
-                  const qty = Math.max(1, Number(itm.quantity || 1));
-                  const reRes = await env.DB.prepare(
-                    `UPDATE products SET quantity = quantity - ?, updated_at = datetime('now') WHERE id = ? AND quantity >= ?`
-                  ).bind(qty, itm.product_variant_id, qty).run();
-
-                  const chg = reRes?.meta?.changes ?? (reRes?.success ? 1 : 0);
-                  if (chg === 0) {
-                    // Rollback any re-reserved
-                    for (const rb of reReserved) {
-                      await env.DB.prepare(
-                        `UPDATE products SET quantity = quantity + ?, updated_at = datetime('now') WHERE id = ?`
-                      ).bind(rb.quantity, rb.variantId).run();
-                    }
-                    return jsonResponse({
-                      error: `Reservation expired and variant '${itm.name}' is out of stock. Cannot confirm payment.`
-                    }, 409);
-                  }
-                  reReserved.push({ variantId: itm.product_variant_id, quantity: qty });
-                }
-              }
-              nextReservationStatus = 'committed';
-            }
+            // Inventory was already deducted when the order was created.
+            nextReservationStatus = 'committed';
           } else if (currentReservation === 'released') {
             // Expired/released recovery check
             let itemsList = [];

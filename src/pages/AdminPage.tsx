@@ -132,6 +132,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
 
   // Mark as Shipped Dialog State
   const [shippingOrderId, setShippingOrderId] = useState<string | null>(null);
+  const [shippingOrderStatus, setShippingOrderStatus] = useState<OrderStatus>('Shipped');
   const [courierName, setCourierName] = useState('BlueDart Express');
   const [trackingNumber, setTrackingNumber] = useState('');
   const [isShippingUpdating, setIsShippingUpdating] = useState(false);
@@ -157,15 +158,29 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
   const handleConfirmPayment = async (orderId: string) => {
     try {
       await updateOrderStatus(orderId, 'Payment Confirmed');
+      alert(`Your order is confirmed. Awaiting for shipment details.`);
     } catch (err: any) {
       alert(`Error confirming payment: ${err.message}`);
     }
   };
 
-  const handleOpenShipDialog = (orderId: string) => {
+  const handleRejectPayment = async (orderId: string) => {
+    if (!confirm(`Reject payment and cancel order ${orderId}?`)) return;
+
+    try {
+      await updateOrderStatus(orderId, 'Cancelled');
+      alert(`Order ${orderId} has been cancelled.`);
+    } catch (err: any) {
+      alert(`Error rejecting payment: ${err.message}`);
+    }
+  };
+
+  const handleOpenShipDialog = (orderId: string, status: OrderStatus = 'Shipped') => {
+    const order = orders.find((item) => item.orderId === orderId || item.id === orderId);
     setShippingOrderId(orderId);
-    setCourierName('BlueDart Express');
-    setTrackingNumber(`BD${Math.floor(100000000 + Math.random() * 900000000)}IN`);
+    setShippingOrderStatus(status);
+    setCourierName(order?.courierName || 'BlueDart Express');
+    setTrackingNumber(order?.trackingNumber || '');
   };
 
   const handleSubmitShipDialog = async (e: React.FormEvent) => {
@@ -178,8 +193,10 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
 
     setIsShippingUpdating(true);
     try {
-      await updateOrderStatus(shippingOrderId, 'Shipped', courierName, trackingNumber);
+      await updateOrderStatus(shippingOrderId, shippingOrderStatus, courierName.trim(), trackingNumber.trim());
       setShippingOrderId(null);
+      await refreshAdminData();
+      alert('Shipment details saved.');
     } catch (err: any) {
       alert(`Error updating shipping status: ${err.message}`);
     } finally {
@@ -836,9 +853,6 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                           </span>
                           <div className="mt-1">
                             {(() => {
-                              const isExp = ord.reservation_expires_at 
-                                ? new Date(ord.reservation_expires_at).getTime() <= Date.now() 
-                                : false;
                               const resStatus = ord.reservation_status || 'reserved';
 
                               if (resStatus === 'committed') {
@@ -856,16 +870,16 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                                 );
                               }
                               if (resStatus === 'reserved') {
-                                if (isExp) {
-                                  return (
-                                    <span className="text-[9px] text-[#fca5a5] bg-[#450a0a] px-1.5 py-0.5 rounded-xs inline-block font-semibold">
-                                      ⚠️ Expired Reservation
-                                    </span>
-                                  );
-                                }
                                 return (
                                   <span className="text-[9px] text-[#fde047] bg-[#422006] px-1.5 py-0.5 rounded-xs inline-block">
-                                    ⏳ Reserved (Active)
+                                    Stock Reserved
+                                  </span>
+                                );
+                              }
+                              if (resStatus === 'expired') {
+                                return (
+                                  <span className="text-[9px] text-[#fca5a5] bg-[#450a0a] px-1.5 py-0.5 rounded-xs inline-block font-semibold">
+                                    Legacy Expired Reservation
                                   </span>
                                 );
                               }
@@ -944,44 +958,25 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                         {/* State Machine Transition Action */}
                         <td className="p-3.5 text-right space-y-1.5">
                           {ord.status === 'Paid, Awaiting Confirmation' && (() => {
-                            const isExp = ord.reservation_expires_at 
-                              ? new Date(ord.reservation_expires_at).getTime() <= Date.now() 
-                              : false;
-                            const isReleased = ord.reservation_status === 'released' || ord.reservation_status === 'expired' || isExp;
-
-                            if (isReleased) {
-                              return (
-                                <div className="flex flex-col gap-1 items-end">
-                                  <button
-                                    onClick={() => handleConfirmPayment(ord.orderId)}
-                                    className="px-2.5 py-1 bg-[#065f46] hover:bg-[#047857] text-[#FAF8F5] text-[10px] font-semibold rounded-xs shadow-sm flex items-center gap-1 cursor-pointer"
-                                    title="Verify inventory availability and recover order"
-                                  >
-                                    <Check className="w-3 h-3" />
-                                    <span>Recover & Confirm</span>
-                                  </button>
-                                  <button
-                                    onClick={async () => {
-                                      if (confirm(`Reject payment and cancel expired order ${ord.orderId}?`)) {
-                                        await updateOrderStatus(ord.orderId, 'Cancelled');
-                                      }
-                                    }}
-                                    className="px-2.5 py-1 bg-[#3a1818] hover:bg-[#5a1818] text-[#fca5a5] text-[10px] font-medium rounded-xs cursor-pointer"
-                                  >
-                                    <span>Reject / Cancel</span>
-                                  </button>
-                                </div>
-                              );
-                            }
+                            const isReleased = ord.reservation_status === 'released' || ord.reservation_status === 'expired';
 
                             return (
-                              <button
-                                onClick={() => handleConfirmPayment(ord.orderId)}
-                                className="px-3 py-1.5 bg-[#065f46] hover:bg-[#047857] text-[#FAF8F5] text-[11px] font-semibold rounded-xs shadow-sm flex items-center gap-1 ml-auto cursor-pointer"
-                              >
-                                <Check className="w-3.5 h-3.5" />
-                                <span>Confirm Payment</span>
-                              </button>
+                              <div className="flex flex-col gap-1.5 items-end">
+                                <button
+                                  onClick={() => handleConfirmPayment(ord.orderId)}
+                                  className="px-2.5 py-1 bg-[#065f46] hover:bg-[#047857] text-[#FAF8F5] text-[10px] font-semibold rounded-xs shadow-sm flex items-center gap-1 cursor-pointer"
+                                  title={isReleased ? 'Verify inventory availability and recover order' : undefined}
+                                >
+                                  <Check className="w-3 h-3" />
+                                  <span>{isReleased ? 'Recover & Confirm' : 'Confirm Payment'}</span>
+                                </button>
+                                <button
+                                  onClick={() => handleRejectPayment(ord.orderId)}
+                                  className="px-2.5 py-1 bg-[#3a1818] hover:bg-[#5a1818] text-[#fca5a5] text-[10px] font-medium rounded-xs cursor-pointer"
+                                >
+                                  <span>Reject Payment</span>
+                                </button>
+                              </div>
                             );
                           })()}
 
@@ -996,19 +991,35 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                           )}
 
                           {ord.status === 'Shipped' && (
-                            <button
-                              onClick={() => handleMarkDelivered(ord.orderId)}
-                              className="px-3 py-1.5 bg-[#166534] hover:bg-[#15803d] text-[#FAF8F5] text-[11px] font-semibold rounded-xs shadow-sm flex items-center gap-1 ml-auto cursor-pointer"
-                            >
-                              <CheckCircle2 className="w-3.5 h-3.5" />
-                              <span>Mark as Delivered</span>
-                            </button>
+                            <div className="flex flex-col gap-1.5 items-end">
+                              <button
+                                onClick={() => handleMarkDelivered(ord.orderId)}
+                                className="px-3 py-1.5 bg-[#166534] hover:bg-[#15803d] text-[#FAF8F5] text-[11px] font-semibold rounded-xs shadow-sm flex items-center gap-1 cursor-pointer"
+                              >
+                                <CheckCircle2 className="w-3.5 h-3.5" />
+                                <span>Mark as Delivered</span>
+                              </button>
+                              <button
+                                onClick={() => handleOpenShipDialog(ord.orderId, 'Shipped')}
+                                className="text-[10px] text-[#D4AF37] hover:text-[#FAF8F5] cursor-pointer"
+                              >
+                                Edit Shipment Details
+                              </button>
+                            </div>
                           )}
 
                           {ord.status === 'Delivered' && (
-                            <span className="text-[10px] text-[#2e7d32] font-semibold block">
-                              ✓ Completed
-                            </span>
+                            <div className="flex flex-col gap-1 items-end">
+                              <span className="text-[10px] text-[#2e7d32] font-semibold block">
+                                ✓ Completed
+                              </span>
+                              <button
+                                onClick={() => handleOpenShipDialog(ord.orderId, 'Delivered')}
+                                className="text-[10px] text-[#D4AF37] hover:text-[#FAF8F5] cursor-pointer"
+                              >
+                                Edit Shipment Details
+                              </button>
+                            </div>
                           )}
 
                           {(ord.status === 'Cancelled' || ord.status === 'Refunded') && (
@@ -1555,7 +1566,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                   disabled={isShippingUpdating}
                   className="flex-1 bg-[#8C7853] hover:bg-[#A08B63] text-white py-2.5 font-semibold uppercase tracking-wider rounded-xs flex items-center justify-center gap-2 cursor-pointer"
                 >
-                  {isShippingUpdating ? <Loader2 className="w-4 h-4 animate-spin" /> : <span>Confirm Dispatch</span>}
+                  {isShippingUpdating ? <Loader2 className="w-4 h-4 animate-spin" /> : <span>{shippingOrderStatus === 'Shipped' ? 'Save Shipment Details' : 'Save Tracking Details'}</span>}
                 </button>
               </div>
             </form>

@@ -104,7 +104,7 @@ CREATE TABLE orders (
   payment_proof_url TEXT,
   reservation_status TEXT NOT NULL DEFAULT 'reserved'
     CHECK (reservation_status IN ('reserved', 'committed', 'released', 'expired')),
-  reservation_expires_at TIMESTAMPTZ,                  -- 30 minutes after checkout creation
+  reservation_expires_at TIMESTAMPTZ,                  -- Legacy field; customer order reservations do not expire
   restocked_at TIMESTAMPTZ,                            -- Timestamp of explicit authorized admin restock
   courier_name TEXT,
   tracking_number TEXT,
