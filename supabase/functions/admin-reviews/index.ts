@@ -103,17 +103,35 @@ serve(async (req: Request) => {
       return jsonResponse(data || []);
     }
 
-    // PATCH /admin-reviews (Toggle review approval)
+    // PATCH /admin-reviews (Moderate or edit a review)
     if (req.method === 'PATCH') {
       const body = await req.json().catch(() => ({}));
       const id = String(body.id || url.searchParams.get('id') || '').trim();
-      const approved = Boolean(body.approved);
 
       if (!id) return errorResponse('Review ID is required.', 400);
 
+      const updates: Record<string, unknown> = {};
+      if (typeof body.approved === 'boolean') updates.approved = body.approved;
+      if (body.customer_name !== undefined) {
+        const customerName = String(body.customer_name).trim();
+        if (customerName.length < 2) return errorResponse('Customer name must be at least 2 characters.', 400);
+        updates.customer_name = customerName;
+      }
+      if (body.rating !== undefined) {
+        const rating = Number(body.rating);
+        if (!Number.isInteger(rating) || rating < 1 || rating > 5) return errorResponse('Rating must be an integer from 1 to 5.', 400);
+        updates.rating = rating;
+      }
+      if (body.comment !== undefined) {
+        const comment = String(body.comment).trim();
+        if (comment.length < 5) return errorResponse('Review must be at least 5 characters.', 400);
+        updates.comment = comment;
+      }
+      if (Object.keys(updates).length === 0) return errorResponse('No review changes provided.', 400);
+
       const { data, error } = await supabase
         .from('reviews')
-        .update({ approved })
+        .update(updates)
         .eq('id', id)
         .select()
         .single();

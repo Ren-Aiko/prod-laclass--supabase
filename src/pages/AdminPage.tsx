@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import logo from '../assets/SVG-02 (12)-Photoroom.png';
 import { 
   Shield, 
@@ -39,7 +39,8 @@ import {
   ChevronDown,
   ChevronUp,
   Layers,
-  RotateCcw
+  RotateCcw,
+  MoreVertical
 } from 'lucide-react';
 import { useAdmin } from '../context/AdminContext';
 import { useStore } from '../context/StoreContext';
@@ -68,10 +69,13 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
     saveCoupon,
     deleteCoupon,
     toggleReviewApproval,
+    updateReview,
+    reviews,
+    refreshReviewModeration,
     restockOrder
   } = useAdmin();
 
-  const { products, reviews, categories, dbError, refreshStoreData } = useStore();
+  const { products, categories, dbError, refreshStoreData } = useStore();
 
   const [activeTab, setActiveTab] = useState<'dashboard' | 'products' | 'orders' | 'coupons' | 'reviews' | 'subscribers' | 'contacts' | 'settings'>('dashboard');
 
@@ -145,7 +149,51 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
 
   // Reviews Processing State
   const [processingReviewId, setProcessingReviewId] = useState<string | null>(null);
+  const [processingReviewApproval, setProcessingReviewApproval] = useState<boolean | null>(null);
   const [reviewFeedback, setReviewFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [reviewActionMenuId, setReviewActionMenuId] = useState<string | null>(null);
+  const [editingReview, setEditingReview] = useState<Review | null>(null);
+  const [isSavingReview, setIsSavingReview] = useState(false);
+
+  useEffect(() => {
+    if (activeTab !== 'reviews' || !isAdminAuthenticated) return;
+    const timer = window.setInterval(() => { void refreshReviewModeration(); }, 20000);
+    return () => window.clearInterval(timer);
+  }, [activeTab, isAdminAuthenticated, refreshReviewModeration]);
+
+  const handleReviewApproval = async (reviewId: string, approved: boolean) => {
+    setProcessingReviewId(reviewId);
+    setProcessingReviewApproval(approved);
+    setReviewFeedback(null);
+    try {
+      await toggleReviewApproval(reviewId, approved);
+      setReviewFeedback({ type: 'success', message: approved ? 'Review approved and published.' : 'Review rejected and hidden.' });
+    } catch (err: any) {
+      setReviewFeedback({ type: 'error', message: err.message || 'Could not update review status.' });
+    } finally {
+      setProcessingReviewId(null);
+      setProcessingReviewApproval(null);
+    }
+  };
+
+  const handleSaveReview = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!editingReview) return;
+    setIsSavingReview(true);
+    try {
+      await updateReview(editingReview.id, {
+        customerName: editingReview.customerName,
+        rating: Number(editingReview.rating),
+        reviewText: editingReview.reviewText,
+      });
+      setEditingReview(null);
+      setReviewFeedback({ type: 'success', message: 'Review updated.' });
+    } catch (err: any) {
+      setReviewFeedback({ type: 'error', message: err.message || 'Could not save review changes.' });
+    } finally {
+      setIsSavingReview(false);
+    }
+  };
 
   const handleLogout = () => {
     logoutAdmin();
@@ -243,8 +291,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
         price: product.price,
         originalPrice: product.originalPrice ?? product.original_price,
         original_price: product.originalPrice ?? product.original_price,
-        offerPrice: product.offerPrice ?? product.offer_price,
-        offer_price: product.offerPrice ?? product.offer_price,
+        offerPrice: product.offerPrice ?? null,
         description: product.description,
         collection: product.collection,
         badge: (product as any).badge || '',
@@ -1347,9 +1394,15 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
                 <h1 className="font-serif text-3xl font-medium text-[#FAF8F5]">Client Reviews Moderation</h1>
-                <p className="text-xs text-[#A09A92]">Approve or hide customer reviews from public display.</p>
+                <p className="text-xs text-[#A09A92]">New customer reviews appear here as unapproved. Approve to publish or reject to keep hidden.</p>
               </div>
             </div>
+
+            {reviewFeedback && (
+              <div className={`p-3 text-xs rounded-xs ${reviewFeedback.type === 'success' ? 'bg-[#1b5e20] text-[#a5d6a7]' : 'bg-[#3a1818] text-[#ffaaaa]'}`}>
+                {reviewFeedback.message}
+              </div>
+            )}
 
             <div className="space-y-4">
               {reviews.length === 0 ? (
@@ -1358,22 +1411,58 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                 </div>
               ) : (
                 reviews.map((r) => (
-                  <div key={r.id} className="bg-[#1C1B1A] border border-[#2D2B28] p-4 rounded-xs flex items-center justify-between">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <strong className="text-[#FAF8F5]">{r.customerName}</strong>
-                        <span className="text-[#D4AF37]">{'★'.repeat(r.rating)}</span>
+                  <div key={r.id} className="bg-[#1C1B1A] border border-[#2D2B28] p-4 rounded-xs">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <strong className="text-[#FAF8F5]">{r.customerName}</strong>
+                          <span className="text-[#D4AF37]" aria-label={`${r.rating} out of 5 stars`}>{'★'.repeat(r.rating)}{'☆'.repeat(Math.max(0, 5 - r.rating))}</span>
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] ${r.approved ? 'bg-[#1b5e20] text-[#a5d6a7]' : 'bg-[#424242] text-[#e0e0e0]'}`}>
+                            {r.approved ? 'Approved' : 'Pending / Rejected'}
+                          </span>
+                        </div>
+                        <p className="text-[10px] text-[#777] mt-1">Product: {r.productName || r.productId} · {r.date || 'Date unavailable'}</p>
+                        <p className="text-xs text-[#A09A92] mt-2 whitespace-pre-wrap">{r.reviewText}</p>
                       </div>
-                      <p className="text-xs text-[#A09A92] mt-1">{r.reviewText}</p>
+                      <div className="relative flex shrink-0 items-center gap-2">
+                        <button
+                          type="button"
+                          disabled={processingReviewId === r.id}
+                          onClick={() => handleReviewApproval(r.id, true)}
+                          className="px-3 py-1.5 text-xs rounded-xs font-semibold bg-[#1b5e20] text-[#a5d6a7] disabled:opacity-50"
+                        >
+                          {processingReviewId === r.id && processingReviewApproval === true ? 'Saving…' : 'Approve'}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={processingReviewId === r.id}
+                          onClick={() => handleReviewApproval(r.id, false)}
+                          className="px-3 py-1.5 text-xs rounded-xs font-semibold bg-[#3a1818] text-[#ffaaaa] disabled:opacity-50"
+                        >
+                          {processingReviewId === r.id && processingReviewApproval === false ? 'Saving…' : 'Reject'}
+                        </button>
+                        <button
+                          type="button"
+                          aria-label={`More actions for ${r.customerName}'s review`}
+                          aria-expanded={reviewActionMenuId === r.id}
+                          onClick={() => setReviewActionMenuId(current => current === r.id ? null : r.id)}
+                          className="p-1.5 text-[#A09A92] hover:bg-[#3A3835] rounded-xs"
+                        >
+                          <MoreVertical className="w-4 h-4" />
+                        </button>
+                        {reviewActionMenuId === r.id && (
+                          <div className="absolute right-0 top-full z-20 mt-1 w-32 bg-[#262422] border border-[#3A3835] rounded-xs shadow-xl">
+                            <button
+                              type="button"
+                              onClick={() => { setEditingReview({ ...r }); setReviewActionMenuId(null); }}
+                              className="w-full px-3 py-2 text-left text-xs text-[#FAF8F5] hover:bg-[#3A3835] flex items-center gap-2"
+                            >
+                              <Edit className="w-3.5 h-3.5" /> Edit review
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    <button
-                      onClick={() => toggleReviewApproval(r.id, !r.approved)}
-                      className={`px-3 py-1.5 text-xs rounded-xs font-semibold ${
-                        r.approved ? 'bg-[#1b5e20] text-[#a5d6a7]' : 'bg-[#3A3835] text-white'
-                      }`}
-                    >
-                      {r.approved ? 'Approved (Visible)' : 'Approve Review'}
-                    </button>
                   </div>
                 ))
               )}
@@ -1463,6 +1552,56 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
         )}
 
       </main>
+
+      {editingReview && (
+        <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+          <form onSubmit={handleSaveReview} className="bg-[#1C1B1A] border border-[#2D2B28] rounded-xs p-6 max-w-lg w-full space-y-4">
+            <div className="flex items-center justify-between border-b border-[#2D2B28] pb-3">
+              <h3 className="font-serif text-xl text-[#FAF8F5]">Edit Customer Review</h3>
+              <button type="button" onClick={() => setEditingReview(null)} className="text-[#A09A92] hover:text-white" aria-label="Close edit review">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div>
+              <label className="block text-xs text-[#A09A92] mb-1">Customer name</label>
+              <input
+                required
+                minLength={2}
+                value={editingReview.customerName}
+                onChange={(e) => setEditingReview({ ...editingReview, customerName: e.target.value })}
+                className="w-full bg-[#121212] border border-[#3A3835] px-3 py-2 text-sm text-[#FAF8F5] rounded-xs"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-[#A09A92] mb-1">Rating</label>
+              <select
+                value={editingReview.rating}
+                onChange={(e) => setEditingReview({ ...editingReview, rating: Number(e.target.value) })}
+                className="w-full bg-[#121212] border border-[#3A3835] px-3 py-2 text-sm text-[#FAF8F5] rounded-xs"
+              >
+                {[5, 4, 3, 2, 1].map(rating => <option key={rating} value={rating}>{rating} star{rating === 1 ? '' : 's'}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs text-[#A09A92] mb-1">Review</label>
+              <textarea
+                required
+                minLength={5}
+                rows={5}
+                value={editingReview.reviewText}
+                onChange={(e) => setEditingReview({ ...editingReview, reviewText: e.target.value })}
+                className="w-full resize-y bg-[#121212] border border-[#3A3835] px-3 py-2 text-sm text-[#FAF8F5] rounded-xs"
+              />
+            </div>
+            <div className="flex justify-end gap-3 pt-1">
+              <button type="button" onClick={() => setEditingReview(null)} className="px-4 py-2 bg-[#262422] text-[#A09A92] text-xs rounded-xs">Cancel</button>
+              <button type="submit" disabled={isSavingReview} className="px-4 py-2 bg-[#8C7853] text-white text-xs font-semibold rounded-xs disabled:opacity-50">
+                {isSavingReview ? 'Saving…' : 'Save changes'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
 
       {/* MODAL: VIEW PAYMENT SCREENSHOT PROOF */}
       {viewingProofUrl && (

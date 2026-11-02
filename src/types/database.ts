@@ -15,7 +15,6 @@ export interface Product {
   fabric: string;
   price: number;
   original_price: number | null;
-  offer_price: number | null;
   size: 'L' | 'XL' | 'XXL' | 'Free Size' | string;
   quantity: number;
   length: '52"' | '54"' | '56"' | '58"' | '60"' | null | string;

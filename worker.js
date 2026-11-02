@@ -463,8 +463,7 @@ export default {
               price: row.price,
               originalPrice: row.original_price ?? null,
               original_price: row.original_price ?? null,
-              offerPrice: row.original_price ?? null,
-              offer_price: row.original_price ?? null,
+              offerPrice: null,
               featured: Boolean(row.is_featured),
               is_featured: Boolean(row.is_featured),
               newArrival: Boolean(row.is_new_arrival ?? 1),
@@ -622,8 +621,7 @@ export default {
           price: first.price,
           originalPrice: first.original_price ?? null,
           original_price: first.original_price ?? null,
-          offerPrice: first.original_price ?? null,
-          offer_price: first.original_price ?? null,
+          offerPrice: null,
           featured: Boolean(first.is_featured),
           is_featured: Boolean(first.is_featured),
           newArrival: Boolean(first.is_new_arrival ?? 1),
@@ -1277,7 +1275,7 @@ export default {
           productId = (formData.get('product_id') || formData.get('productId') || '').toString().trim();
           length = normalizeLength(formData.get('length')?.toString() || '56"');
           price = parseFloat(formData.get('price')?.toString() || '0') || 0;
-          const orig = formData.get('original_price') || formData.get('originalPrice') || formData.get('offer_price');
+          const orig = formData.get('original_price') || formData.get('originalPrice');
           originalPrice = orig ? parseFloat(orig.toString()) : null;
           quantity = size === 'Custom' ? 9999 : (parseInt(formData.get('quantity')?.toString() || '0', 10) || 0);
           category = (formData.get('category') || 'Luxury').toString().trim();
@@ -1319,7 +1317,7 @@ export default {
           productId = (body.product_id || body.productId || '').toString().trim();
           length = normalizeLength(body.length || '56"');
           price = parseFloat(body.price || 0) || 0;
-          originalPrice = body.original_price !== undefined ? (body.original_price ? parseFloat(body.original_price) : null) : (body.offer_price ? parseFloat(body.offer_price) : null);
+          originalPrice = body.original_price ? parseFloat(body.original_price) : null;
           quantity = size === 'Custom' ? 9999 : (parseInt(body.quantity || 0, 10) || 0);
           category = (body.category || 'Luxury').toString().trim();
           fabric = (body.fabric || 'Dubai Nida').toString().trim();

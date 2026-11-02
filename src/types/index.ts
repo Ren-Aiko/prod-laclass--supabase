@@ -21,7 +21,6 @@ export interface ProductVariation {
   quantity: number;
   price: number;
   original_price?: number | null;
-  offer_price?: number | null;
 }
 
 export interface SizeStockItem {
@@ -47,7 +46,6 @@ export interface Product {
   original_price?: number | null;
   originalPrice?: number | null;
   offerPrice?: number | null;
-  offer_price?: number | null;
   size: 'S' | 'M' | 'L' | 'XL' | '2XL' | 'Custom' | string;
   quantity: number;
   stock: number; // total stock across sizes or current size stock

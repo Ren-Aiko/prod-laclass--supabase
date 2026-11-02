@@ -19,7 +19,6 @@ CREATE TABLE IF NOT EXISTS public.products (
   fabric TEXT NOT NULL DEFAULT 'Dubai Nida',
   price NUMERIC(10, 2) NOT NULL CHECK (price >= 0),
   original_price NUMERIC(10, 2) CHECK (original_price IS NULL OR original_price >= 0),
-  offer_price NUMERIC(10, 2) CHECK (offer_price IS NULL OR offer_price >= 0),
   size TEXT NOT NULL CHECK (size IN ('L', 'XL', 'XXL', 'Free Size')),
   quantity INTEGER NOT NULL DEFAULT 0 CHECK (quantity >= 0),
   length TEXT CHECK (length IS NULL OR length IN ('52"', '54"', '56"', '58"', '60"')),
@@ -209,14 +208,14 @@ BEGIN
   -- Verify each item against real database pricing and quantity
   FOR v_item IN SELECT * FROM jsonb_array_elements(p_payload->'items')
   LOOP
-    SELECT id, price, offer_price, quantity, name, slug
+    SELECT id, price, quantity, name, slug
     INTO v_product
     FROM public.products
     WHERE id = (v_item->>'product_variant_id')::UUID AND is_active = true;
 
     IF v_product.id IS NULL THEN
       -- Fallback search by product_id if variant id not directly matched
-      SELECT id, price, offer_price, quantity, name, slug
+      SELECT id, price, quantity, name, slug
       INTO v_product
       FROM public.products
       WHERE product_id = (v_item->>'product_id') AND is_active = true
@@ -231,7 +230,7 @@ BEGIN
       RAISE EXCEPTION 'Insufficient stock for %', v_product.name;
     END IF;
 
-    v_subtotal := v_subtotal + (COALESCE(v_product.offer_price, v_product.price) * (v_item->>'quantity')::INTEGER);
+    v_subtotal := v_subtotal + (v_product.price * (v_item->>'quantity')::INTEGER);
   END LOOP;
 
   -- Validate coupon if provided
@@ -269,12 +268,12 @@ BEGIN
   -- Insert line items and decrement inventory
   FOR v_item IN SELECT * FROM jsonb_array_elements(p_payload->'items')
   LOOP
-    SELECT id, price, offer_price, name, slug INTO v_product
+    SELECT id, price, name, slug INTO v_product
     FROM public.products 
     WHERE id = (v_item->>'product_variant_id')::UUID;
 
     IF v_product.id IS NULL THEN
-      SELECT id, price, offer_price, name, slug INTO v_product
+      SELECT id, price, name, slug INTO v_product
       FROM public.products 
       WHERE product_id = (v_item->>'product_id')
       LIMIT 1;
@@ -293,7 +292,7 @@ BEGIN
         (v_item->>'quantity')::INTEGER,
         COALESCE(v_item->>'size', 'Free Size'),
         v_item->>'length',
-        COALESCE(v_product.offer_price, v_product.price),
+        v_product.price,
         v_item->'custom_measurements'
       );
 
