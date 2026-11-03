@@ -4,8 +4,6 @@ import { useStore } from '../../context/StoreContext';
 import { useCart } from '../../context/CartContext';
 import { Product, CustomMeasurements } from '../../types';
 import { CustomMeasurementsForm, INITIAL_CUSTOM_MEASUREMENTS, MEASUREMENT_FIELDS } from './CustomMeasurementsForm';
-import sizeChartLc0104 from '../../assets/Size Chart (LC01-04).png';
-import sizeChartLc0509 from '../../assets/Size Chart (LC05-09).png';
 
 interface QuickViewModalProps {
   onSelectProduct?: (product: Product) => void;
@@ -61,17 +59,10 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({ onSelectProduct 
   if (!quickViewProduct) return null;
 
   const isLC001to004 = ['LC001', 'LC002', 'LC003', 'LC004'].includes(quickViewProduct.product_id || quickViewProduct.productId || '');
-  const productCode = quickViewProduct.product_id || quickViewProduct.productId || quickViewProduct.productCode || '';
-  const sizeChart = ['LC001', 'LC002', 'LC003', 'LC004'].includes(productCode)
-    ? sizeChartLc0104
-    : ['LC005', 'LC006', 'LC007', 'LC008', 'LC009'].includes(productCode)
-      ? sizeChartLc0509
-      : null;
-  const productImages = [quickViewProduct.image1, quickViewProduct.image2, quickViewProduct.image3, ...(quickViewProduct.images || [])]
+
+  const images = [quickViewProduct.image1, quickViewProduct.image2, quickViewProduct.image3, ...(quickViewProduct.images || [])]
     .filter((img, idx, arr) => Boolean(img) && arr.indexOf(img) === idx);
-  if (productImages.length === 0 && quickViewProduct.thumbnail) productImages.push(quickViewProduct.thumbnail);
-  if (productImages.length === 0) productImages.push('https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=800&auto=format&fit=crop');
-  const images = sizeChart ? [...productImages, sizeChart] : productImages;
+  if (images.length === 0) images.push('https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=800&auto=format&fit=crop');
 
   const activeSize = selectedSize || availableSizes[0] || 'L';
   const activeLength = selectedLength || availableLengths[0] || '';
@@ -166,7 +157,7 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({ onSelectProduct 
             <img
               src={images[selectedImageIndex] || quickViewProduct.image1}
               alt={quickViewProduct.name}
-              className={`w-full h-full ${images[selectedImageIndex] === sizeChart ? 'object-contain p-3' : 'object-cover object-center'} transition-all duration-300`}
+              className="w-full h-full object-cover object-center transition-all duration-300"
             />
           </div>
 
@@ -180,7 +171,7 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({ onSelectProduct 
                   selectedImageIndex === idx ? 'border-[#B55232] scale-102' : 'border-transparent opacity-60 hover:opacity-100'
                 }`}
               >
-                <img src={img} alt={img === sizeChart ? 'Size chart' : 'Product thumbnail'} className={`w-full h-full ${img === sizeChart ? 'object-contain bg-white' : 'object-cover'}`} />
+                <img src={img} alt="Thumbnail" className="w-full h-full object-cover" />
               </button>
             ))}
           </div>
