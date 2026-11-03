@@ -23,6 +23,28 @@
   }
 }
 
+@layer utilities {
+  button:active {
+    animation: button-press 180ms ease-out;
+  }
+
+  @keyframes button-press {
+    40% {
+      scale: 0.96;
+    }
+
+    100% {
+      scale: 1;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    button:active {
+      animation: none;
+    }
+  }
+}
+
 /* Custom Scrollbar for luxury feel */
 ::-webkit-scrollbar {
   width: 6px;
@@ -71,4 +93,3 @@
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
-

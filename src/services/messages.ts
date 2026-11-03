@@ -44,7 +44,7 @@ export const fetchContactMessages = async (): Promise<ContactMessage[]> => {
         name: m.name,
         email: m.email,
         phone: m.phone || '',
-        message: m.message,
+        message: m.body || m.message || '',
         date: (m.created_at || '').split('T')[0],
         status: m.status || 'Unread',
       }));

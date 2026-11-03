@@ -158,6 +158,8 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
   const [reviewActionMenuId, setReviewActionMenuId] = useState<string | null>(null);
   const [editingReview, setEditingReview] = useState<Review | null>(null);
   const [isSavingReview, setIsSavingReview] = useState(false);
+  const [processingMessageId, setProcessingMessageId] = useState<string | null>(null);
+  const [messageFeedback, setMessageFeedback] = useState<string | null>(null);
 
   useEffect(() => {
     if (activeTab !== 'reviews' || !isAdminAuthenticated) return;
@@ -196,6 +198,22 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
       setReviewFeedback({ type: 'error', message: err.message || 'Could not save review changes.' });
     } finally {
       setIsSavingReview(false);
+    }
+  };
+
+  const handleMarkMessageRead = async (messageId: string) => {
+    setProcessingMessageId(messageId);
+    setMessageFeedback(null);
+    try {
+      await invokeEdgeFunction('admin-messages', {
+        method: 'PATCH',
+        body: { id: messageId, status: 'Read' },
+      });
+      await refreshAdminData();
+    } catch (err: any) {
+      setMessageFeedback(err.message || 'Could not update message status.');
+    } finally {
+      setProcessingMessageId(null);
     }
   };
 
@@ -681,6 +699,23 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                 <span>Subscribers</span>
               </div>
               <span className="text-[10px]">{subscribers.length}</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('contacts')}
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xs transition-colors ${
+                activeTab === 'contacts' ? 'bg-[#B55232] text-[#F8F8F8]' : 'text-[#9B9B9B] hover:bg-[#242424] hover:text-[#F8F8F8]'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <MessageSquare className="w-4 h-4" />
+                <span>Messages</span>
+              </div>
+              {contacts.filter(message => message.status === 'Unread').length > 0 && (
+                <span className="bg-[#EAB308] text-[#422006] text-[10px] px-2 py-0.5 rounded-full font-bold">
+                  {contacts.filter(message => message.status === 'Unread').length}
+                </span>
+              )}
             </button>
 
             <button
@@ -1521,6 +1556,86 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                   })}
                 </tbody>
               </table>
+            </div>
+          </div>
+        )}
+
+        {/* TAB: CONTACT MESSAGES */}
+        {activeTab === 'contacts' && (
+          <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h1 className="font-serif text-3xl font-medium text-[#F8F8F8]">Contact Messages</h1>
+                <p className="text-xs text-[#9B9B9B]">Customer inquiries submitted through the Contact page.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => refreshAdminData()}
+                className="px-4 py-2 bg-[#242424] hover:bg-[#383838] text-[#F8F8F8] rounded-xs text-xs flex items-center gap-2"
+              >
+                <RefreshCw className="w-3.5 h-3.5" /> Refresh
+              </button>
+            </div>
+
+            {messageFeedback && (
+              <div role="alert" className="p-3 text-xs rounded-xs bg-[#450A0A] text-[#FCA5A5]">
+                {messageFeedback}
+              </div>
+            )}
+
+            <div className="space-y-4">
+              {contacts.length === 0 ? (
+                <div className="bg-[#1B1B1B] border border-[#2B2B2B] p-8 text-center text-xs text-[#9B9B9B]">
+                  No contact messages found.
+                </div>
+              ) : contacts.map((contact) => {
+                const replySubject = encodeURIComponent('Re: Your message to LaClassé Abaya');
+                const replyBody = encodeURIComponent(
+                  `Hello ${contact.name},\n\n\n\n--- Your message ---\n${contact.message}`
+                );
+                const replyHref = `mailto:${contact.email}?subject=${replySubject}&body=${replyBody}`;
+
+                return (
+                <article key={contact.id} className="bg-[#1B1B1B] border border-[#2B2B2B] p-4 sm:p-5 rounded-xs">
+                  <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h2 className="text-sm font-semibold text-[#F8F8F8]">{contact.name}</h2>
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] ${contact.status === 'Unread' ? 'bg-[#422006] text-[#FDE047]' : 'bg-[#242424] text-[#9B9B9B]'}`}>
+                          {contact.status || 'Unread'}
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-[#9B9B9B] mt-1">
+                        {contact.date || 'Date unavailable'}
+                        {contact.phone ? ` · ${contact.phone}` : ''}
+                      </p>
+                      <p className="text-xs text-[#E6E6E6] mt-3 whitespace-pre-wrap break-words">{contact.message}</p>
+                    </div>
+                    <div className="flex shrink-0 flex-wrap gap-2">
+                      <a
+                        href={replyHref}
+                        className="px-3 py-1.5 text-xs rounded-xs bg-[#242424] hover:bg-[#383838] text-[#F8F8F8]"
+                      >
+                        Reply by email
+                      </a>
+                      {contact.status === 'Unread' && (
+                        <button
+                          type="button"
+                          disabled={processingMessageId === contact.id}
+                          onClick={() => handleMarkMessageRead(contact.id)}
+                          className="px-3 py-1.5 text-xs rounded-xs bg-[#166534] hover:bg-[#14532D] text-white disabled:opacity-50"
+                        >
+                          {processingMessageId === contact.id ? 'Saving…' : 'Mark as read'}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <a href={replyHref} className="text-[10px] text-[#E8B7A5] hover:underline mt-2 inline-block">
+                    {contact.email}
+                  </a>
+                </article>
+                );
+              })}
             </div>
           </div>
         )}

@@ -4,7 +4,7 @@ import { Sparkles, Truck, ShieldCheck, Heart } from 'lucide-react';
 const ANNOUNCEMENTS = [
   { text: 'Complimentary Express Shipping Across India on All Orders Above ₹5,000', icon: Truck },
   { text: 'Haute Couture Abayas Crafted with Fine Dubai & Indonesian Silk Fabrics', icon: Sparkles },
-  { text: 'Engineered for South Indian Climate Comfort — Featherlight & Breathable', icon: ShieldCheck },
+  { text: 'Engineered for Indian Climate Comfort — Featherlight & Breathable', icon: ShieldCheck },
   { text: 'New Season Launch • Initial 4 Bespoke Designs Available Now', icon: Heart }
 ];
 

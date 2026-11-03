@@ -43,6 +43,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose })
 
   // UTR / Transaction ID State (Replaces screenshot upload)
   const [utrNumber, setUtrNumber] = useState('');
+  const [paymentReference, setPaymentReference] = useState('');
   const [copiedUpi, setCopiedUpi] = useState(false);
 
   // Submission State
@@ -52,7 +53,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose })
 
   if (!isOpen) return null;
 
-  const upiId = '9380509397@okbizaxis';
+  const upiId = 'sunwillraise72@oksbi';
   const upiName = 'LaClassé Abaya Atelier';
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -68,6 +69,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose })
       return;
     }
 
+    const reference = `LC-${Date.now().toString(36).toUpperCase()}-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
+    setPaymentReference(reference);
     setStep('payment');
   };
 
@@ -200,8 +203,17 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose })
     setStep('details');
     setCompletedOrder(null);
     setUtrNumber('');
+    setPaymentReference('');
     onClose();
   };
+
+  const upiPaymentUri = `upi://pay?${new URLSearchParams({
+    pa: upiId,
+    pn: upiName,
+    am: grandTotal.toFixed(2),
+    cu: 'INR',
+    tn: paymentReference,
+  }).toString()}`;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#121212]/80 backdrop-blur-md overflow-y-auto">
@@ -433,7 +445,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose })
                   Scan QR & Enter 12-Digit Transaction UTR
                 </h3>
                 <p className="text-xs text-[#666666] max-w-md mx-auto">
-                  Scan the verified UPI QR code below using Google Pay, PhonePe, Paytm, or your banking app. Once completed, enter the 12-digit UTR reference.
+                  Scan this order-specific UPI QR code using Google Pay, PhonePe, Paytm, or your banking app. Once completed, enter the UTR reference.
                 </p>
               </div>
 
@@ -443,7 +455,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose })
                 <div className="bg-white p-4 rounded-xs border border-[#DCDCDC] shadow-md flex flex-col items-center">
                   <div className="w-48 h-48 bg-[#121212] p-2 rounded-xs flex items-center justify-center relative group">
                     <img 
-                      src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(`upi://pay?pa=${upiId}&pn=${encodeURIComponent(upiName)}&am=${grandTotal}&cu=INR&tn=${encodeURIComponent('LaClassé Abaya Order')}`)}`}
+                      src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(upiPaymentUri)}`}
                       alt="LaClassé UPI QR Code"
                       className="w-full h-full object-contain bg-white p-1"
                     />
@@ -460,6 +472,11 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose })
                     <div className="font-serif text-3xl font-semibold text-[#121212]">
                       ₹{grandTotal.toLocaleString('en-IN')}
                     </div>
+                  </div>
+
+                  <div>
+                    <span className="text-[10px] text-[#777777] uppercase tracking-wider block">Payment Reference</span>
+                    <code className="font-mono text-xs text-[#121212]">{paymentReference}</code>
                   </div>
 
                   <div className="space-y-2">

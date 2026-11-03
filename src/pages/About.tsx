@@ -36,7 +36,7 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onExploreShop }) => {
               Crafted For Comfort
             </span>
             <h2 className="font-serif text-3xl sm:text-4xl text-[#121212] font-medium leading-snug">
-              Dubai Luxury Meets South Indian Climate Comfort
+              Dubai Luxury Meets Indian Climate Comfort
             </h2>
             <p className="text-xs text-[#555555] leading-relaxed">
               Traditional heavy abayas often prove uncomfortable in South India's warm, humid weather. At Laclassé, we spent months testing and sourcing lightweight, moisture-wicking Zoom fabrics from Bandung, Indonesia, and high-density anti-static Royal Nida from Deira, Dubai.

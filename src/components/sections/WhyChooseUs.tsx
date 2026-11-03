@@ -4,18 +4,18 @@ import { Sparkles, ShieldCheck, Sun, Truck } from 'lucide-react';
 const PILLARS = [
   {
     icon: Sparkles,
-    title: 'Sourced Dubai & Indonesian Fine Silk',
-    description: 'We directly import original Dubai Royal Nida and Bandung Air-Flow Zoom silk from renowned textile houses in Deira and Indonesia.'
-  },
-  {
-    icon: Sun,
-    title: 'Engineered for South Indian Climate',
-    description: 'Specially constructed micro-weave fabrics that feel featherlight, cool against the skin, and completely opaque even in humid weather.'
+    title: 'Fabrics That Feel as Good as They Look',
+    description: 'Premium Korean Nida, crepe and chiffon that drape softly and never cling.'
   },
   {
     icon: ShieldCheck,
-    title: 'Haute Couture Precision Sizing',
-    description: 'Every abaya is tailored with customized length selections from 52" to 60" ensuring graceful, modest drapes.'
+    title: 'Details Placed by Hand',
+    description: 'Stonework, embroidery and lace finished with care, never heavy and never overwhelming.'
+  },
+  {
+    icon: Sun,
+    title: 'Made to Fit You',
+    description: 'Custom measurements and sizes from 52″ to 60″ for a graceful, modest drape.'
   },
   {
     icon: Truck,
@@ -34,7 +34,7 @@ export const WhyChooseUs: React.FC = () => {
             The Atelier Promise
           </span>
           <h2 className="font-serif text-3xl sm:text-4xl text-[#121212] font-medium tracking-wide">
-            Why Discerning Clients Choose Laclassé
+            The LaClassé Difference
           </h2>
           <div className="w-12 h-0.5 bg-[#121212] mx-auto mt-4" />
         </div>

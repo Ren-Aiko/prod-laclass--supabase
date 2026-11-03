@@ -38,6 +38,7 @@ export function App() {
 
   const { products, setSelectedCategory, setIsSearchOpen } = useStore();
   const { isAdminAuthenticated, isAdminAuthReady } = useAdmin();
+  const isAdminPage = currentPage === 'admin' || window.location.pathname === '/admin';
 
   // Dynamic Route Resolver based on window.location.pathname
   const resolveRouteFromPath = async () => {
@@ -177,17 +178,18 @@ export function App() {
   return (
     <div className="min-h-screen bg-[#FCFCFC] text-[#121212] font-sans antialiased flex flex-col justify-between selection:bg-[#B55232] selection:text-white">
       
-      {/* Top Banner & Navigation Header */}
-      <div>
-        <AnnouncementBar />
-        <Header
-          currentPage={currentPage}
-          onNavigate={handleNavigatePage}
-          onOpenSearch={() => setIsSearchOpen(true)}
-        />
+      {!isAdminPage && (
+        <>
+          <AnnouncementBar />
+          <Header
+            currentPage={currentPage}
+            onNavigate={handleNavigatePage}
+            onOpenSearch={() => setIsSearchOpen(true)}
+          />
+        </>
+      )}
 
-        {/* Dynamic Page Router Content */}
-        <div>
+      <main className={isAdminPage ? 'flex-1' : undefined}>
           {currentPage === 'home' && (
             <HomePage
               onSelectCategory={handleNavigateCategory}
@@ -243,33 +245,35 @@ export function App() {
           {currentPage === 'admin' && (
             <AdminPage onNavigate={handleNavigatePage} />
           )}
-        </div>
-      </div>
+      </main>
 
-      {/* Footer */}
-      <Footer
-        onNavigate={handleNavigatePage}
-        onSelectCategory={handleNavigateCategory}
-      />
+      {!isAdminPage && (
+        <Footer
+          onNavigate={handleNavigatePage}
+          onSelectCategory={handleNavigateCategory}
+        />
+      )}
 
-      {/* Persistent Modals & Drawers */}
-      <CartDrawer 
-        onProceedToCheckout={() => setIsCheckoutOpen(true)}
-        onOpenCheckout={() => setIsCheckoutOpen(true)} 
-      />
-      <QuickViewModal onSelectProduct={handleSelectProduct} />
-      <SizeGuideModal />
-      <SearchModal onSelectProduct={handleSelectProduct} />
-      <CheckoutModal isOpen={isCheckoutOpen} onClose={() => setIsCheckoutOpen(false)} />
+      {!isAdminPage && (
+        <>
+          <CartDrawer
+            onProceedToCheckout={() => setIsCheckoutOpen(true)}
+            onOpenCheckout={() => setIsCheckoutOpen(true)}
+          />
+          <QuickViewModal onSelectProduct={handleSelectProduct} />
+          <SizeGuideModal />
+          <SearchModal onSelectProduct={handleSelectProduct} />
+          <CheckoutModal isOpen={isCheckoutOpen} onClose={() => setIsCheckoutOpen(false)} />
+          <FloatingWhatsApp />
+        </>
+      )}
+
       <AdminLoginModal 
         isOpen={isAdminLoginOpen} 
         onClose={() => setIsAdminLoginOpen(false)} 
         onSuccess={() => setCurrentPage('admin')}
         onLoginSuccess={() => setCurrentPage('admin')} 
       />
-
-      {/* Floating Concierge WhatsApp */}
-      <FloatingWhatsApp />
 
     </div>
   );
