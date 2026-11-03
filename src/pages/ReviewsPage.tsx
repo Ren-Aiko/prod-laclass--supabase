@@ -44,16 +44,26 @@ export const ReviewsPage: React.FC = () => {
   const [rating, setRating] = useState(5);
   const [reviewText, setReviewText] = useState('');
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!reviewerName.trim() || !reviewText.trim()) return;
-    const prod = products.find((p) => p.id === selectedProductId);
-    await addCustomerReview(selectedProductId, prod?.name || 'Laclassé Abaya', reviewerName, rating, reviewText);
-    setSubmitted(true);
-    setReviewerName('');
-    setReviewText('');
-    setTimeout(() => setSubmitted(false), 5000);
+    if (isSubmitting || submitted || !reviewerName.trim() || !reviewText.trim()) return;
+    setIsSubmitting(true);
+    setSubmitError(null);
+    try {
+      const prod = products.find((p) => p.id === selectedProductId);
+      const success = await addCustomerReview(selectedProductId, prod?.name || 'Laclassé Abaya', reviewerName, rating, reviewText);
+      if (!success) throw new Error('Review submission was not completed. Please try again.');
+      setSubmitted(true);
+      setReviewerName('');
+      setReviewText('');
+    } catch (error: any) {
+      setSubmitError(error.message || 'Unable to submit your review. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -94,6 +104,11 @@ export const ReviewsPage: React.FC = () => {
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
+              {submitError && (
+                <div role="alert" className="bg-[#FCE8E6] border border-[#E6B8B4] text-[#8A2820] p-3 rounded-xs text-xs">
+                  {submitError}
+                </div>
+              )}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs text-[#555555] mb-1 font-medium">Select Purchased Product *</label>
@@ -148,10 +163,11 @@ export const ReviewsPage: React.FC = () => {
 
               <button
                 type="submit"
-                className="bg-[#121212] hover:bg-[#B55232] text-[#FCFCFC] px-8 py-3 text-xs font-semibold uppercase tracking-[0.2em] rounded-xs transition-colors flex items-center gap-2"
+                disabled={isSubmitting || submitted}
+                className="bg-[#121212] hover:bg-[#B55232] text-[#FCFCFC] px-8 py-3 text-xs font-semibold uppercase tracking-[0.2em] rounded-xs transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <Send className="w-3.5 h-3.5" />
-                <span>Submit Review</span>
+                {isSubmitting ? <span className="animate-spin">◌</span> : <Send className="w-3.5 h-3.5" />}
+                <span>{isSubmitting ? 'Submitting…' : 'Submit Review'}</span>
               </button>
             </form>
           )}
