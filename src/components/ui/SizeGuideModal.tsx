@@ -15,19 +15,19 @@ export const SizeGuideModal: React.FC<SizeGuideModalProps> = ({ initialTab = 'co
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#121212]/70 backdrop-blur-md overflow-y-auto">
       <div 
-        className="bg-[#FCFCFA] border border-[#EAEAEA] rounded-xs shadow-2xl w-full max-w-2xl p-6 md:p-8 relative max-h-[90vh] overflow-y-auto"
+        className="bg-[#FCFCFC] border border-[#EAEAEA] rounded-xs shadow-2xl w-full max-w-2xl p-6 md:p-8 relative max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <button
           onClick={() => setIsSizeGuideOpen(false)}
-          className="absolute top-4 right-4 p-2 text-[#121212] hover:text-[#8C7853] cursor-pointer"
+          className="absolute top-4 right-4 p-2 text-[#121212] hover:text-[#B55232] cursor-pointer"
         >
           <X className="w-5 h-5" />
         </button>
 
         <div className="flex items-center gap-2 mb-2">
-          <Ruler className="w-5 h-5 text-[#8C7853]" />
-          <span className="text-xs uppercase tracking-[0.25em] text-[#8C7853] font-medium">
+          <Ruler className="w-5 h-5 text-[#B55232]" />
+          <span className="text-xs uppercase tracking-[0.25em] text-[#B55232] font-medium">
             LaClassé Haute Couture Atelier Sizing
           </span>
         </div>
@@ -70,7 +70,7 @@ export const SizeGuideModal: React.FC<SizeGuideModalProps> = ({ initialTab = 'co
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs border-collapse border border-[#EAEAEA]">
                 <thead>
-                  <tr className="bg-[#121212] text-[#FCFCFA] uppercase tracking-wider text-[11px]">
+                  <tr className="bg-[#121212] text-[#FCFCFC] uppercase tracking-wider text-[11px]">
                     <th className="p-3 border border-[#2D2D2D]">Measurement</th>
                     <th className="p-3 border border-[#2D2D2D]">L</th>
                     <th className="p-3 border border-[#2D2D2D]">XL</th>
@@ -78,31 +78,31 @@ export const SizeGuideModal: React.FC<SizeGuideModalProps> = ({ initialTab = 'co
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#EAEAEA] text-[#333333]">
-                  <tr className="hover:bg-[#F5F2EA]">
+                  <tr className="hover:bg-[#F2F2F2]">
                     <td className="p-3 font-semibold">Chest (in)</td>
                     <td className="p-3">42–44</td>
                     <td className="p-3">45–47</td>
                     <td className="p-3">48–50</td>
                   </tr>
-                  <tr className="hover:bg-[#F5F2EA]">
+                  <tr className="hover:bg-[#F2F2F2]">
                     <td className="p-3 font-semibold">Hip (in)</td>
                     <td className="p-3">44–46</td>
                     <td className="p-3">48–50</td>
                     <td className="p-3">52–54</td>
                   </tr>
-                  <tr className="hover:bg-[#F5F2EA]">
+                  <tr className="hover:bg-[#F2F2F2]">
                     <td className="p-3 font-semibold">Abaya Length (in)</td>
                     <td className="p-3">56</td>
                     <td className="p-3">56</td>
                     <td className="p-3">56</td>
                   </tr>
-                  <tr className="hover:bg-[#F5F2EA]">
+                  <tr className="hover:bg-[#F2F2F2]">
                     <td className="p-3 font-semibold">Your Height (cm)</td>
                     <td className="p-3">159</td>
                     <td className="p-3">159</td>
                     <td className="p-3">159</td>
                   </tr>
-                  <tr className="hover:bg-[#F5F2EA]">
+                  <tr className="hover:bg-[#F2F2F2]">
                     <td className="p-3 font-semibold">Sleeve Length from Neck (in)</td>
                     <td className="p-3">28</td>
                     <td className="p-3">28</td>
@@ -112,8 +112,8 @@ export const SizeGuideModal: React.FC<SizeGuideModalProps> = ({ initialTab = 'co
               </table>
             </div>
 
-            <div className="p-3 bg-[#FAF8F5] border border-[#E0DCD3] rounded-xs text-xs text-[#555555] flex items-start gap-2">
-              <Info className="w-4 h-4 text-[#8C7853] shrink-0 mt-0.5" />
+            <div className="p-3 bg-[#F8F8F8] border border-[#DCDCDC] rounded-xs text-xs text-[#555555] flex items-start gap-2">
+              <Info className="w-4 h-4 text-[#B55232] shrink-0 mt-0.5" />
               <span>
                 <strong>Inventory Note:</strong> LC001 is exclusively available in XXL (56"). LC002, LC003, and LC004 are crafted in L, XL, and XXL (all 56"). Select <strong>Custom</strong> for bespoke made-to-measure tailoring.
               </span>
@@ -131,40 +131,40 @@ export const SizeGuideModal: React.FC<SizeGuideModalProps> = ({ initialTab = 'co
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs border-collapse border border-[#EAEAEA]">
                 <thead>
-                  <tr className="bg-[#121212] text-[#FCFCFA] uppercase tracking-wider text-[11px]">
+                  <tr className="bg-[#121212] text-[#FCFCFC] uppercase tracking-wider text-[11px]">
                     <th className="p-3 border border-[#2D2D2D]">Garment Size</th>
                     <th className="p-3 border border-[#2D2D2D]">Available Length Options</th>
                     <th className="p-3 border border-[#2D2D2D]">Recommended Customer Height</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#EAEAEA] text-[#333333]">
-                  <tr className="hover:bg-[#F5F2EA]">
+                  <tr className="hover:bg-[#F2F2F2]">
                     <td className="p-3 font-semibold" rowSpan={5}>Free Size (Relaxed Drape)</td>
-                    <td className="p-3 font-semibold text-[#8C7853]">52 Inches</td>
+                    <td className="p-3 font-semibold text-[#B55232]">52 Inches</td>
                     <td className="p-3">5'0" – 5'2" (152 – 157 cm)</td>
                   </tr>
-                  <tr className="hover:bg-[#F5F2EA]">
-                    <td className="p-3 font-semibold text-[#8C7853]">54 Inches</td>
+                  <tr className="hover:bg-[#F2F2F2]">
+                    <td className="p-3 font-semibold text-[#B55232]">54 Inches</td>
                     <td className="p-3">5'3" – 5'4" (158 – 162 cm)</td>
                   </tr>
-                  <tr className="hover:bg-[#F5F2EA]">
-                    <td className="p-3 font-semibold text-[#8C7853]">56 Inches</td>
+                  <tr className="hover:bg-[#F2F2F2]">
+                    <td className="p-3 font-semibold text-[#B55232]">56 Inches</td>
                     <td className="p-3">5'5" – 5'6" (163 – 167 cm)</td>
                   </tr>
-                  <tr className="hover:bg-[#F5F2EA]">
-                    <td className="p-3 font-semibold text-[#8C7853]">58 Inches</td>
+                  <tr className="hover:bg-[#F2F2F2]">
+                    <td className="p-3 font-semibold text-[#B55232]">58 Inches</td>
                     <td className="p-3">5'7" – 5'8" (168 – 172 cm)</td>
                   </tr>
-                  <tr className="hover:bg-[#F5F2EA]">
-                    <td className="p-3 font-semibold text-[#8C7853]">60 Inches</td>
+                  <tr className="hover:bg-[#F2F2F2]">
+                    <td className="p-3 font-semibold text-[#B55232]">60 Inches</td>
                     <td className="p-3">5'9"+ (173 cm & above)</td>
                   </tr>
                 </tbody>
               </table>
             </div>
 
-            <div className="p-3 bg-[#FAF8F5] border border-[#E0DCD3] rounded-xs text-xs text-[#555555] flex items-start gap-2">
-              <Check className="w-4 h-4 text-[#8C7853] shrink-0 mt-0.5" />
+            <div className="p-3 bg-[#F8F8F8] border border-[#DCDCDC] rounded-xs text-xs text-[#555555] flex items-start gap-2">
+              <Check className="w-4 h-4 text-[#B55232] shrink-0 mt-0.5" />
               <span>
                 <strong>Free Size Silhouette:</strong> Free Size accommodates bust measurements up to 48" comfortably with generous modest flare. Choose your abaya length based on your barefoot height.
               </span>
@@ -172,7 +172,7 @@ export const SizeGuideModal: React.FC<SizeGuideModalProps> = ({ initialTab = 'co
           </div>
         )}
 
-        <div className="bg-[#E8E5DD] p-4 rounded-xs text-xs text-[#000000] leading-relaxed mt-6">
+        <div className="bg-[#E5E5E5] p-4 rounded-xs text-xs text-[#000000] leading-relaxed mt-6">
           <strong className="block font-semibold mb-0.5">Bespoke Fit:</strong> Have distinct body proportions? Select <strong>Custom</strong> on any garment to provide your exact Chest, Hip, Abaya Length, Height, and Sleeve Length measurements.
         </div>
       </div>

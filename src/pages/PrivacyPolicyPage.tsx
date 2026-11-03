@@ -7,8 +7,8 @@ export const PrivacyPolicyPage: React.FC = () => {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
         
         {/* Header */}
-        <div className="text-center space-y-3 pb-8 border-b border-[#E8E5DD]">
-          <span className="text-[10px] tracking-[0.35em] uppercase font-semibold text-[#8C7853] block">
+        <div className="text-center space-y-3 pb-8 border-b border-[#E5E5E5]">
+          <span className="text-[10px] tracking-[0.35em] uppercase font-semibold text-[#B55232] block">
             LaClassé Abaya — Data Protection
           </span>
           <h1 className="font-serif text-4xl sm:text-5xl font-medium tracking-wide text-[#000000]">
@@ -22,7 +22,7 @@ export const PrivacyPolicyPage: React.FC = () => {
         <div className="space-y-8 text-xs text-[#222222] leading-relaxed">
           
           {/* Item 1 */}
-          <div className="bg-[#E8E5DD]/30 border border-[#E8E5DD] p-6 rounded-xs space-y-3">
+          <div className="bg-[#E5E5E5]/30 border border-[#E5E5E5] p-6 rounded-xs space-y-3">
             <div className="flex items-center gap-2.5">
               <ShieldCheck className="w-5 h-5 text-[#000000]" />
               <h2 className="font-serif text-xl font-medium text-[#000000]">1. Information We Collect</h2>
@@ -30,13 +30,13 @@ export const PrivacyPolicyPage: React.FC = () => {
             <p className="text-[#444444]">
               We collect information that you provide when placing an order or communicating with us, including your <strong>Name, Phone number, Email address, Shipping Address, Order details, and Payment information</strong>.
             </p>
-            <p className="text-[#666666] bg-[#FFFFFF] p-3 border border-[#E8E5DD] rounded-xs">
+            <p className="text-[#666666] bg-[#FFFFFF] p-3 border border-[#E5E5E5] rounded-xs">
               <strong>Note on Payment Security:</strong> All payment details are processed securely by our verified payment gateway. <strong>We do not store card/UPI details.</strong>
             </p>
           </div>
 
           {/* Item 2 */}
-          <div className="bg-[#E8E5DD]/30 border border-[#E8E5DD] p-6 rounded-xs space-y-3">
+          <div className="bg-[#E5E5E5]/30 border border-[#E5E5E5] p-6 rounded-xs space-y-3">
             <div className="flex items-center gap-2.5">
               <Eye className="w-5 h-5 text-[#000000]" />
               <h2 className="font-serif text-xl font-medium text-[#000000]">2. How We Use Information</h2>
@@ -54,7 +54,7 @@ export const PrivacyPolicyPage: React.FC = () => {
           </div>
 
           {/* Item 3 */}
-          <div className="bg-[#E8E5DD]/30 border border-[#E8E5DD] p-6 rounded-xs space-y-3">
+          <div className="bg-[#E5E5E5]/30 border border-[#E5E5E5] p-6 rounded-xs space-y-3">
             <div className="flex items-center gap-2.5">
               <Lock className="w-5 h-5 text-[#000000]" />
               <h2 className="font-serif text-xl font-medium text-[#000000]">3. Data Sharing</h2>
@@ -68,7 +68,7 @@ export const PrivacyPolicyPage: React.FC = () => {
           </div>
 
           {/* Item 4 */}
-          <div className="bg-[#E8E5DD]/30 border border-[#E8E5DD] p-6 rounded-xs space-y-3">
+          <div className="bg-[#E5E5E5]/30 border border-[#E5E5E5] p-6 rounded-xs space-y-3">
             <div className="flex items-center gap-2.5">
               <Cookie className="w-5 h-5 text-[#000000]" />
               <h2 className="font-serif text-xl font-medium text-[#000000]">4. Cookies & Data Security</h2>
@@ -83,7 +83,7 @@ export const PrivacyPolicyPage: React.FC = () => {
 
           {/* Item 5 */}
           <div className="bg-[#000000] text-[#FFFFFF] p-6 rounded-xs space-y-4">
-            <h2 className="font-serif text-xl font-medium text-[#E8E5DD]">5. Privacy Inquiries & Contact</h2>
+            <h2 className="font-serif text-xl font-medium text-[#E5E5E5]">5. Privacy Inquiries & Contact</h2>
             <p className="text-[#CCCCCC]">
               If you have any questions or requests regarding your personal data, reach out directly:
             </p>
@@ -92,7 +92,7 @@ export const PrivacyPolicyPage: React.FC = () => {
                 href="https://wa.me/919380509397"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="bg-[#25D366] hover:bg-[#1eb354] text-white px-5 py-2.5 rounded-xs font-semibold flex items-center gap-2"
+                className="bg-[#25D366] hover:bg-[#1DA851] text-white px-5 py-2.5 rounded-xs font-semibold flex items-center gap-2"
               >
                 <MessageCircle className="w-4 h-4" />
                 <span>WhatsApp: 9380509397</span>
@@ -101,7 +101,7 @@ export const PrivacyPolicyPage: React.FC = () => {
                 href="https://www.instagram.com/laclasseabaya"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="bg-[#FFFFFF] text-[#000000] hover:bg-[#E8E5DD] px-5 py-2.5 rounded-xs font-semibold flex items-center gap-2"
+                className="bg-[#FFFFFF] text-[#000000] hover:bg-[#E5E5E5] px-5 py-2.5 rounded-xs font-semibold flex items-center gap-2"
               >
                 <Instagram className="w-4 h-4" />
                 <span>DM @laclasse.abaya</span>

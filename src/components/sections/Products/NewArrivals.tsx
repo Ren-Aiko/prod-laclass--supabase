@@ -14,13 +14,13 @@ export const NewArrivals: React.FC<NewArrivalsProps> = ({ onSelectProduct, onVie
   const featuredList = products.filter(p => p.featured || p.newArrival).slice(0, 4);
 
   return (
-    <section className="py-20 bg-[#FAF8F5]">
+    <section className="py-20 bg-[#F8F8F8]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Section Header */}
         <div className="flex flex-col md:flex-row items-end justify-between mb-12 border-b border-[#EAEAEA] pb-6">
           <div>
-            <span className="text-[10px] tracking-[0.35em] text-[#8C7853] uppercase font-medium block mb-1">
+            <span className="text-[10px] tracking-[0.35em] text-[#B55232] uppercase font-medium block mb-1">
               Initial Season Launch
             </span>
             <h2 className="font-serif text-3xl sm:text-4xl text-[#121212] font-medium tracking-wide">
@@ -30,7 +30,7 @@ export const NewArrivals: React.FC<NewArrivalsProps> = ({ onSelectProduct, onVie
 
           <button
             onClick={onViewAllClick}
-            className="mt-4 md:mt-0 text-xs font-semibold uppercase tracking-[0.2em] text-[#121212] hover:text-[#8C7853] transition-colors flex items-center gap-2 group cursor-pointer"
+            className="mt-4 md:mt-0 text-xs font-semibold uppercase tracking-[0.2em] text-[#121212] hover:text-[#B55232] transition-colors flex items-center gap-2 group cursor-pointer"
           >
             <span>View All Products ({products.length})</span>
             <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
@@ -41,12 +41,12 @@ export const NewArrivals: React.FC<NewArrivalsProps> = ({ onSelectProduct, onVie
         {isLoadingProducts ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {[1, 2, 3, 4].map(n => (
-              <div key={n} className="bg-[#FCFCFA] aspect-[3/4] rounded-xs animate-pulse border border-[#EAEAEA]" />
+              <div key={n} className="bg-[#FCFCFC] aspect-[3/4] rounded-xs animate-pulse border border-[#EAEAEA]" />
             ))}
           </div>
         ) : dbError ? (
-          <div className="text-center py-16 px-4 bg-[#FCFCFA] border border-[#F0ECE1] rounded-xs space-y-3">
-            <AlertCircle className="w-10 h-10 text-[#8C7853] mx-auto stroke-1" />
+          <div className="text-center py-16 px-4 bg-[#FCFCFC] border border-[#ECECEC] rounded-xs space-y-3">
+            <AlertCircle className="w-10 h-10 text-[#B55232] mx-auto stroke-1" />
             <h3 className="font-serif text-xl text-[#121212] font-medium">
               Trouble connecting to our servers. Please try our WhatsApp.
             </h3>
@@ -54,19 +54,19 @@ export const NewArrivals: React.FC<NewArrivalsProps> = ({ onSelectProduct, onVie
               Our concierge atelier is available on WhatsApp to assist with immediate orders and inquiries.
             </p>
           </div>
-        ) : products.length === 0 ? (
-          <div className="text-center py-16 px-4 bg-[#FCFCFA] border border-[#F0ECE1] rounded-xs space-y-3">
-            <AlertCircle className="w-10 h-10 text-[#8C7853] mx-auto stroke-1" />
+        ) : featuredList.length === 0 ? (
+          <div className="text-center py-16 px-4 bg-[#FCFCFC] border border-[#ECECEC] rounded-xs space-y-3">
+            <AlertCircle className="w-10 h-10 text-[#B55232] mx-auto stroke-1" />
             <h3 className="font-serif text-xl text-[#121212] font-medium">
-              No products available right now.
+              No featured or new-arrival products selected.
             </h3>
             <p className="text-xs text-[#777777] max-w-sm mx-auto">
-              Our haute couture collections are currently being prepared for the upcoming season.
+              Choose a merchandising flag in the admin product editor to feature garments here.
             </p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {(featuredList.length > 0 ? featuredList : products.slice(0, 4)).map((product) => (
+            {featuredList.map((product) => (
               <ProductCard
                 key={product.id}
                 product={product}

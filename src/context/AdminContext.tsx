@@ -5,6 +5,7 @@ import {
   fetchCoupons, 
   fetchSubscribers, 
   fetchContactMessages,
+  fetchAdminProducts,
   createProduct as createProductService,
   deleteProduct as deleteProductService,
   updateProductStock as updateProductStockService,
@@ -32,6 +33,7 @@ interface AdminContextType {
   loginAdmin: (email: string, password?: string, customUrl?: string, customAnonKey?: string) => Promise<{ success: boolean; error?: string }>;
   logoutAdmin: () => Promise<void>;
   orders: Order[];
+  adminProducts: Product[];
   coupons: Coupon[];
   subscribers: Subscriber[];
   contacts: ContactMessage[];
@@ -44,7 +46,7 @@ interface AdminContextType {
   refreshReviewModeration: () => Promise<void>;
   updateOrderStatus: (orderId: string, status: OrderStatus, courierName?: string, trackingNumber?: string) => Promise<boolean>;
   restockOrder: (orderId: string) => Promise<boolean>;
-  saveProduct: (product: Partial<Product>, imageFiles?: (File | null)[]) => Promise<boolean>;
+  saveProduct: (product: Partial<Product> & { isNewProduct?: boolean }, imageFiles?: (File | null)[]) => Promise<boolean>;
   updateProductStock: (id: string, quantity: number) => Promise<boolean>;
   deleteProduct: (productId: string, isGroup?: boolean) => Promise<boolean>;
   saveCoupon: (coupon: Coupon) => Promise<boolean>;
@@ -61,6 +63,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [adminEmail, setAdminEmail] = useState<string | null>(null);
 
   const [orders, setOrders] = useState<Order[]>([]);
+  const [adminProducts, setAdminProducts] = useState<Product[]>([]);
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [subscribers, setSubscribers] = useState<Subscriber[]>([]);
   const [contacts, setContacts] = useState<ContactMessage[]>([]);
@@ -254,12 +257,13 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setIsLoadingAdminData(true);
     setBackendError(null);
     try {
-      const [ordsRes, cpsRes, subsRes, cntsRes, reviewsRes] = await Promise.allSettled([
+      const [ordsRes, cpsRes, subsRes, cntsRes, reviewsRes, productsRes] = await Promise.allSettled([
         fetchOrders(),
         fetchCoupons(),
         fetchSubscribers(),
         fetchContactMessages(),
-        fetchAdminReviewsService()
+        fetchAdminReviewsService(),
+        fetchAdminProducts()
       ]);
 
       if (ordsRes.status === 'fulfilled') {
@@ -275,6 +279,13 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (cntsRes.status === 'fulfilled') setContacts(cntsRes.value);
       if (reviewsRes.status === 'fulfilled') setReviews(reviewsRes.value);
       else console.warn('[Admin fetchReviews error]:', reviewsRes.reason);
+      if (productsRes.status === 'fulfilled') {
+        setAdminProducts(productsRes.value);
+      } else {
+        const err = productsRes.reason?.message || 'Failed to fetch products from Supabase';
+        setBackendError(err);
+        console.warn('[Admin fetchProducts error]:', err);
+      }
 
       await refreshStoreData();
     } catch (e: any) {
@@ -340,9 +351,19 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
-  const saveProduct = async (product: Partial<Product>, imageFiles?: (File | null)[]) => {
+  const refreshAdminProducts = async () => {
+    try {
+      setAdminProducts(await fetchAdminProducts());
+    } catch (error: any) {
+      console.error('[Admin refreshProducts error]:', error);
+      setBackendError(error.message || 'Product data was saved, but the admin list could not be refreshed.');
+    }
+  };
+
+  const saveProduct = async (product: Partial<Product> & { isNewProduct?: boolean }, imageFiles?: (File | null)[]) => {
     const success = await createProductService(product, imageFiles);
     if (success) {
+      await refreshAdminProducts();
       await refreshStoreData();
     }
     return success;
@@ -351,6 +372,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const updateProductStock = async (id: string, quantity: number) => {
     const success = await updateProductStockService(id, quantity);
     if (success) {
+      await refreshAdminProducts();
       await refreshStoreData();
     }
     return success;
@@ -359,6 +381,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const deleteProduct = async (productId: string, isGroup?: boolean) => {
     const success = await deleteProductService(productId, isGroup);
     if (success) {
+      await refreshAdminProducts();
       await refreshStoreData();
     }
     return success;
@@ -429,6 +452,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         loginAdmin,
         logoutAdmin,
         orders,
+        adminProducts,
         coupons,
         subscribers,
         contacts,

@@ -72,7 +72,7 @@ CREATE TABLE IF NOT EXISTS orders (
   courier_name TEXT,
   tracking_number TEXT,
   reservation_status TEXT DEFAULT 'reserved', -- 'reserved', 'committed', 'released', 'expired'
-  reservation_expires_at DATETIME,           -- Legacy field; customer order reservations do not expire
+  reservation_expires_at DATETIME,           -- UTC expiry (30 min after checkout)
   restocked_at DATETIME,                     -- Explicit restock timestamp
   notes TEXT,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,

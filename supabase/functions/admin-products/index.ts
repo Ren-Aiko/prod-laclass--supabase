@@ -111,69 +111,120 @@ serve(async (req: Request) => {
       const name = String(body.name || '').trim();
       const category = String(body.category || 'Luxury').trim();
       const fabric = String(body.fabric || 'Dubai Nida').trim();
-      const price = Number(body.price || 0);
-      const originalPrice = body.originalPrice != null ? Number(body.originalPrice) : null;
+      const price = Number(body.price);
+      const rawOriginalPrice = body.originalPrice ?? body.original_price;
+      const originalPrice = rawOriginalPrice == null || rawOriginalPrice === '' ? null : Number(rawOriginalPrice);
       const description = String(body.description || '').trim();
       const collection = String(body.collection || 'Luxury Signature').trim();
-      const badge = body.badge || null;
-      const isFeatured = Boolean(body.featured || body.is_featured);
-      const isNewArrival = Boolean(body.newArrival || body.is_new_arrival);
+      const toBoolean = (value: unknown, fallback: boolean): boolean => {
+        if (typeof value === 'boolean') return value;
+        if (typeof value === 'number') return value !== 0;
+        if (typeof value === 'string') return value.toLowerCase() === 'true' || value === '1';
+        return fallback;
+      };
+      const isFeatured = toBoolean(body.featured ?? body.is_featured, false);
+      const isNewArrival = toBoolean(body.newArrival ?? body.is_new_arrival, false);
+      const isFlashSale = toBoolean(body.flashSale ?? body.is_flash_sale, false);
+      const isActive = toBoolean(body.active ?? body.is_active, true);
+      const isNewProduct = body.isNewProduct === true;
 
-      const image1 = body.image1 || null;
-      const image2 = body.image2 || null;
-      const image3 = body.image3 || null;
-
-      if (!pId || !name || price <= 0) {
-        return errorResponse('Product Code (ID), Name, and Price are required.', 400);
+      if (!pId || pId.length > 100 || !name || !Number.isFinite(price) || price <= 0) {
+        return errorResponse('Product ID, name, and a valid price greater than zero are required.', 400);
+      }
+      if (originalPrice !== null && (!Number.isFinite(originalPrice) || originalPrice < 0)) {
+        return errorResponse('Original price must be zero or a positive number.', 400);
       }
 
-      // Generate server-side slug
-      const slug = (body.slug || name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '')) + `-${pId.toLowerCase()}`;
+      if (!Array.isArray(body.variants) || body.variants.length === 0) {
+        return errorResponse('At least one size/length variant is required.', 400);
+      }
 
-      const variants = Array.isArray(body.variants) && body.variants.length > 0
-        ? body.variants
-        : [{ size: body.size || 'Free Size', length: body.length || '56"', quantity: Number(body.quantity || 1) }];
+      const allowedSizes = new Set(['L', 'XL', 'XXL', 'FREE SIZE', 'CUSTOM']);
+      const allowedLengths = new Set(['52"', '54"', '56"', '58"', '60"']);
+      const variantKeys = new Set<string>();
+      const variants: { size: string; length: string | null; quantity: number }[] = [];
 
-      const upsertRows = variants.map((v: any) => ({
-        id: v.id || `prod_${pId.toLowerCase()}_${(v.size || 'fs').toLowerCase().replace(/[^a-z0-9]/g, '')}_${(v.length || '56').replace(/[^0-9]/g, '')}`,
+      for (const variant of body.variants) {
+        const rawSize = String(variant?.size || '').trim().toUpperCase();
+        const size = rawSize === '2XL' ? 'XXL' : rawSize === 'FREESIZE' ? 'FREE SIZE' : rawSize;
+        const canonicalSize = size === 'FREE SIZE' ? 'Free Size' : size === 'CUSTOM' ? 'Custom' : size;
+        const rawLength = String(variant?.length || '').trim().replace(/[”]/g, '"');
+        const length = rawLength ? (rawLength.endsWith('"') ? rawLength : `${rawLength}"`) : null;
+        const quantity = Number(variant?.quantity);
+
+        if (!allowedSizes.has(size)) {
+          return errorResponse(`Unsupported garment size: ${String(variant?.size || '')}.`, 400);
+        }
+        if (length && !allowedLengths.has(length)) {
+          return errorResponse(`Unsupported garment length: ${length}.`, 400);
+        }
+        if (!Number.isInteger(quantity) || quantity < 0) {
+          return errorResponse('Variant stock must be a non-negative whole number.', 400);
+        }
+
+        const variantKey = `${canonicalSize}|${length || ''}`;
+        if (variantKeys.has(variantKey)) {
+          return errorResponse(`Duplicate size/length variant: ${canonicalSize} ${length || ''}.`, 400);
+        }
+        variantKeys.add(variantKey);
+        variants.push({ size: canonicalSize, length, quantity });
+      }
+
+      const { count, error: existingError } = await supabase
+        .from('products')
+        .select('id', { count: 'exact', head: true })
+        .eq('product_id', pId);
+      if (existingError) return errorResponse(existingError.message, 400, existingError);
+      if (isNewProduct && (count || 0) > 0) {
+        return errorResponse('That Product ID is already in use. Choose a different ID.', 409);
+      }
+      if (!isNewProduct && count === 0) {
+        return errorResponse('This garment no longer exists. Refresh the product list and try again.', 404);
+      }
+
+      const submittedSlug = String(body.slug || '').trim();
+      const slugBase = String(submittedSlug || name)
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)/g, '');
+      const slug = submittedSlug
+        ? slugBase
+        : slugBase
+          ? `${slugBase}-${pId.toLowerCase()}`
+          : pId.toLowerCase();
+      const productPayload = {
         product_id: pId,
         name,
         slug,
         category,
+        collection,
+        description,
         fabric,
         price,
         original_price: originalPrice,
-        description,
-        collection,
-        badge,
-        size: v.size || 'Free Size',
-        length: v.length || '56"',
-        quantity: Math.max(0, Number(v.quantity || 0)),
-        image1,
-        image2,
-        image3,
-        thumbnail: image1,
+        image1: body.image1 || null,
+        image2: body.image2 || null,
+        image3: body.image3 || null,
         is_featured: isFeatured,
         is_new_arrival: isNewArrival,
-        is_active: true,
-      }));
+        is_flash_sale: isFlashSale,
+        is_active: isActive,
+      };
 
-      const { data: savedRows, error: upsertError } = await supabase
-        .from('products')
-        .upsert(upsertRows, { onConflict: 'id' })
-        .select();
-
-      if (upsertError) {
-        console.error('[admin-products Upsert Error]:', upsertError);
-        return errorResponse(upsertError.message, 400, upsertError);
-      }
-
-      // Propagate shared images across other variants with this product_id
-      if (image1 || image2 || image3) {
-        await supabase
-          .from('products')
-          .update({ image1, image2, image3, thumbnail: image1 })
-          .eq('product_id', pId);
+      const { data: savedRows, error: saveError } = await supabase.rpc('admin_save_product', {
+        p_product: productPayload,
+        p_variants: variants,
+        p_is_new: isNewProduct,
+      });
+      if (saveError) {
+        console.error('[admin-products Save Error]:', saveError);
+        if (saveError.code === 'PGRST202') {
+          return errorResponse('The product management migration is not installed. Run supabase/10_product_variant_management.sql.', 503, saveError);
+        }
+        if (saveError.code === '23505') return errorResponse('That Product ID is already in use.', 409, saveError);
+        if (saveError.code === 'P0002') return errorResponse('This garment no longer exists. Refresh the product list and try again.', 404, saveError);
+        return errorResponse(saveError.message, 400, saveError);
       }
 
       return jsonResponse({ success: true, variants: savedRows }, 200);
@@ -183,9 +234,12 @@ serve(async (req: Request) => {
     if (req.method === 'PATCH') {
       const body = await req.json().catch(() => ({}));
       const id = String(body.id || url.searchParams.get('id') || '').trim();
-      const quantity = Math.max(0, Number(body.quantity || 0));
+      const quantity = Number(body.quantity);
 
       if (!id) return errorResponse('Variant ID is required.', 400);
+      if (!Number.isInteger(quantity) || quantity < 0) {
+        return errorResponse('Variant stock must be a non-negative whole number.', 400);
+      }
 
       const { data, error } = await supabase
         .from('products')
@@ -201,16 +255,25 @@ serve(async (req: Request) => {
     // DELETE /admin-products?id=<id>&is_group=<bool>
     if (req.method === 'DELETE') {
       const id = url.searchParams.get('id') || '';
-      const isGroup = url.searchParams.get('is_group') === 'true';
+      const isGroup = url.searchParams.get('group') === 'true'
+        || url.searchParams.get('is_group') === 'true';
 
       if (!id) return errorResponse('ID parameter is required.', 400);
 
       if (isGroup) {
-        const { error } = await supabase.from('products').delete().eq('product_id', id);
-        if (error) return errorResponse(error.message, 400, error);
+        const { data: deletedCount, error } = await supabase.rpc('admin_delete_product', {
+          p_product_id: id,
+        });
+        if (error) return errorResponse(error.message, error.code === 'PGRST202' ? 503 : 400, error);
+        if (!deletedCount) return errorResponse('No matching garment was found to delete.', 404);
       } else {
-        const { error } = await supabase.from('products').delete().eq('id', id);
+        const { data: deletedRows, error } = await supabase
+          .from('products')
+          .delete()
+          .eq('id', id)
+          .select('id');
         if (error) return errorResponse(error.message, 400, error);
+        if (!deletedRows?.length) return errorResponse('No matching product variant was found to delete.', 404);
       }
 
       return jsonResponse({ success: true, deleted_id: id });

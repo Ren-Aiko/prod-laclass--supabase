@@ -39,15 +39,14 @@ CREATE TABLE products (
   fabric TEXT NOT NULL DEFAULT 'Dubai Nida',            -- Primary fabric name
   price NUMERIC(10, 2) NOT NULL CHECK (price >= 0),     -- Current selling price (INR)
   original_price NUMERIC(10, 2) CHECK (original_price IS NULL OR original_price >= 0),
-  size TEXT NOT NULL CHECK (size IN ('L', 'XL', 'XXL', 'Free Size')),
+  size TEXT NOT NULL CHECK (size IN ('L', 'XL', 'XXL', 'Free Size', 'Custom')),
   quantity INTEGER NOT NULL DEFAULT 0 CHECK (quantity >= 0),
   length TEXT CHECK (length IS NULL OR length IN ('52"', '54"', '56"', '58"', '60"')),
   image1 TEXT,                                          -- Primary image (R2 key or public URL)
   image2 TEXT,                                          -- Secondary angle
   image3 TEXT,                                          -- Detail / model shot
-  thumbnail TEXT,                                       -- Catalog thumbnail
   is_featured BOOLEAN NOT NULL DEFAULT false,
-  is_new_arrival BOOLEAN NOT NULL DEFAULT true,
+  is_new_arrival BOOLEAN NOT NULL DEFAULT false,
   is_flash_sale BOOLEAN NOT NULL DEFAULT false,
   is_active BOOLEAN NOT NULL DEFAULT true,
   care_instructions TEXT,

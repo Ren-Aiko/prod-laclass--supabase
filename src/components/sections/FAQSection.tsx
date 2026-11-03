@@ -33,11 +33,11 @@ export const FAQSection: React.FC = () => {
   const [openIndex, setOpenIndex] = useState<number | null>(0);
 
   return (
-    <section id="faq-section" className="py-20 bg-[#FAF8F5] border-t border-[#F0ECE1]">
+    <section id="faq-section" className="py-20 bg-[#F8F8F8] border-t border-[#ECECEC]">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         
         <div className="text-center max-w-xl mx-auto mb-12 space-y-3">
-          <div className="flex items-center justify-center gap-2 text-[#8C7853]">
+          <div className="flex items-center justify-center gap-2 text-[#B55232]">
             <HelpCircle className="w-4 h-4" />
             <span className="text-[10px] tracking-[0.35em] uppercase font-medium">
               Client Assistance
@@ -57,20 +57,20 @@ export const FAQSection: React.FC = () => {
             return (
               <div
                 key={idx}
-                className="bg-[#FCFCFA] border border-[#EAEAEA] rounded-xs overflow-hidden transition-all duration-200 shadow-xs"
+                className="bg-[#FCFCFC] border border-[#EAEAEA] rounded-xs overflow-hidden transition-all duration-200 shadow-xs"
               >
                 <button
                   onClick={() => setOpenIndex(isOpen ? null : idx)}
-                  className="w-full text-left p-5 flex items-center justify-between gap-4 font-serif text-base sm:text-lg font-medium text-[#121212] hover:text-[#8C7853] transition-colors"
+                  className="w-full text-left p-5 flex items-center justify-between gap-4 font-serif text-base sm:text-lg font-medium text-[#121212] hover:text-[#B55232] transition-colors"
                   aria-expanded={isOpen}
                 >
                   <span>{faq.q}</span>
-                  <ChevronDown className={`w-5 h-5 text-[#8C7853] transition-transform duration-300 flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`} />
+                  <ChevronDown className={`w-5 h-5 text-[#B55232] transition-transform duration-300 flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`} />
                 </button>
 
                 {isOpen && (
-                  <div className="px-5 pb-5 pt-1 text-xs text-[#555555] leading-relaxed border-t border-[#F5F2EA] bg-[#FCFCFA]">
-                    <span className="text-[9px] font-semibold text-[#8C7853] uppercase tracking-widest block mb-1.5">
+                  <div className="px-5 pb-5 pt-1 text-xs text-[#555555] leading-relaxed border-t border-[#F2F2F2] bg-[#FCFCFC]">
+                    <span className="text-[9px] font-semibold text-[#B55232] uppercase tracking-widest block mb-1.5">
                       {faq.category}
                     </span>
                     <p>{faq.a}</p>

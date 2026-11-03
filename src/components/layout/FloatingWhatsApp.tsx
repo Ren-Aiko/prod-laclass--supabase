@@ -27,7 +27,7 @@ export const FloatingWhatsApp: React.FC<FloatingWhatsAppProps> = ({
       href={whatsappUrl}
       target="_blank"
       rel="noopener noreferrer"
-      className="fixed bottom-6 right-6 z-40 bg-[#25D366] hover:bg-[#20ba5a] text-[#FCFCFA] p-3.5 rounded-full shadow-2xl transition-all duration-300 transform hover:scale-110 flex items-center gap-2 group border border-white/20"
+      className="fixed bottom-6 right-6 z-40 bg-[#25D366] hover:bg-[#1DA851] text-white p-3.5 rounded-full shadow-2xl transition-all duration-300 transform hover:scale-110 flex items-center gap-2 group border border-white/20"
       aria-label="Contact Laclassé Concierge on WhatsApp"
     >
       <MessageCircle className="w-6 h-6 fill-current" />

@@ -175,7 +175,7 @@ export function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FCFCFA] text-[#121212] font-sans antialiased flex flex-col justify-between selection:bg-[#8C7853] selection:text-white">
+    <div className="min-h-screen bg-[#FCFCFC] text-[#121212] font-sans antialiased flex flex-col justify-between selection:bg-[#B55232] selection:text-white">
       
       {/* Top Banner & Navigation Header */}
       <div>

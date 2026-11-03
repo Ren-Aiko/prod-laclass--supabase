@@ -30,11 +30,11 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: #FAF8F5;
+  background: #F8F8F8;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #D1CDC7;
+  background: #CDCDCD;
   border-radius: 9999px;
 }
 
@@ -57,8 +57,8 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.gold-gradient-text {
-  background: linear-gradient(135deg, #2C2825 0%, #8C7853 50%, #121212 100%);
+.rust-gradient-text {
+  background: linear-gradient(135deg, #292929 0%, #B55232 50%, #121212 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }

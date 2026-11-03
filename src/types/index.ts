@@ -60,7 +60,6 @@ export interface Product {
   image2?: string;
   image3?: string;
   images: string[];
-  thumbnail: string;
   featured: boolean;
   is_featured?: boolean | number;
   newArrival: boolean;

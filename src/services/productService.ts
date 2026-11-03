@@ -192,7 +192,7 @@ export async function uploadProductImage(file: File, bucketName = 'abaya-store-a
  * Internal Row-to-UI-Product mapper keeping visual structures 100% intact
  */
 function mapRowToProduct(row: any): Product {
-  const img1 = row.image_1 || row.image1 || row.thumbnail || 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=800&auto=format&fit=crop';
+  const img1 = row.image_1 || row.image1 || 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=800&auto=format&fit=crop';
   const img2 = row.image_2 || row.image2 || img1;
   const img3 = row.image_3 || row.image3 || img2;
 
@@ -225,7 +225,6 @@ function mapRowToProduct(row: any): Product {
     image2: img2,
     image3: img3,
     images: [img1, img2, img3].filter(Boolean),
-    thumbnail: img1,
     rating: Number(row.rating || 5.0),
     reviewCount: Number(row.review_count || 0),
     createdAt: row.created_at || new Date().toISOString(),

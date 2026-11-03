@@ -1,4 +1,4 @@
-import { Product, SizeStockItem } from '../types';
+import { Product } from '../types';
 import { getSupabase, isSupabaseConfigured, invokeEdgeFunction, getR2PublicUrl } from '../utils/supabase';
 
 export function resolveProductImageUrl(urlOrKey: string | null | undefined): string | null {
@@ -26,14 +26,15 @@ export function normalizeSize(size: string): string {
   const s = String(size || '').trim();
   if (s.toUpperCase() === '2XL' || s.toUpperCase() === 'XXL') return 'XXL';
   if (s.toLowerCase() === 'free size' || s.toLowerCase() === 'freesize') return 'Free Size';
-  return s;
+  return s.toUpperCase() === 'CUSTOM' ? 'Custom' : s.toUpperCase();
 }
 
-export function normalizeLength(len: any): string | null {
+export function normalizeLength(len: string | null | undefined): string | null {
   if (!len) return null;
   const str = String(len).trim();
-  if (str.endsWith('"')) return str;
-  return `${str}"`;
+  if (!str) return null;
+  const numericLength = str.replace(/["”]/g, '');
+  return `${numericLength}"`;
 }
 
 /**
@@ -54,7 +55,6 @@ export function groupProductVariants(rows: any[]): Product[] {
       const img1 = resolveProductImageUrl(row.image1);
       const img2 = resolveProductImageUrl(row.image2);
       const img3 = resolveProductImageUrl(row.image3);
-      const thumb = resolveProductImageUrl(row.thumbnail) || img1;
       const allImages = [img1, img2, img3].filter(Boolean) as string[];
 
       groupedMap.set(groupKey, {
@@ -82,7 +82,7 @@ export function groupProductVariants(rows: any[]): Product[] {
         flashSale: Boolean(row.is_flash_sale),
         is_flash_sale: Boolean(row.is_flash_sale),
         active: Boolean(row.is_active),
-        is_active: row.is_active ? 1 : 0,
+        is_active: Boolean(row.is_active),
         careInstructions: row.care_instructions || 'Dry clean recommended.',
         care_instructions: row.care_instructions || '',
         includesMatchingSheila: row.includes_matching_sheila !== undefined ? Boolean(row.includes_matching_sheila) : true,
@@ -91,7 +91,6 @@ export function groupProductVariants(rows: any[]): Product[] {
         image2: img2,
         image3: img3,
         images: allImages,
-        thumbnail: thumb,
         rating: Number(row.rating || 5.0),
         reviewCount: Number(row.review_count || 0),
         review_count: Number(row.review_count || 0),
@@ -124,27 +123,18 @@ export function groupProductVariants(rows: any[]): Product[] {
     }
 
     group.sizeStock[normSize] = (group.sizeStock[normSize] || 0) + variantQty;
-    if (normLen) {
-      group.variantStock[`${normSize}_${normLen}`] = variantQty;
-    }
+    group.variantStock[`${normSize}_${normLen || ''}`] = variantQty;
     group.variantStock[row.id] = variantQty;
     group.totalStock += variantQty;
   }
 
   // Finalize each garment group
   for (const group of groupedMap.values()) {
-    if (!group.sizes.includes('Custom')) {
-      group.sizes.push('Custom');
-    }
-    group.sizeStock['Custom'] = 9999;
     group.quantity = group.totalStock;
     group.stock = group.totalStock;
 
     if (group.lengths.length > 0) {
       group.length = group.lengths[0];
-    } else {
-      group.lengths = ['56"'];
-      group.length = '56"';
     }
   }
 
@@ -176,6 +166,16 @@ export const fetchProducts = async (): Promise<Product[]> => {
   }
 
   return groupProductVariants(data || []);
+};
+
+export const fetchAdminProducts = async (): Promise<Product[]> => {
+  const rows = await invokeEdgeFunction<Record<string, any>[]>('admin-products', {
+    method: 'GET',
+  });
+  if (!Array.isArray(rows)) {
+    throw new Error('The server returned an invalid product list.');
+  }
+  return groupProductVariants(rows);
 };
 
 /**
@@ -237,11 +237,11 @@ export const fetchProductBySlug = async (slug: string): Promise<Product | null> 
  * Uploads image files to Cloudflare R2 if provided
  */
 export const createProduct = async (
-  product: Partial<Product>,
+  product: Partial<Product> & { isNewProduct?: boolean },
   imageFiles?: (File | null)[]
 ): Promise<boolean> => {
   try {
-    const payload: any = { ...product };
+    const payload: Record<string, unknown> = {};
 
     // If new image files were selected, upload them to R2 first
     if (imageFiles && imageFiles.some(f => f !== null)) {
@@ -262,15 +262,51 @@ export const createProduct = async (
             if (i === 0) payload.image1 = res.url;
             if (i === 1) payload.image2 = res.url;
             if (i === 2) payload.image3 = res.url;
+          } else {
+            throw new Error(`Image ${i + 1} upload did not return a URL.`);
           }
         }
       }
     }
 
-    await invokeEdgeFunction('admin-products', {
+    const variants = product.variants?.length
+      ? product.variants.map((variant) => ({
+          size: normalizeSize(variant.size),
+          length: normalizeLength(variant.length),
+          quantity: Number(variant.quantity),
+        }))
+      : [{
+          size: normalizeSize(product.size || 'Free Size'),
+          length: normalizeLength(product.length),
+          quantity: Number(product.quantity ?? 0),
+        }];
+
+    const result = await invokeEdgeFunction<{ success?: boolean; variants?: unknown[]; error?: string }>('admin-products', {
       method: 'POST',
-      body: payload,
+      body: {
+        productId: product.productId || product.product_id,
+        isNewProduct: Boolean(product.isNewProduct),
+        name: product.name,
+        slug: product.slug,
+        category: product.category,
+        collection: product.collection,
+        description: product.description,
+        fabric: product.fabric,
+        price: product.price,
+        originalPrice: product.originalPrice ?? product.original_price ?? null,
+        image1: payload.image1 ?? product.image1 ?? null,
+        image2: payload.image2 ?? product.image2 ?? null,
+        image3: payload.image3 ?? product.image3 ?? null,
+        featured: Boolean(product.featured ?? product.is_featured),
+        newArrival: Boolean(product.newArrival ?? product.is_new_arrival),
+        flashSale: Boolean(product.flashSale ?? product.is_flash_sale),
+        active: product.active ?? Boolean(product.is_active ?? true),
+        variants,
+      },
     });
+    if (!result?.success || !Array.isArray(result.variants)) {
+      throw new Error(result?.error || 'The server did not confirm the product save.');
+    }
 
     return true;
   } catch (err: any) {
@@ -300,10 +336,15 @@ export const updateProductStock = async (id: string, quantity: number): Promise<
  */
 export const deleteProduct = async (productId: string, isGroup: boolean = false): Promise<boolean> => {
   try {
-    const query = isGroup ? `?id=${encodeURIComponent(productId)}&group=true` : `?id=${encodeURIComponent(productId)}`;
-    await invokeEdgeFunction(`admin-products${query}`, {
+    const query = isGroup
+      ? `?id=${encodeURIComponent(productId)}&group=true`
+      : `?id=${encodeURIComponent(productId)}`;
+    const result = await invokeEdgeFunction<{ success?: boolean; error?: string }>(`admin-products${query}`, {
       method: 'DELETE',
     });
+    if (!result?.success) {
+      throw new Error(result?.error || 'The server did not confirm the product deletion.');
+    }
     return true;
   } catch (err: any) {
     console.error('[deleteProduct Error]:', err);

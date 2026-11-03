@@ -22,7 +22,7 @@ export const FeaturedCollections: React.FC<FeaturedCollectionsProps> = ({ onSele
 
     const collection: CollectionCard = groupedCollections.get(category) ?? { category, products: [] };
     collection.products.push(product);
-    if (!collection.imageProduct && (product.thumbnail?.trim() || product.image1?.trim())) {
+    if (!collection.imageProduct && product.image2?.trim()) {
       collection.imageProduct = product;
     }
     groupedCollections.set(category, collection);
@@ -30,12 +30,12 @@ export const FeaturedCollections: React.FC<FeaturedCollectionsProps> = ({ onSele
   const collections = Array.from(groupedCollections.values());
 
   return (
-    <section className="py-20 bg-[#FCFCFA] border-b border-[#F0ECE1]">
+    <section className="py-20 bg-[#FCFCFC] border-b border-[#ECECEC]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Section Heading */}
         <div className="text-center max-w-2xl mx-auto mb-14">
-          <span className="text-[10px] tracking-[0.35em] text-[#8C7853] uppercase font-medium block mb-2">
+          <span className="text-[10px] tracking-[0.35em] text-[#B55232] uppercase font-medium block mb-2">
             Curated Atelier Selections
           </span>
           <h2 className="font-serif text-3xl sm:text-4xl text-[#121212] font-medium tracking-wide">
@@ -58,7 +58,7 @@ export const FeaturedCollections: React.FC<FeaturedCollectionsProps> = ({ onSele
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {collections.map((collection) => {
-              const image = collection.imageProduct?.thumbnail || collection.imageProduct?.image1;
+              const image = collection.imageProduct?.image2?.trim();
 
               return (
                 <div
@@ -79,19 +79,19 @@ export const FeaturedCollections: React.FC<FeaturedCollectionsProps> = ({ onSele
 
                   <div className="absolute inset-0 p-6 z-20 flex flex-col justify-between">
                     <div className="flex justify-between items-start">
-                      <span className="bg-[#121212]/80 backdrop-blur-md text-[#FCFCFA] text-[9px] font-semibold uppercase tracking-[0.2em] px-2.5 py-1 rounded-xs">
+                      <span className="bg-[#121212]/80 backdrop-blur-md text-[#FCFCFC] text-[9px] font-semibold uppercase tracking-[0.2em] px-2.5 py-1 rounded-xs">
                         {collection.products.length} {collection.products.length === 1 ? 'Design' : 'Designs'}
                       </span>
-                      <div className="w-8 h-8 rounded-full bg-[#FCFCFA]/90 text-[#121212] flex items-center justify-center group-hover:bg-[#8C7853] group-hover:text-[#FCFCFA] transition-colors">
+                      <div className="w-8 h-8 rounded-full bg-[#FCFCFC]/90 text-[#121212] flex items-center justify-center group-hover:bg-[#B55232] group-hover:text-[#FCFCFC] transition-colors">
                         <ArrowUpRight className="w-4 h-4" />
                       </div>
                     </div>
 
                     <div>
-                      <h3 className="font-serif text-2xl text-[#FCFCFA] font-medium mb-1 group-hover:text-[#D4AF37] transition-colors">
+                      <h3 className="font-serif text-2xl text-[#FCFCFC] font-medium mb-1 group-hover:text-[#E8B7A5] transition-colors">
                         {collection.category}
                       </h3>
-                      <p className="text-xs text-[#D1CDC7] font-light leading-relaxed line-clamp-2">
+                      <p className="text-xs text-[#CDCDCD] font-light leading-relaxed line-clamp-2">
                         Explore our {collection.category} designs.
                       </p>
                     </div>

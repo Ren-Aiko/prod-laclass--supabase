@@ -21,10 +21,10 @@ export const AnnouncementBar: React.FC = () => {
   const CurrentIcon = ANNOUNCEMENTS[index].icon;
 
   return (
-    <div className="bg-[#121212] text-[#FAF8F5] text-xs py-2.5 px-4 tracking-widest uppercase font-medium border-b border-[#2A2A2A] overflow-hidden">
+    <div className="bg-[#121212] text-[#F8F8F8] text-xs py-2.5 px-4 tracking-widest uppercase font-medium border-b border-[#2A2A2A] overflow-hidden">
       <div className="max-w-7xl mx-auto flex items-center justify-center text-center transition-all duration-500 transform">
         <div className="flex items-center gap-2 space-x-1">
-          <CurrentIcon className="w-3.5 h-3.5 text-[#D4AF37] animate-pulse" />
+          <CurrentIcon className="w-3.5 h-3.5 text-[#E8B7A5] animate-pulse" />
           <span>{ANNOUNCEMENTS[index].text}</span>
         </div>
       </div>

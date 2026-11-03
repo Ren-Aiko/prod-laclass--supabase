@@ -114,39 +114,91 @@ serve(async (req: Request) => {
       const active = body.active !== undefined ? Boolean(body.active) : true;
       const subscriberEmail = body.subscriberEmail || body.subscriber_email || null;
 
-      if (!/^[A-Z0-9_-]{3,40}$/.test(code) || discountValue <= 0 || minPurchase < 0) {
-        return errorResponse('Coupon code and positive discount value are required.', 400);
+      if (!/^[A-Z0-9_-]{3,40}$/.test(code)) {
+        return errorResponse('Coupon code must be 3-40 characters using letters, numbers, hyphens, or underscores.', 400);
+      }
+      if (!Number.isFinite(discountValue) || discountValue <= 0) {
+        return errorResponse('Discount value must be a positive number.', 400);
+      }
+      if (!Number.isFinite(minPurchase) || minPurchase < 0) {
+        return errorResponse('Minimum purchase must be zero or a positive number.', 400);
       }
       if (!['percentage', 'flat'].includes(discountType)) return errorResponse('Discount type must be percentage or flat.', 400);
       if (discountType === 'percentage' && discountValue > 100) return errorResponse('Percentage discount cannot exceed 100.', 400);
+      if (expiryDate) {
+        const parsedExpiry = new Date(`${expiryDate}T00:00:00.000Z`);
+        if (
+          !/^\d{4}-\d{2}-\d{2}$/.test(expiryDate) ||
+          Number.isNaN(parsedExpiry.getTime()) ||
+          parsedExpiry.toISOString().slice(0, 10) !== expiryDate
+        ) {
+          return errorResponse('Expiry date must be a valid YYYY-MM-DD date.', 400);
+        }
+      }
 
-      const { data: existing, error: lookupError } = await supabase
+      const { data: matchingCoupons, error: lookupError } = await supabase
         .from('coupons')
         .select('id')
         .ilike('code', code)
-        .maybeSingle();
+        .limit(2)
       if (lookupError) return errorResponse(lookupError.message, 400, lookupError);
+      const existingCoupons = matchingCoupons || [];
+      if (existingCoupons.length > 1) {
+        return errorResponse('Multiple coupons already use this code. Remove duplicates before saving.', 409);
+      }
+      const existing = existingCoupons[0];
 
       const couponPayload = {
-          code,
-          discount_type: discountType,
-          discount_value: discountValue,
-          min_purchase: minPurchase,
-          expiry_date: expiryDate,
-          subscriber_email: subscriberEmail,
-          active,
-          updated_at: new Date().toISOString(),
+        code,
+        discount_type: discountType,
+        discount_value: discountValue,
+        min_purchase: minPurchase,
+        expiry_date: expiryDate,
+        subscriber_email: subscriberEmail,
+        active,
+        updated_at: new Date().toISOString(),
       };
 
-      const query = existing
-        ? supabase.from('coupons').update(couponPayload).eq('id', existing.id)
-        : supabase.from('coupons').insert(couponPayload);
-      const { data, error } = await query
+      const saveExistingCoupon = async (id: string) => supabase
+        .from('coupons')
+        .update(couponPayload)
+        .eq('id', id)
         .select()
         .single();
 
+      let data;
+      let error;
+      let status = 201;
+      if (existing) {
+        ({ data, error } = await saveExistingCoupon(existing.id));
+        status = 200;
+      } else {
+        ({ data, error } = await supabase
+          .from('coupons')
+          .insert(couponPayload)
+          .select()
+          .single());
+
+        if (error?.code === '23505') {
+          const { data: concurrentCoupons, error: retryLookupError } = await supabase
+            .from('coupons')
+            .select('id')
+            .ilike('code', code)
+            .limit(2);
+
+          if (retryLookupError) return errorResponse(retryLookupError.message, 400, retryLookupError);
+          const concurrentMatches = concurrentCoupons || [];
+          if (concurrentMatches.length > 1) {
+            return errorResponse('Multiple coupons already use this code. Remove duplicates before saving.', 409);
+          }
+          if (concurrentMatches[0]) {
+            ({ data, error } = await saveExistingCoupon(concurrentMatches[0].id));
+            status = 200;
+          }
+        }
+      }
       if (error) return errorResponse(error.message, 400, error);
-      return jsonResponse({ success: true, coupon: data }, 201);
+      return jsonResponse({ success: true, coupon: data }, status);
     }
 
     // DELETE /admin-coupons?code=<code>

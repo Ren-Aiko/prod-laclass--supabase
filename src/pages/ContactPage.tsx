@@ -42,11 +42,11 @@ export const ContactPage: React.FC = () => {
   };
 
   return (
-    <div className="bg-[#FCFCFA] min-h-screen py-16">
+    <div className="bg-[#FCFCFC] min-h-screen py-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         <div className="text-center max-w-2xl mx-auto mb-16 space-y-3">
-          <span className="text-[10px] tracking-[0.35em] text-[#8C7853] uppercase font-medium block">
+          <span className="text-[10px] tracking-[0.35em] text-[#B55232] uppercase font-medium block">
             Client Support
           </span>
           <h1 className="font-serif text-4xl sm:text-5xl text-[#121212] font-medium tracking-wide">
@@ -60,9 +60,9 @@ export const ContactPage: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
           
           {/* Left Info Column */}
-          <div className="lg:col-span-5 bg-[#FAF8F5] border border-[#F0ECE1] p-8 rounded-xs space-y-8">
+          <div className="lg:col-span-5 bg-[#F8F8F8] border border-[#ECECEC] p-8 rounded-xs space-y-8">
             <div>
-              <span className="text-[10px] uppercase tracking-[0.25em] text-[#8C7853] font-semibold block mb-1">
+              <span className="text-[10px] uppercase tracking-[0.25em] text-[#B55232] font-semibold block mb-1">
                 Direct Contact
               </span>
               <h3 className="font-serif text-2xl font-medium text-[#121212]">
@@ -72,7 +72,7 @@ export const ContactPage: React.FC = () => {
 
             <div className="space-y-4 text-xs text-[#555555]">
               <div className="flex items-center gap-3">
-                <Phone className="w-5 h-5 text-[#8C7853] flex-shrink-0" />
+                <Phone className="w-5 h-5 text-[#B55232] flex-shrink-0" />
                 <div>
                   <strong className="text-[#121212] block mb-0.5">WhatsApp Support:</strong>
                   +91 93805 09397
@@ -80,7 +80,7 @@ export const ContactPage: React.FC = () => {
               </div>
 
               <div className="flex items-center gap-3">
-                <Mail className="w-5 h-5 text-[#8C7853] flex-shrink-0" />
+                <Mail className="w-5 h-5 text-[#B55232] flex-shrink-0" />
                 <div>
                   <strong className="text-[#121212] block mb-0.5">Instagram DM:</strong>
                   @laclasseabaya
@@ -98,7 +98,7 @@ export const ContactPage: React.FC = () => {
                 href="https://wa.me/919380509397?text=Hello%20LaClass%C3%A9%20Abaya!%20I%20have%20an%20inquiry%20regarding%20your%20collections."
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-full bg-[#25D366] hover:bg-[#20ba5a] text-[#FCFCFA] py-3 text-xs font-semibold uppercase tracking-[0.15em] rounded-xs transition-colors flex items-center justify-center gap-2"
+                className="w-full bg-[#25D366] hover:bg-[#1DA851] text-white py-3 text-xs font-semibold uppercase tracking-[0.15em] rounded-xs transition-colors flex items-center justify-center gap-2"
               >
                 <MessageCircle className="w-4 h-4" />
                 <span>Open WhatsApp (+91 9380509397)</span>
@@ -107,12 +107,12 @@ export const ContactPage: React.FC = () => {
           </div>
 
           {/* Right Contact Form */}
-          <div className="lg:col-span-7 bg-[#FAF8F5] border border-[#F0ECE1] p-8 rounded-xs">
+          <div className="lg:col-span-7 bg-[#F8F8F8] border border-[#ECECEC] p-8 rounded-xs">
             <h3 className="font-serif text-2xl font-medium text-[#121212] mb-4">Send Us a Message</h3>
 
             {submitted ? (
-              <div className="bg-[#e8f5e9] border border-[#a5d6a7] text-[#2e7d32] p-4 rounded-xs text-xs flex items-center gap-2">
-                <CheckCircle2 className="w-5 h-5 text-[#2e7d32]" />
+              <div className="bg-[#F1F1F1] border border-[#C8C8C8] text-[#676767] p-4 rounded-xs text-xs flex items-center gap-2">
+                <CheckCircle2 className="w-5 h-5 text-[#676767]" />
                 <span>Thank you! Your message has been received by our atelier team. We will respond within 12 hours.</span>
               </div>
             ) : (
@@ -125,7 +125,7 @@ export const ContactPage: React.FC = () => {
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       placeholder="e.g. Suhana Parveen"
-                      className="w-full bg-[#FCFCFA] border border-[#D1CDC7] px-3.5 py-2.5 text-xs rounded-xs"
+                      className="w-full bg-[#FCFCFC] border border-[#CDCDCD] px-3.5 py-2.5 text-xs rounded-xs"
                       required
                     />
                   </div>
@@ -137,7 +137,7 @@ export const ContactPage: React.FC = () => {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="e.g. suhana@example.com"
-                      className="w-full bg-[#FCFCFA] border border-[#D1CDC7] px-3.5 py-2.5 text-xs rounded-xs"
+                      className="w-full bg-[#FCFCFC] border border-[#CDCDCD] px-3.5 py-2.5 text-xs rounded-xs"
                       required
                     />
                   </div>
@@ -150,7 +150,7 @@ export const ContactPage: React.FC = () => {
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder="+91 98470 12345"
-                    className="w-full bg-[#FCFCFA] border border-[#D1CDC7] px-3.5 py-2.5 text-xs rounded-xs"
+                    className="w-full bg-[#FCFCFC] border border-[#CDCDCD] px-3.5 py-2.5 text-xs rounded-xs"
                   />
                 </div>
 
@@ -161,7 +161,7 @@ export const ContactPage: React.FC = () => {
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
                     placeholder="Tell us about your custom bridal requirements or order questions..."
-                    className="w-full bg-[#FCFCFA] border border-[#D1CDC7] px-3.5 py-2.5 text-xs rounded-xs"
+                    className="w-full bg-[#FCFCFC] border border-[#CDCDCD] px-3.5 py-2.5 text-xs rounded-xs"
                     required
                   />
                 </div>
@@ -169,7 +169,7 @@ export const ContactPage: React.FC = () => {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="bg-[#121212] hover:bg-[#8C7853] text-[#FCFCFA] px-8 py-3.5 text-xs font-semibold uppercase tracking-[0.2em] rounded-xs transition-colors flex items-center gap-2"
+                  className="bg-[#121212] hover:bg-[#B55232] text-[#FCFCFC] px-8 py-3.5 text-xs font-semibold uppercase tracking-[0.2em] rounded-xs transition-colors flex items-center gap-2"
                 >
                   <Send className="w-4 h-4" />
                   <span>{isSubmitting ? 'Sending Message...' : 'Send Message'}</span>

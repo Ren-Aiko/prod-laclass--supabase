@@ -26,11 +26,11 @@ const PILLARS = [
 
 export const WhyChooseUs: React.FC = () => {
   return (
-    <section className="py-20 bg-[#FCFCFA] border-y border-[#F0ECE1]">
+    <section className="py-20 bg-[#FCFCFC] border-y border-[#ECECEC]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         <div className="text-center max-w-2xl mx-auto mb-16">
-          <span className="text-[10px] tracking-[0.35em] text-[#8C7853] uppercase font-medium block mb-2">
+          <span className="text-[10px] tracking-[0.35em] text-[#B55232] uppercase font-medium block mb-2">
             The Atelier Promise
           </span>
           <h2 className="font-serif text-3xl sm:text-4xl text-[#121212] font-medium tracking-wide">
@@ -45,9 +45,9 @@ export const WhyChooseUs: React.FC = () => {
             return (
               <div
                 key={idx}
-                className="bg-[#FAF8F5] border border-[#F0ECE1] p-8 rounded-xs hover:border-[#D1CDC7] transition-all duration-300 space-y-4 group"
+                className="bg-[#F8F8F8] border border-[#ECECEC] p-8 rounded-xs hover:border-[#CDCDCD] transition-all duration-300 space-y-4 group"
               >
-                <div className="w-12 h-12 rounded-full bg-[#121212] text-[#D4AF37] flex items-center justify-center group-hover:scale-110 transition-transform">
+                <div className="w-12 h-12 rounded-full bg-[#121212] text-[#E8B7A5] flex items-center justify-center group-hover:scale-110 transition-transform">
                   <Icon className="w-6 h-6" />
                 </div>
                 <h3 className="font-serif text-lg font-medium text-[#121212]">

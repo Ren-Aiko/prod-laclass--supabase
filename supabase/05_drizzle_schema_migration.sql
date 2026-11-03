@@ -52,7 +52,7 @@ ALTER TABLE public.products ADD COLUMN IF NOT EXISTS selected_variants TEXT[] DE
 ALTER TABLE public.products ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true;
 
 -- Sync image_1/image1 if needed
-UPDATE public.products SET image_1 = COALESCE(image_1, image1, thumbnail) WHERE image_1 IS NULL;
+UPDATE public.products SET image_1 = COALESCE(image_1, image1) WHERE image_1 IS NULL;
 UPDATE public.products SET image_2 = COALESCE(image_2, image2) WHERE image_2 IS NULL;
 UPDATE public.products SET image_3 = COALESCE(image_3, image3) WHERE image_3 IS NULL;
 UPDATE public.products SET selected_variants = ARRAY['S', 'M', 'L', 'XL'] WHERE selected_variants IS NULL;
