@@ -80,7 +80,7 @@
 }
 
 .rust-gradient-text {
-  background: linear-gradient(135deg, #292929 0%, #B55232 50%, #121212 100%);
+  background: linear-gradient(110deg, #E8B7A5 0%, #B55232 55%, #F3D0C2 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
