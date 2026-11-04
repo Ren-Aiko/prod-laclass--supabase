@@ -1,4 +1,4 @@
--- Allow products without approved reviews to have a 0.0 rating.
+-- Allow products with no approved customer reviews to have a 0.0 rating.
 ALTER TABLE public.products ALTER COLUMN rating SET DEFAULT 0.0;
 
 DO $$
@@ -27,8 +27,8 @@ BEGIN
 END;
 $$;
 
--- Recalculate each product group's rating from approved client reviews only.
--- Reviews may refer either to the product group code (product_id) or a variant UUID.
+-- Recalculate each product group from approved reviews only. Existing review
+-- product_id values may be the group's product code or a specific variant UUID.
 UPDATE public.products AS product
 SET rating = COALESCE(approved.avg_rating, 0),
     review_count = COALESCE(approved.review_count, 0)
@@ -36,7 +36,7 @@ FROM (
   SELECT
     product_group.product_id,
     ROUND(AVG(review.rating)::numeric, 2) AS avg_rating,
-    COUNT(review.id)::integer AS review_count
+    COUNT(DISTINCT review.id)::integer AS review_count
   FROM (SELECT DISTINCT product_id FROM public.products) AS product_group
   LEFT JOIN public.reviews AS review
     ON review.approved = true

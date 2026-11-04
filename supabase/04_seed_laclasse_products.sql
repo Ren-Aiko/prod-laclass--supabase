@@ -4,8 +4,7 @@
 -- =====================================================================
 -- Optional manual execution in Supabase SQL Editor.
 -- Inserts the 9 authentic LaClassé garment models across 35 variant rows
--- totaling 35 units of initial inventory. Ratings are initialized to zero
--- and must be based on approved client reviews.
+-- totaling 35 units of initial inventory.
 -- Per specification: Image columns remain NULL until real Cloudflare R2
 -- asset keys are uploaded by the atelier.
 -- =====================================================================
@@ -538,10 +537,10 @@ INSERT INTO products (
   true, 5.0, 10
 );
 
--- Ratings are derived from approved reviews, never seeded as fabricated scores.
-UPDATE products SET rating = 0, review_count = 0;
-
 -- Initial Verification Summary
 -- Total Garments: 9
 -- Total Variants: 35
 -- Total Stock Units: 35
+
+-- Ratings are calculated from approved customer reviews, never from seed data.
+UPDATE products SET rating = 0, review_count = 0;

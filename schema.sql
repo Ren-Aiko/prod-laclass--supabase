@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS products (
   is_active INTEGER DEFAULT 1,
   care_instructions TEXT,
   includes_matching_sheila INTEGER DEFAULT 1,
-  rating REAL DEFAULT 0,
+  rating REAL DEFAULT 5.0,
   review_count INTEGER DEFAULT 0,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
