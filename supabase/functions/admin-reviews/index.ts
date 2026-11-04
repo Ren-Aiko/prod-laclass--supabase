@@ -83,6 +83,52 @@ async function requireAdmin(req: Request) {
   return { user, admin: adminRecord };
 }
 
+async function recalculateProductRatings(supabase: ReturnType<typeof getServiceClient>, reviewProductId: string) {
+  const { data: byProductCode, error: codeError } = await supabase
+    .from('products')
+    .select('id, product_id')
+    .eq('product_id', reviewProductId);
+  if (codeError) throw codeError;
+
+  let matchedProducts = byProductCode || [];
+  if (matchedProducts.length === 0 && /^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(reviewProductId)) {
+    const { data: byRowId, error: rowError } = await supabase
+      .from('products')
+      .select('id, product_id')
+      .eq('id', reviewProductId);
+    if (rowError) throw rowError;
+    matchedProducts = byRowId || [];
+  }
+
+  const productGroupId = matchedProducts[0]?.product_id;
+  if (!productGroupId) return;
+
+  const { data: variants, error: variantsError } = await supabase
+    .from('products')
+    .select('id')
+    .eq('product_id', productGroupId);
+  if (variantsError) throw variantsError;
+
+  const reviewProductIds = [...new Set([productGroupId, ...(variants || []).map((variant) => variant.id)])];
+  const { data: approvedReviews, error: reviewsError } = await supabase
+    .from('reviews')
+    .select('rating')
+    .eq('approved', true)
+    .in('product_id', reviewProductIds);
+  if (reviewsError) throw reviewsError;
+
+  const count = approvedReviews?.length || 0;
+  const average = count > 0
+    ? Number((approvedReviews!.reduce((sum, review) => sum + Number(review.rating || 0), 0) / count).toFixed(2))
+    : 0;
+
+  const { error: updateError } = await supabase
+    .from('products')
+    .update({ rating: average, review_count: count })
+    .eq('product_id', productGroupId);
+  if (updateError) throw updateError;
+}
+
 serve(async (req: Request) => {
   const cors = handleCors(req);
   if (cors) return cors;
@@ -160,24 +206,7 @@ serve(async (req: Request) => {
 
       if (error) return errorResponse(error.message, 400, error);
 
-      // Re-aggregate product rating & review_count
-      if (data?.product_id) {
-        const { data: approvedList } = await supabase
-          .from('reviews')
-          .select('rating')
-          .eq('product_id', data.product_id)
-          .eq('approved', true);
-
-        const count = approvedList?.length || 0;
-        const avg = count > 0
-          ? Number((approvedList!.reduce((acc, r) => acc + (r.rating || 5), 0) / count).toFixed(2))
-          : 5.0;
-
-        await supabase
-          .from('products')
-          .update({ rating: avg, review_count: count })
-          .eq('product_id', data.product_id);
-      }
+      if (data?.product_id) await recalculateProductRatings(supabase, data.product_id);
 
       return jsonResponse({ success: true, updated: data });
     }
@@ -187,8 +216,16 @@ serve(async (req: Request) => {
       const id = url.searchParams.get('id') || '';
       if (!id) return errorResponse('Review ID parameter is required.', 400);
 
+      const { data: review, error: reviewError } = await supabase
+        .from('reviews')
+        .select('product_id')
+        .eq('id', id)
+        .single();
+      if (reviewError) return errorResponse(reviewError.message, 400, reviewError);
+
       const { error } = await supabase.from('reviews').delete().eq('id', id);
       if (error) return errorResponse(error.message, 400, error);
+      if (review?.product_id) await recalculateProductRatings(supabase, review.product_id);
       return jsonResponse({ success: true, deleted_id: id });
     }
 

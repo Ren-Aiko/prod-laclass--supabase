@@ -42,8 +42,8 @@ export const INITIAL_PRODUCTS: Product[] = [
     active: true,
     careInstructions: 'Dry clean recommended or gentle cold hand wash. Steam lightly on reverse.',
     includesMatchingSheila: true,
-    rating: 5.0,
-    reviewCount: 14,
+    rating: 0,
+    reviewCount: 0,
     createdAt: new Date().toISOString()
   },
   {
@@ -89,8 +89,8 @@ export const INITIAL_PRODUCTS: Product[] = [
     active: true,
     careInstructions: 'Specialist dry clean only. Protect embroidery when pressing.',
     includesMatchingSheila: true,
-    rating: 4.9,
-    reviewCount: 9,
+    rating: 0,
+    reviewCount: 0,
     createdAt: new Date().toISOString()
   },
   {
@@ -136,8 +136,8 @@ export const INITIAL_PRODUCTS: Product[] = [
     active: true,
     careInstructions: 'Dry clean recommended. Low steam with protective cloth.',
     includesMatchingSheila: true,
-    rating: 5.0,
-    reviewCount: 6,
+    rating: 0,
+    reviewCount: 0,
     createdAt: new Date().toISOString()
   },
   {
@@ -183,8 +183,8 @@ export const INITIAL_PRODUCTS: Product[] = [
     active: true,
     careInstructions: 'Delicate dry clean only.',
     includesMatchingSheila: true,
-    rating: 4.8,
-    reviewCount: 8,
+    rating: 0,
+    reviewCount: 0,
     createdAt: new Date().toISOString()
   },
   {
@@ -234,8 +234,8 @@ export const INITIAL_PRODUCTS: Product[] = [
     active: true,
     careInstructions: 'Machine wash delicate cycle in laundry bag or cold hand wash.',
     includesMatchingSheila: true,
-    rating: 5.0,
-    reviewCount: 11,
+    rating: 0,
+    reviewCount: 0,
     createdAt: new Date().toISOString()
   },
   {
@@ -285,8 +285,8 @@ export const INITIAL_PRODUCTS: Product[] = [
     active: true,
     careInstructions: 'Dry clean only. Steam from inside out.',
     includesMatchingSheila: true,
-    rating: 4.9,
-    reviewCount: 7,
+    rating: 0,
+    reviewCount: 0,
     createdAt: new Date().toISOString()
   },
   {
@@ -336,8 +336,8 @@ export const INITIAL_PRODUCTS: Product[] = [
     active: true,
     careInstructions: 'Machine wash cold. Line dry in shade.',
     includesMatchingSheila: true,
-    rating: 5.0,
-    reviewCount: 5,
+    rating: 0,
+    reviewCount: 0,
     createdAt: new Date().toISOString()
   },
   {
@@ -387,8 +387,8 @@ export const INITIAL_PRODUCTS: Product[] = [
     active: true,
     careInstructions: 'Specialist dry clean only. Store wrapped in acid-free tissue.',
     includesMatchingSheila: true,
-    rating: 5.0,
-    reviewCount: 16,
+    rating: 0,
+    reviewCount: 0,
     createdAt: new Date().toISOString()
   },
   {
@@ -438,8 +438,8 @@ export const INITIAL_PRODUCTS: Product[] = [
     active: true,
     careInstructions: 'Gentle cycle cold wash. Low steam iron.',
     includesMatchingSheila: true,
-    rating: 4.9,
-    reviewCount: 10,
+    rating: 0,
+    reviewCount: 0,
     createdAt: new Date().toISOString()
   }
 ];

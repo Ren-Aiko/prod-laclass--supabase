@@ -4,8 +4,6 @@ import { useStore } from '../../context/StoreContext';
 import { useCart } from '../../context/CartContext';
 import { Product, CustomMeasurements } from '../../types';
 import { CustomMeasurementsForm, INITIAL_CUSTOM_MEASUREMENTS, MEASUREMENT_FIELDS } from './CustomMeasurementsForm';
-import sizeChartLc0104 from '../../assets/Size Chart (LC01-04).png';
-import sizeChartLc0509 from '../../assets/Size Chart (LC05-09).png';
 
 interface QuickViewModalProps {
   onSelectProduct?: (product: Product) => void;
@@ -36,22 +34,16 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({ onSelectProduct 
     availableSizes.push('Custom');
   }
 
-  const getLengthsForSize = (size: string): string[] => {
-    const sizeVariants = quickViewProduct?.variants?.filter(variant => variant.size === size) || [];
-    if (sizeVariants.length > 0) {
-      return Array.from(new Set(sizeVariants.map(variant => variant.length || '')));
-    }
-    return quickViewProduct?.lengths?.length ? quickViewProduct.lengths : [];
-  };
-  const availableLengths = getLengthsForSize(selectedSize);
-  const lengthOptions = availableLengths.length > 0 ? availableLengths : [''];
+  const availableLengths = quickViewProduct?.lengths && quickViewProduct.lengths.length > 0 
+    ? quickViewProduct.lengths 
+    : ['56"'];
 
   useEffect(() => {
     if (quickViewProduct) {
       setSelectedImageIndex(0);
       const firstStd = availableSizes.find(s => s !== 'Custom') || 'Custom';
       setSelectedSize(firstStd);
-      setSelectedLength(getLengthsForSize(firstStd)[0] || '');
+      setSelectedLength(availableLengths[0] || '56"');
       setQuantity(1);
       setMeasurementErrors({});
       setCustomValidationMsg(null);
@@ -61,20 +53,14 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({ onSelectProduct 
   if (!quickViewProduct) return null;
 
   const isLC001to004 = ['LC001', 'LC002', 'LC003', 'LC004'].includes(quickViewProduct.product_id || quickViewProduct.productId || '');
-  const productCode = quickViewProduct.product_id || quickViewProduct.productId || quickViewProduct.productCode || '';
-  const sizeChart = ['LC001', 'LC002', 'LC003', 'LC004'].includes(productCode)
-    ? sizeChartLc0104
-    : ['LC005', 'LC006', 'LC007', 'LC008', 'LC009'].includes(productCode)
-      ? sizeChartLc0509
-      : null;
-  const productImages = [quickViewProduct.image1, quickViewProduct.image2, quickViewProduct.image3, ...(quickViewProduct.images || [])]
+
+  const images = [quickViewProduct.image1, quickViewProduct.image2, quickViewProduct.image3, ...(quickViewProduct.images || [])]
     .filter((img, idx, arr) => Boolean(img) && arr.indexOf(img) === idx);
-  if (productImages.length === 0 && quickViewProduct.thumbnail) productImages.push(quickViewProduct.thumbnail);
-  if (productImages.length === 0) productImages.push('https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=800&auto=format&fit=crop');
-  const images = sizeChart ? [...productImages, sizeChart] : productImages;
+  if (images.length === 0 && quickViewProduct.thumbnail) images.push(quickViewProduct.thumbnail);
+  if (images.length === 0) images.push('https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=800&auto=format&fit=crop');
 
   const activeSize = selectedSize || availableSizes[0] || 'L';
-  const activeLength = selectedLength || availableLengths[0] || '';
+  const activeLength = selectedLength || availableLengths[0] || '56"';
 
   // Stock check for selected variant
   const getSelectedVariantStock = (): number => {
@@ -106,6 +92,8 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({ onSelectProduct 
   };
 
   const effectivePrice = quickViewProduct.offerPrice ?? quickViewProduct.price ?? 0;
+  const productRating = Number(quickViewProduct.rating ?? 0);
+  const productReviewCount = Number(quickViewProduct.reviewCount ?? 0);
   const isWishlisted = wishlist.includes(quickViewProduct.id);
 
   const handleAddToCart = () => {
@@ -149,24 +137,24 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({ onSelectProduct 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#121212]/75 backdrop-blur-md overflow-y-auto">
       <div 
-        className="bg-[#FCFCFC] border border-[#EAEAEA] rounded-xs shadow-2xl w-full max-w-4xl overflow-hidden relative max-h-[92vh] flex flex-col md:flex-row my-auto"
+        className="bg-[#FCFCFA] border border-[#EAEAEA] rounded-xs shadow-2xl w-full max-w-4xl overflow-hidden relative max-h-[92vh] flex flex-col md:flex-row my-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close Button */}
         <button
           onClick={() => setQuickViewProduct(null)}
-          className="absolute top-4 right-4 z-20 p-2 text-[#121212] hover:text-[#B55232] bg-white/80 rounded-full backdrop-blur-sm transition-colors cursor-pointer"
+          className="absolute top-4 right-4 z-20 p-2 text-[#121212] hover:text-[#8C7853] bg-white/80 rounded-full backdrop-blur-sm transition-colors cursor-pointer"
         >
           <X className="w-5 h-5" />
         </button>
 
         {/* Left: Product Images Gallery */}
-        <div className="w-full md:w-1/2 bg-[#F2F2F2] p-6 flex flex-col justify-between">
+        <div className="w-full md:w-1/2 bg-[#F5F2EA] p-6 flex flex-col justify-between">
           <div className="relative aspect-[3/4] w-full overflow-hidden rounded-xs mb-4 shadow-sm">
             <img
-              src={images[selectedImageIndex] || quickViewProduct.image1}
+              src={images[selectedImageIndex] || quickViewProduct.thumbnail}
               alt={quickViewProduct.name}
-              className={`w-full h-full ${images[selectedImageIndex] === sizeChart ? 'object-contain p-3' : 'object-cover object-center'} transition-all duration-300`}
+              className="w-full h-full object-cover object-center transition-all duration-300"
             />
           </div>
 
@@ -177,10 +165,10 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({ onSelectProduct 
                 key={idx}
                 onClick={() => setSelectedImageIndex(idx)}
                 className={`w-16 h-20 rounded-xs overflow-hidden border-2 transition-all shrink-0 cursor-pointer ${
-                  selectedImageIndex === idx ? 'border-[#B55232] scale-102' : 'border-transparent opacity-60 hover:opacity-100'
+                  selectedImageIndex === idx ? 'border-[#8C7853] scale-102' : 'border-transparent opacity-60 hover:opacity-100'
                 }`}
               >
-                <img src={img} alt={img === sizeChart ? 'Size chart' : 'Product thumbnail'} className={`w-full h-full ${img === sizeChart ? 'object-contain bg-white' : 'object-cover'}`} />
+                <img src={img} alt="Thumbnail" className="w-full h-full object-cover" />
               </button>
             ))}
           </div>
@@ -190,7 +178,7 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({ onSelectProduct 
         <div className="w-full md:w-1/2 p-6 md:p-8 overflow-y-auto flex flex-col justify-between space-y-5">
           <div>
             {/* Collection & Fabric */}
-            <div className="flex items-center justify-between text-xs text-[#B55232] uppercase tracking-[0.2em] font-medium mb-1">
+            <div className="flex items-center justify-between text-xs text-[#8C7853] uppercase tracking-[0.2em] font-medium mb-1">
               <span>{quickViewProduct.collection}</span>
               <span>{quickViewProduct.fabric}</span>
             </div>
@@ -201,7 +189,7 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({ onSelectProduct 
             </h2>
 
             {/* Price & Rating */}
-            <div className="flex items-center justify-between border-b border-[#ECECEC] pb-3 mb-4">
+            <div className="flex items-center justify-between border-b border-[#F0ECE1] pb-3 mb-4">
               <div className="flex items-baseline space-x-3">
                 <span className="text-xl font-semibold text-[#121212]">
                   ₹{effectivePrice.toLocaleString('en-IN')}
@@ -214,12 +202,14 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({ onSelectProduct 
               </div>
 
               <div className="flex items-center gap-1.5 text-xs">
-                <div className="flex text-[#E8B7A5]">
+                <div className="flex text-[#D4AF37]">
                   {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="w-3.5 h-3.5 fill-current" />
+                    <Star key={i} className={`w-3.5 h-3.5 ${i < Math.round(productRating) ? 'fill-current' : 'text-[#DCDCDC]'}`} />
                   ))}
                 </div>
-                <span className="text-[#666666] font-medium">({quickViewProduct.reviewCount || 0})</span>
+                <span className="text-[#666666] font-medium">
+                  {productRating.toFixed(1)} ({productReviewCount})
+                </span>
               </div>
             </div>
 
@@ -231,18 +221,18 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({ onSelectProduct 
             {/* SIZE SELECTOR */}
             <div className="mb-4">
               <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wider mb-2">
-                <span>Size: <strong className="text-[#B55232]">{activeSize}</strong></span>
+                <span>Size: <strong className="text-[#8C7853]">{activeSize}</strong></span>
 
                 {activeSize === 'Custom' ? (
-                  <span className="text-[10px] text-[#515151] bg-[#F4F4F4] px-2 py-0.5 rounded-xs font-medium">
+                  <span className="text-[10px] text-[#166534] bg-[#dcfce7] px-2 py-0.5 rounded-xs font-medium">
                     Bespoke Tailoring
                   </span>
                 ) : isOutOfStock ? (
-                  <span className="text-[10px] text-[#B55232] bg-[#E8E8E8] px-2 py-0.5 rounded-xs font-bold">
+                  <span className="text-[10px] text-[#991b1b] bg-[#fee2e2] px-2 py-0.5 rounded-xs font-bold">
                     Out of Stock
                   </span>
                 ) : (
-                  <span className="text-[10px] text-[#B55232] bg-[#B55232]/10 px-2 py-0.5 rounded-xs font-medium">
+                  <span className="text-[10px] text-[#8C7853] bg-[#8C7853]/10 px-2 py-0.5 rounded-xs font-medium">
                     In Stock: {currentStock} available
                   </span>
                 )}
@@ -258,16 +248,13 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({ onSelectProduct 
                   return (
                     <button
                       key={sz}
-                      onClick={() => {
-                        setSelectedSize(sz);
-                        setSelectedLength(getLengthsForSize(sz)[0] || '');
-                      }}
+                      onClick={() => setSelectedSize(sz)}
                       className={`px-3 py-1.5 text-xs font-semibold rounded-xs border transition-all cursor-pointer ${
                         activeSize === sz
-                          ? 'bg-[#121212] text-[#FCFCFC] border-[#121212]'
+                          ? 'bg-[#121212] text-[#FCFCFA] border-[#121212]'
                           : szOut
-                          ? 'border-[#EAEAEA] bg-[#F2F2F2] text-[#AAAAAA] line-through'
-                          : 'border-[#CDCDCD] text-[#121212] hover:border-[#121212]'
+                          ? 'border-[#EAEAEA] bg-[#F5F2EA] text-[#AAAAAA] line-through'
+                          : 'border-[#D1CDC7] text-[#121212] hover:border-[#121212]'
                       }`}
                     >
                       {sz}
@@ -282,7 +269,7 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({ onSelectProduct 
                   <button
                     type="button"
                     onClick={() => setShowSizeGuideInline(!showSizeGuideInline)}
-                    className="text-[11px] text-[#B55232] hover:underline flex items-center gap-1 font-medium cursor-pointer"
+                    className="text-[11px] text-[#8C7853] hover:underline flex items-center gap-1 font-medium cursor-pointer"
                   >
                     <Ruler className="w-3 h-3" />
                     <span>
@@ -296,11 +283,11 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({ onSelectProduct 
                   </button>
 
                   {showSizeGuideInline && (
-                    <div className="mt-2 p-2.5 bg-[#F8F8F8] border border-[#DCDCDC] rounded-xs text-[10px] space-y-1">
+                    <div className="mt-2 p-2.5 bg-[#FAF8F5] border border-[#E0DCD3] rounded-xs text-[10px] space-y-1">
                       {isLC001to004 ? (
                         <table className="w-full text-left">
                           <thead>
-                            <tr className="border-b border-[#DCDCDC] font-semibold text-[#121212]">
+                            <tr className="border-b border-[#E0DCD3] font-semibold text-[#121212]">
                               <th className="p-1">Measurement</th>
                               <th className="p-1">L</th>
                               <th className="p-1">XL</th>
@@ -318,18 +305,18 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({ onSelectProduct 
                       ) : (
                         <table className="w-full text-left">
                           <thead>
-                            <tr className="border-b border-[#DCDCDC] font-semibold text-[#121212]">
+                            <tr className="border-b border-[#E0DCD3] font-semibold text-[#121212]">
                               <th className="p-1">Garment Size</th>
                               <th className="p-1">Length</th>
                               <th className="p-1">Customer Height</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-[#EAEAEA]">
-                            <tr><td className="p-1 font-medium" rowSpan={5}>Free Size</td><td className="p-1 font-semibold text-[#B55232]">52"</td><td className="p-1">5'0" – 5'2" (152 – 157 cm)</td></tr>
-                            <tr><td className="p-1 font-semibold text-[#B55232]">54"</td><td className="p-1">5'3" – 5'4" (158 – 162 cm)</td></tr>
-                            <tr><td className="p-1 font-semibold text-[#B55232]">56"</td><td className="p-1">5'5" – 5'6" (163 – 167 cm)</td></tr>
-                            <tr><td className="p-1 font-semibold text-[#B55232]">58"</td><td className="p-1">5'7" – 5'8" (168 – 172 cm)</td></tr>
-                            <tr><td className="p-1 font-semibold text-[#B55232]">60"</td><td className="p-1">5'9"+ (173 cm & above)</td></tr>
+                            <tr><td className="p-1 font-medium" rowSpan={5}>Free Size</td><td className="p-1 font-semibold text-[#8C7853]">52"</td><td className="p-1">5'0" – 5'2" (152 – 157 cm)</td></tr>
+                            <tr><td className="p-1 font-semibold text-[#8C7853]">54"</td><td className="p-1">5'3" – 5'4" (158 – 162 cm)</td></tr>
+                            <tr><td className="p-1 font-semibold text-[#8C7853]">56"</td><td className="p-1">5'5" – 5'6" (163 – 167 cm)</td></tr>
+                            <tr><td className="p-1 font-semibold text-[#8C7853]">58"</td><td className="p-1">5'7" – 5'8" (168 – 172 cm)</td></tr>
+                            <tr><td className="p-1 font-semibold text-[#8C7853]">60"</td><td className="p-1">5'9"+ (173 cm & above)</td></tr>
                           </tbody>
                         </table>
                       )}
@@ -353,13 +340,11 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({ onSelectProduct 
             {activeSize !== 'Custom' && (
               <div className="mb-4">
                 <div className="text-xs font-semibold uppercase tracking-wider mb-1.5 text-[#121212]">
-                  Length: <strong className="text-[#B55232]">{activeLength}</strong>
+                  Length: <strong className="text-[#8C7853]">{activeLength}</strong>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {lengthOptions.map((len) => {
-                    const lenStock = quickViewProduct.variantStock?.[`${activeSize}_${len}`]
-                      ?? quickViewProduct.sizeStock?.[activeSize]
-                      ?? 0;
+                  {availableLengths.map((len) => {
+                    const lenStock = quickViewProduct.variantStock?.[`${activeSize}_${len}`] ?? 1;
                     const lenOut = lenStock <= 0;
 
                     return (
@@ -368,13 +353,13 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({ onSelectProduct 
                         onClick={() => setSelectedLength(len)}
                         className={`px-3 py-1.5 text-xs font-semibold rounded-xs border transition-all cursor-pointer ${
                           activeLength === len
-                            ? 'bg-[#121212] text-[#FCFCFC] border-[#121212]'
+                            ? 'bg-[#121212] text-[#FCFCFA] border-[#121212]'
                             : lenOut
-                            ? 'border-[#EAEAEA] bg-[#F2F2F2] text-[#AAAAAA] line-through'
-                            : 'border-[#CDCDCD] text-[#121212] hover:border-[#121212]'
+                            ? 'border-[#EAEAEA] bg-[#F5F2EA] text-[#AAAAAA] line-through'
+                            : 'border-[#D1CDC7] text-[#121212] hover:border-[#121212]'
                         }`}
                       >
-                        {len || 'No specific length'}
+                        {len}
                       </button>
                     );
                   })}
@@ -385,7 +370,7 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({ onSelectProduct 
             {/* Quantity */}
             <div className="flex items-center space-x-3 mb-4">
               <span className="text-xs font-semibold uppercase tracking-wider text-[#121212]">Quantity:</span>
-              <div className="flex items-center border border-[#CDCDCD] rounded-xs bg-[#F8F8F8]">
+              <div className="flex items-center border border-[#D1CDC7] rounded-xs bg-[#FAF8F5]">
                 <button
                   disabled={isOutOfStock}
                   onClick={() => setQuantity(Math.max(1, quantity - 1))}
@@ -406,24 +391,24 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({ onSelectProduct 
           </div>
 
           {/* Action Buttons */}
-          <div className="flex gap-3 pt-3 border-t border-[#ECECEC]">
+          <div className="flex gap-3 pt-3 border-t border-[#F0ECE1]">
             <button
               onClick={handleAddToCart}
               disabled={isOutOfStock}
               className={`flex-1 py-3 text-xs font-semibold uppercase tracking-[0.2em] rounded-xs transition-colors flex items-center justify-center gap-2 cursor-pointer ${
                 isOutOfStock
-                  ? 'bg-[#E0E0E0] text-[#888888] cursor-not-allowed'
-                  : 'bg-[#121212] hover:bg-[#B55232] text-[#FCFCFC]'
+                  ? 'bg-[#E5E0D8] text-[#888888] cursor-not-allowed'
+                  : 'bg-[#121212] hover:bg-[#8C7853] text-[#FCFCFA]'
               }`}
             >
               {isOutOfStock ? (
                 <>
-                  <AlertCircle className="w-4 h-4 text-[#B55232]" />
+                  <AlertCircle className="w-4 h-4 text-[#991b1b]" />
                   <span>Out of Stock</span>
                 </>
               ) : addedSuccess ? (
                 <>
-                  <Check className="w-4 h-4 text-[#E8B7A5]" />
+                  <Check className="w-4 h-4 text-[#D4AF37]" />
                   <span>Added to Bag!</span>
                 </>
               ) : (
@@ -438,8 +423,8 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({ onSelectProduct 
               onClick={() => toggleWishlist(quickViewProduct.id)}
               className={`p-3 border rounded-xs transition-colors cursor-pointer ${
                 isWishlisted
-                  ? 'border-[#121212] bg-[#121212] text-[#E8B7A5]'
-                  : 'border-[#CDCDCD] text-[#121212] hover:border-[#121212]'
+                  ? 'border-[#121212] bg-[#121212] text-[#D4AF37]'
+                  : 'border-[#D1CDC7] text-[#121212] hover:border-[#121212]'
               }`}
               title="Wishlist"
             >

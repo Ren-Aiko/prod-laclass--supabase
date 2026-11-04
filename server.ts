@@ -46,7 +46,7 @@ if (checkCount.count === 0) {
       ?, ?, ?, ?, ?, ?, ?, ?,
       ?, ?, ?, ?, ?, ?, ?, ?, ?,
       ?, ?, ?, ?, 1,
-      ?, 1, 5.0, ?, datetime('now'), datetime('now')
+      ?, 1, 0, 0, datetime('now'), datetime('now')
     )
   `);
 
@@ -69,7 +69,6 @@ if (checkCount.count === 0) {
       isNewArrival: 0,
       isFlashSale: 0,
       careInstructions: 'Dry clean recommended or gentle cold hand wash. Steam lightly on reverse.',
-      reviewCount: 14,
       variants: [
         { size: 'XXL', length: '56"', quantity: 1 }
       ]
@@ -92,7 +91,6 @@ if (checkCount.count === 0) {
       isNewArrival: 1,
       isFlashSale: 0,
       careInstructions: 'Specialist dry clean only. Protect embroidery when pressing.',
-      reviewCount: 9,
       variants: [
         { size: 'L', length: '56"', quantity: 1 },
         { size: 'XL', length: '56"', quantity: 1 },
@@ -117,7 +115,6 @@ if (checkCount.count === 0) {
       isNewArrival: 1,
       isFlashSale: 0,
       careInstructions: 'Dry clean recommended. Low steam with protective cloth.',
-      reviewCount: 6,
       variants: [
         { size: 'L', length: '56"', quantity: 1 },
         { size: 'XL', length: '56"', quantity: 1 },
@@ -142,7 +139,6 @@ if (checkCount.count === 0) {
       isNewArrival: 0,
       isFlashSale: 0,
       careInstructions: 'Delicate dry clean only.',
-      reviewCount: 8,
       variants: [
         { size: 'L', length: '56"', quantity: 1 },
         { size: 'XL', length: '56"', quantity: 1 },
@@ -167,7 +163,6 @@ if (checkCount.count === 0) {
       isNewArrival: 1,
       isFlashSale: 1,
       careInstructions: 'Machine wash delicate cycle in laundry bag or cold hand wash.',
-      reviewCount: 11,
       variants: [
         { size: 'Free Size', length: '52"', quantity: 1 },
         { size: 'Free Size', length: '54"', quantity: 1 },
@@ -194,7 +189,6 @@ if (checkCount.count === 0) {
       isNewArrival: 0,
       isFlashSale: 0,
       careInstructions: 'Dry clean only. Steam from inside out.',
-      reviewCount: 7,
       variants: [
         { size: 'Free Size', length: '52"', quantity: 1 },
         { size: 'Free Size', length: '54"', quantity: 1 },
@@ -221,7 +215,6 @@ if (checkCount.count === 0) {
       isNewArrival: 0,
       isFlashSale: 0,
       careInstructions: 'Machine wash cold. Line dry in shade.',
-      reviewCount: 5,
       variants: [
         { size: 'Free Size', length: '52"', quantity: 1 },
         { size: 'Free Size', length: '54"', quantity: 1 },
@@ -248,7 +241,6 @@ if (checkCount.count === 0) {
       isNewArrival: 0,
       isFlashSale: 0,
       careInstructions: 'Specialist dry clean only. Store wrapped in acid-free tissue.',
-      reviewCount: 16,
       variants: [
         { size: 'Free Size', length: '52"', quantity: 1 },
         { size: 'Free Size', length: '54"', quantity: 1 },
@@ -275,7 +267,6 @@ if (checkCount.count === 0) {
       isNewArrival: 1,
       isFlashSale: 0,
       careInstructions: 'Gentle cycle cold wash. Low steam iron.',
-      reviewCount: 10,
       variants: [
         { size: 'Free Size', length: '52"', quantity: 1 },
         { size: 'Free Size', length: '54"', quantity: 1 },
@@ -313,7 +304,6 @@ if (checkCount.count === 0) {
         g.isNewArrival,
         g.isFlashSale,
         g.careInstructions,
-        g.reviewCount
       );
       totalVariantsCreated++;
     }

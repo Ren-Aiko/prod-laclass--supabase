@@ -91,7 +91,7 @@ export function groupProductVariants(rows: any[]): Product[] {
         image2: img2,
         image3: img3,
         images: allImages,
-        rating: Number(row.rating || 5.0),
+        rating: Number(row.rating ?? 0),
         reviewCount: Number(row.review_count || 0),
         review_count: Number(row.review_count || 0),
         createdAt: row.created_at,

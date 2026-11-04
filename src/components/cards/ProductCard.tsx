@@ -69,7 +69,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelectProdu
   const isWishlisted = wishlist.includes(product.id);
   const effectivePrice = product.offerPrice ?? product.price ?? 0;
   const hasDiscount = Boolean(product.offerPrice && product.offerPrice < product.price);
-  const rating = product.rating ?? 5;
+  const rating = product.rating ?? 0;
   const reviewCount = product.reviewCount ?? 0;
 
   const handleQuickAdd = (e: React.MouseEvent) => {
@@ -172,13 +172,13 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelectProdu
                 <Star
                   key={i}
                   className={`w-3 h-3 ${
-                    i < Math.floor(rating) ? 'fill-current' : 'text-[#DCDCDC]'
+                    i < Math.round(rating) ? 'fill-current' : 'text-[#DCDCDC]'
                   }`}
                 />
               ))}
             </div>
             <span className="text-[10px] text-[#777777] font-medium">
-              ({reviewCount})
+              {rating.toFixed(1)} ({reviewCount})
             </span>
           </div>
 

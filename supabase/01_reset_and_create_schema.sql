@@ -51,7 +51,7 @@ CREATE TABLE products (
   is_active BOOLEAN NOT NULL DEFAULT true,
   care_instructions TEXT,
   includes_matching_sheila BOOLEAN NOT NULL DEFAULT true,
-  rating NUMERIC(3, 2) NOT NULL DEFAULT 5.0 CHECK (rating >= 1.0 AND rating <= 5.0),
+  rating NUMERIC(3, 2) NOT NULL DEFAULT 0.0 CHECK (rating >= 0.0 AND rating <= 5.0),
   review_count INTEGER NOT NULL DEFAULT 0 CHECK (review_count >= 0),
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()

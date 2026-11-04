@@ -17,7 +17,7 @@ export const InstagramGrid: React.FC = () => {
             Social Journal
           </span>
           <h2 className="font-serif text-3xl font-medium text-[#121212]">
-            Follow @laclasse_couture
+            Follow @laclasseabaya
           </h2>
           <p className="text-xs text-[#666666] mt-2">
             Tag #LaclasseAbaya on Instagram to be featured in our fashion editorial gallery.
@@ -40,7 +40,7 @@ export const InstagramGrid: React.FC = () => {
               return (
                 <a
                   key={product.id}
-                  href="https://instagram.com"
+                  href="https://www.instagram.com/laclasseabaya/"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="group relative aspect-square rounded-xs overflow-hidden bg-[#121212] block"

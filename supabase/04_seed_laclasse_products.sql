@@ -4,7 +4,8 @@
 -- =====================================================================
 -- Optional manual execution in Supabase SQL Editor.
 -- Inserts the 9 authentic LaClassé garment models across 35 variant rows
--- totaling 35 units of initial inventory.
+-- totaling 35 units of initial inventory. Ratings are initialized to zero
+-- and must be based on approved client reviews.
 -- Per specification: Image columns remain NULL until real Cloudflare R2
 -- asset keys are uploaded by the atelier.
 -- =====================================================================
@@ -536,6 +537,9 @@ INSERT INTO products (
   'Gentle cycle cold wash. Low steam iron.',
   true, 5.0, 10
 );
+
+-- Ratings are derived from approved reviews, never seeded as fabricated scores.
+UPDATE products SET rating = 0, review_count = 0;
 
 -- Initial Verification Summary
 -- Total Garments: 9

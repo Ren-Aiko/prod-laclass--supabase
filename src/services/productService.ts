@@ -225,7 +225,7 @@ function mapRowToProduct(row: any): Product {
     image2: img2,
     image3: img3,
     images: [img1, img2, img3].filter(Boolean),
-    rating: Number(row.rating || 5.0),
+    rating: Number(row.rating ?? 0),
     reviewCount: Number(row.review_count || 0),
     createdAt: row.created_at || new Date().toISOString(),
     size: (variants[0] || 'Free Size') as any,
