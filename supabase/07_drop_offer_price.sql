@@ -33,6 +33,7 @@ DECLARE
   v_coupon_code TEXT;
   v_coupon RECORD;
   v_product RECORD;
+  v_shipping_fee NUMERIC(10, 2) := 0;
   v_final_amount NUMERIC(10, 2);
 BEGIN
   IF p_payload->>'customer_name' IS NULL OR p_payload->>'customer_phone' IS NULL OR p_payload->>'utr_number' IS NULL THEN
@@ -83,17 +84,18 @@ BEGIN
     END IF;
   END IF;
 
-  v_final_amount := GREATEST(0, v_subtotal - v_discount);
+  v_shipping_fee := CASE WHEN v_subtotal = 0 OR v_subtotal >= 5000 THEN 0 ELSE 250 END;
+  v_final_amount := GREATEST(0, v_subtotal - v_discount + v_shipping_fee);
 
   INSERT INTO public.orders (
     id, order_number, customer_name, customer_email, customer_phone,
-    shipping_address, total_amount, amount, discount_amount,
+    shipping_address, total_amount, amount, discount_amount, shipping_fee,
     items, utr_number, payment_proof_url, notes,
     payment_status, reservation_status
   ) VALUES (
     v_order_id, v_order_number,
     p_payload->>'customer_name', p_payload->>'customer_email', p_payload->>'customer_phone',
-    p_payload->>'shipping_address', v_final_amount, v_subtotal, v_discount,
+    p_payload->>'shipping_address', v_final_amount, v_subtotal, v_discount, v_shipping_fee,
     p_payload->'items', p_payload->>'utr_number', p_payload->>'payment_proof_url', p_payload->>'notes',
     'Paid, Awaiting Confirmation', 'reserved'
   );
@@ -139,7 +141,8 @@ BEGIN
     'success', true,
     'order_number', v_order_number,
     'order_id', v_order_id,
-    'total_amount', v_final_amount
+    'total_amount', v_final_amount,
+    'shipping_fee', v_shipping_fee
   );
 END;
 $$;

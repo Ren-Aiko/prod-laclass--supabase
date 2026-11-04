@@ -149,7 +149,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose })
         discountAmount,
         couponCode: appliedCoupon?.code,
         shippingFee,
-        grandTotal: result.total_amount || grandTotal,
+        grandTotal,
         utrNumber: cleanUtr,
         status: 'Paid, Awaiting Confirmation',
         paymentStatus: 'Paid, Awaiting Confirmation',
@@ -411,8 +411,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose })
                       </div>
                     )}
                     <div className="flex justify-between text-[#666666]">
-                      <span>Bespoke Packaging & Courier</span>
-                      <span className="text-[#676767]">Complimentary</span>
+                      <span>Shipping Fee</span>
+                      <span className="text-[#676767]">{shippingFee === 0 ? 'FREE' : `₹${shippingFee.toLocaleString('en-IN')}`}</span>
                     </div>
                     <div className="flex justify-between text-sm font-semibold text-[#121212] pt-2 border-t border-[#EAEAEA]">
                       <span>Total Amount to Pay</span>
@@ -634,6 +634,20 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose })
                 <div className="py-2 flex justify-between">
                   <span className="text-[#777777]">Delivery Destination:</span>
                   <span className="font-medium text-[#121212]">{completedOrder.customer.city || completedOrder.customer.address}</span>
+                </div>
+                <div className="py-2 flex justify-between">
+                  <span className="text-[#777777]">Items Subtotal:</span>
+                  <span className="font-medium text-[#121212]">₹{completedOrder.amount.toLocaleString('en-IN')}</span>
+                </div>
+                {completedOrder.discountAmount > 0 && (
+                  <div className="py-2 flex justify-between">
+                    <span className="text-[#777777]">Discount:</span>
+                    <span className="font-medium text-[#121212]">-₹{completedOrder.discountAmount.toLocaleString('en-IN')}</span>
+                  </div>
+                )}
+                <div className="py-2 flex justify-between">
+                  <span className="text-[#777777]">Shipping Fee:</span>
+                  <span className="font-medium text-[#121212]">{completedOrder.shippingFee === 0 ? 'FREE' : `₹${completedOrder.shippingFee.toLocaleString('en-IN')}`}</span>
                 </div>
                 <div className="pt-2 flex justify-between font-semibold text-sm">
                   <span>Total Amount Paid:</span>

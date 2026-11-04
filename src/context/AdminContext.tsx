@@ -111,7 +111,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           setIsAdminAuthenticated(true);
           setAdminEmail(adminRecord.email || session.user.email || null);
         } else {
-          await supabase.auth.signOut();
+          await supabase.auth.signOut({ scope: 'local' });
         }
         if (checkId === authorizationCheckId) {
           setIsAdminAuthReady(true);
@@ -215,11 +215,11 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       try {
         adminRecord = await checkAdminPrivileges(supabase, data.user);
       } catch (verificationError) {
-        await supabase.auth.signOut();
+        await supabase.auth.signOut({ scope: 'local' });
         throw verificationError;
       }
       if (!adminRecord) {
-        await supabase.auth.signOut();
+        await supabase.auth.signOut({ scope: 'local' });
         return {
           success: false,
           error: 'This account is not registered as an active administrator.'
@@ -246,7 +246,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     try {
       if (isSupabaseConfigured()) {
         const supabase = getSupabase();
-        await supabase.auth.signOut();
+        await supabase.auth.signOut({ scope: 'local' });
       }
     } catch {}
     setIsAdminAuthenticated(false);

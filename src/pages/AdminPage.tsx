@@ -579,7 +579,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
   };
 
   const exportOrdersCSV = () => {
-    const headers = ['Order ID', 'Date', 'Customer Name', 'Email', 'Phone', 'Address', 'Total', 'UTR Number', 'Status', 'Payment Proof', 'Courier', 'Tracking'];
+    const headers = ['Order ID', 'Date', 'Customer Name', 'Email', 'Phone', 'Address', 'Items Subtotal', 'Shipping Fee', 'Total Amount Paid', 'UTR Number', 'Status', 'Payment Proof', 'Courier', 'Tracking'];
     const rows = orders.map(o => [
       o.orderId,
       o.date,
@@ -587,6 +587,8 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
       o.customer.email,
       o.customer.phone,
       `"${o.customer.address}"`,
+      o.amount,
+      o.shippingFee,
       o.grandTotal,
       `"${o.utrNumber || o.utr_number || ''}"`,
       o.status,
@@ -995,6 +997,9 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                           <div className="font-semibold text-[#F8F8F8]">
                             ₹{ord.grandTotal.toLocaleString('en-IN')}
                           </div>
+                          <span className="text-[10px] text-[#9B9B9B] block">
+                            Includes shipping: {ord.shippingFee === 0 ? 'FREE' : `₹${ord.shippingFee.toLocaleString('en-IN')}`}
+                          </span>
                           <span className="text-[10px] text-[#9B9B9B] block">
                             {ord.paymentMethod || ord.payment_method || 'Bank Transfer'}
                           </span>
