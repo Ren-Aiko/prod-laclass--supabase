@@ -5,6 +5,8 @@ import { useCart } from '../context/CartContext';
 import { useStore } from '../context/StoreContext';
 import { ProductCard } from '../components/cards/ProductCard';
 import { CustomMeasurementsForm, INITIAL_CUSTOM_MEASUREMENTS, MEASUREMENT_FIELDS } from '../components/ui/CustomMeasurementsForm';
+import sizeChartLc0104 from '../assets/Size Chart (LC01-04).png';
+import sizeChartLc0509 from '../assets/Size Chart (LC05-09).png';
 
 interface ProductDetailPageProps {
   product?: Product | null;
@@ -23,11 +25,18 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
   const p = product || products[0];
 
   // Images: prioritize image1, image2, image3
-  const images = p 
+  const productCode = p?.product_id || p?.productId || p?.productCode || '';
+  const sizeChart = ['LC001', 'LC002', 'LC003', 'LC004'].includes(productCode)
+    ? sizeChartLc0104
+    : ['LC005', 'LC006', 'LC007', 'LC008', 'LC009'].includes(productCode)
+      ? sizeChartLc0509
+      : null;
+  const productImages = p
     ? [p.image1, p.image2, p.image3, ...(p.images || [])].filter((img, idx, arr) => Boolean(img) && arr.indexOf(img) === idx)
     : [];
-  if (images.length === 0 && p?.thumbnail) images.push(p.thumbnail);
-  if (images.length === 0) images.push('https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=800&auto=format&fit=crop');
+  if (productImages.length === 0 && p?.thumbnail) productImages.push(p.thumbnail);
+  if (productImages.length === 0) productImages.push('https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=800&auto=format&fit=crop');
+  const images = sizeChart ? [...productImages, sizeChart] : productImages;
 
   // Compute available sizes strictly from active inventory variants
   // Never add XS or S. Only show options corresponding to real active variants.
@@ -99,8 +108,6 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
   }
 
   // Determine if this garment belongs to 4 COLLECTION (LC001-LC004) or New Guide (LC005-LC009)
-  const isLC001to004 = ['LC001', 'LC002', 'LC003', 'LC004'].includes(p.product_id || p.productId || '');
-
   // Calculate stock for selected size & length
   const getSelectedVariantStock = (): number => {
     if (selectedSize === 'Custom') return 9999;
@@ -119,6 +126,8 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
     return p.quantity ?? 1;
   };
 
+
+  const isLC001to004 = ['LC001', 'LC002', 'LC003', 'LC004'].includes(productCode);
   const currentStock = getSelectedVariantStock();
   const isOutOfStock = selectedSize !== 'Custom' && currentStock <= 0;
 
@@ -182,7 +191,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
   const handleReviewSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!reviewerName.trim() || !reviewText.trim()) return;
-    await addCustomerReview(p.id, p.name, reviewerName, reviewRating, reviewText);
+    await addCustomerReview(p.product_id || p.productId || p.id, p.name, reviewerName, reviewRating, reviewText);
     setReviewSubmitted(true);
     setReviewerName('');
     setReviewText('');
@@ -230,7 +239,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
               <img
                 src={images[selectedImageIndex] || p.thumbnail}
                 alt={p.name}
-                className="w-full h-full object-cover object-center transition-all duration-500"
+                className={`w-full h-full ${images[selectedImageIndex] === sizeChart ? 'object-contain p-3' : 'object-cover object-center'} transition-all duration-500`}
               />
 
               {p.featured && (
@@ -252,7 +261,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                       : 'border-transparent opacity-60 hover:opacity-100'
                   }`}
                 >
-                  <img src={img} alt={`View ${idx + 1}`} className="w-full h-full object-cover" />
+                  <img src={img} alt={img === sizeChart ? 'Size chart' : `View ${idx + 1}`} className={`w-full h-full ${img === sizeChart ? 'object-contain bg-white' : 'object-cover'}`} />
                   <span className="absolute bottom-1 right-1 bg-black/60 text-white text-[8px] px-1 rounded-xs">
                     {idx + 1}
                   </span>
@@ -316,7 +325,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                     Size: <strong className="text-[#8C7853]">{selectedSize}</strong>
                   </span>
 
-                  {/* Stock Availability Indicator */}
+                  {/* Keep availability state without exposing quantity. */}
                   {selectedSize === 'Custom' ? (
                     <span className="text-[11px] text-[#166534] bg-[#dcfce7] px-2 py-0.5 rounded-xs font-medium">
                       Bespoke Tailoring (Made-to-Order)
@@ -325,11 +334,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                     <span className="text-[11px] text-[#991b1b] bg-[#fee2e2] px-2 py-0.5 rounded-xs font-bold animate-pulse">
                       Out of Stock
                     </span>
-                  ) : (
-                    <span className="text-[11px] text-[#8C7853] bg-[#8C7853]/10 px-2 py-0.5 rounded-xs font-medium">
-                      In Stock: {currentStock} available
-                    </span>
-                  )}
+                  ) : null}
                 </div>
 
                 {/* Size Pills: Strictly only active inventory sizes + Custom */}
@@ -508,11 +513,6 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                     <span>
                       Length: <strong className="text-[#8C7853]">{selectedLength}</strong>
                     </span>
-                    {p.variantStock?.[`${selectedSize}_${selectedLength}`] !== undefined && (
-                      <span className="text-[10px] text-[#777777] font-normal lowercase">
-                        ({p.variantStock[`${selectedSize}_${selectedLength}`]} in stock for this length)
-                      </span>
-                    )}
                   </div>
 
                   <div className="flex flex-wrap gap-2">
