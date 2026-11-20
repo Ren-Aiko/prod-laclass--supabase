@@ -73,30 +73,42 @@ export const Hero: React.FC<HeroProps> = ({ onShopClick, onBridalClick }) => {
         <div className="max-w-2xl space-y-6">
           
           {/* Main Title */}
-          <h1 className="font-serif text-4xl sm:text-6xl lg:text-7xl font-normal leading-[1.08] tracking-wide text-[#F8F8F8]">
-            Elegance <br />
-            <span className="italic font-light rust-gradient-text">Redefined</span> for <br />
-            the Modern Woman.
+          <h1 className="font-serif text-4xl sm:text-6xl lg:text-7xl font-semibold leading-[0.96] tracking-[0.06em] text-[#F8F8F8] hero-promotion-enter" style={{ animationDelay: '80ms' }}>
+            BLACK FRIDAY<br />SALE
           </h1>
 
-          {/* Subtitle */}
-          <p className="text-sm sm:text-base text-[#CDCDCD] leading-relaxed max-w-lg font-light">
-            Handcrafted luxury abayas crafted with pure Dubai Royal Nida & featherlight Indonesian Air-Flow Zoom silk. Designed for ultimate luxury & climate-engineered comfort.
-          </p>
+          <div className="hero-promotion-enter" style={{ animationDelay: '160ms' }}>
+            <span className="font-serif text-5xl sm:text-7xl lg:text-8xl font-semibold leading-none tracking-tight text-[#B55232] drop-shadow-[0_4px_18px_rgba(181,82,50,0.22)]">
+              25% OFF
+            </span>
+
+            <div className="mt-5 flex flex-wrap items-center gap-3 sm:gap-4">
+              <span className="text-[10px] sm:text-xs tracking-[0.22em] uppercase text-[#CDCDCD] font-medium">
+                USE CODE:
+              </span>
+              <span className="inline-flex min-w-[112px] items-center justify-center border border-[#B55232]/90 bg-black/25 px-4 py-2 text-sm sm:text-base tracking-[0.18em] font-semibold text-[#E8B7A5] rounded-xs shadow-[inset_0_0_18px_rgba(181,82,50,0.08)]">
+                FRIDAY25
+              </span>
+            </div>
+
+            <p className="mt-4 text-[10px] sm:text-xs tracking-[0.28em] uppercase text-[#E8B7A5] font-semibold">
+              LIMITED TIME OFFER
+            </p>
+          </div>
 
           {/* CTA Buttons */}
-          <div className="pt-4 flex flex-col sm:flex-row gap-4">
+          <div className="pt-3 flex flex-col sm:flex-row gap-4 hero-promotion-enter" style={{ animationDelay: '240ms' }}>
             <button
               onClick={onShopClick}
-              className="bg-[#F8F8F8] hover:bg-[#E8B7A5] text-[#121212] px-8 py-4 text-xs font-semibold uppercase tracking-[0.22em] rounded-xs transition-all duration-300 flex items-center justify-center gap-3 shadow-xl hover:shadow-2xl"
+              className="group bg-[#B55232] hover:bg-[#E8B7A5] text-[#121212] px-8 py-4 text-xs font-bold uppercase tracking-[0.22em] rounded-xs transition-all duration-300 flex items-center justify-center gap-3 shadow-[0_12px_35px_rgba(181,82,50,0.18)] hover:shadow-[0_16px_42px_rgba(181,82,50,0.28)] hover:-translate-y-0.5 cursor-pointer"
             >
-              <span>Explore New Season</span>
-              <ArrowRight className="w-4 h-4" />
+              <span>SHOP NOW</span>
+              <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
             </button>
 
             <button
               onClick={onBridalClick}
-              className="border border-[#B55232] hover:border-[#F8F8F8] text-[#F8F8F8] px-8 py-4 text-xs font-semibold uppercase tracking-[0.22em] rounded-xs transition-all duration-300 backdrop-blur-sm hover:bg-white/10"
+              className="border border-[#B55232]/80 hover:border-[#E8B7A5] text-[#F8F8F8] px-8 py-4 text-xs font-semibold uppercase tracking-[0.22em] rounded-xs transition-all duration-300 backdrop-blur-sm hover:bg-black/20 cursor-pointer"
             >
               Bridal Collection
             </button>
